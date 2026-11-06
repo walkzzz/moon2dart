@@ -1,6 +1,6 @@
 # moon2dart 迭代路线图
 
-> 已实现 v0.1.0 · 2026-11-06 | 更新 v0.2.0-v1.0.0 规划 · 2026-11-07
+> 已实现 v0.1.0-v0.2.0 · 2026-11-07 | 更新 v0.3.0-v1.0.0 规划
 
 ## 最终目标
 
@@ -49,19 +49,19 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.2.0 — 解析器：MoonBit 源码 → AST
+## v0.2.0 ✅ — 解析器：MoonBit 源码 → AST（已完成）
 
 **目标**：实现 MoonBit 源码解析器，支持 `.mbt` 文件 → AST → Dart 单文件转换。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | lexer：词法分析（token 流 — 关键字/标识符/字面量/运算符/分隔符） |
-| S2 | parser：语法分析（fn/struct/enum/let/表达式/类型注解/模式匹配） |
-| S3 | 单文件转换管线（`.mbt` → AST → `.dart`） |
-| S4 | CLI `moon2dart convert <file>` 子命令 |
-| S5 | 测试（lexer/parser/端到端）+ 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | lexer：词法分析（TokenKind 57 变体 + Lexer，15 白盒测试） | ✅ |
+| S2 | parser：语法分析（fn/struct/enum/expr/type，27 白盒测试） | ✅ |
+| S3 | 单文件转换管线 transpile_source（8 管线测试） | ✅ |
+| S4 | CLI convert/demo/help 子命令 | ✅ |
+| S5 | 测试 + 文档 + 门禁 + 提交推送 | ✅ |
 
-**交付线**：库 API（`parse_moonbit`）、CLI（`convert` 子命令）
+**交付**：83 测试 × 4 后端，`transpile_source` API，CLI `convert <file>` 子命令。
 
 ---
 

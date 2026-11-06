@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.2.0 (2026-11-07) — 解析器 + 单文件转换管线
+
+### 新增
+- `parser/lexer.mbt`：MoonBit 词法分析器（TokenKind 57 变体 + Lexer，15 白盒测试）
+- `parser/parser.mbt`：MoonBit 语法分析器（fn/struct/enum/expr/type 解析，27 白盒测试）
+- `transpile_source`：单文件转换管线（src → lexer → parser → codegen → dart，8 管线测试）
+- CLI `convert <file>` 子命令：读取 .mbt 文件并转换为 Dart 代码
+- CLI `demo` / `help` 子命令
+
+### 改进
+- 版本号 v0.1.0 → v0.2.0
+- 测试 33 → 83（× 4 后端）
+- 添加 `moonbitlang/async` 依赖（CLI 文件读取）
+
 ## v0.1.0 (2026-11-06) — transpiler 骨架
 
 ### 新增
