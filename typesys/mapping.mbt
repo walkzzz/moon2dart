@@ -74,7 +74,7 @@ pub fn moon_to_dart_type(t : @ast.MoonType) -> String {
 }
 
 ///|
-/// 判断 MoonBit 类型是否可纯退化（无需混合模式）。
+/// 判断 MoonBit 类型是否可纯转换（无需混合模式）。
 pub fn is_pure(t : @ast.MoonType) -> Bool {
   match t {
     @ast.MResult(_, _) => false

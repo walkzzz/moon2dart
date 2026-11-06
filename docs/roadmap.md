@@ -1,6 +1,6 @@
 # moon2dart 迭代路线图
 
-> 待审核 · 2026-11-06
+> 已实现 v0.1.0 · 2026-11-06
 
 ## 路线总览
 
@@ -10,9 +10,9 @@ v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0 ─�
 纯逻辑      模式匹配   Option    混合     widget     验证
 ```
 
-## v0.1.0 — 类型映射 + 纯逻辑退化
+## v0.1.0 — 类型映射 + 纯逻辑转换
 
-**目标**：建立 transpiler 骨架，支持纯逻辑子集退化。
+**目标**：建立 transpiler 骨架，支持纯逻辑子集转换。
 
 | 项 | 内容 |
 |----|------|
@@ -24,11 +24,11 @@ v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0 ─�
 | CLI | `moon2dart input -o output` 基本用法 |
 | 测试 | 类型映射 + codegen 单元测试 |
 
-**验收**：`moon check` + `moon test` 通过，能退化简单 fn/struct/enum 到 Dart。
+**验收**：`moon check` + `moon test` 通过，能转换简单 fn/struct/enum 到 Dart。
 
 ## v0.2.0 — trait → mixin + 模式匹配
 
-**目标**：支持 trait 退化和模式匹配。
+**目标**：支持 trait 转换和模式匹配。
 
 | 项 | 内容 |
 |----|------|
@@ -51,16 +51,16 @@ v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0 ─�
 
 ## v0.4.0 — FFI 混合模式
 
-**目标**：支持 FFI 退化（dart:ffi 桥接）。
+**目标**：支持 FFI 转换（dart:ffi 桥接）。
 
 | 项 | 内容 |
 |----|------|
 | FFI | extern "C" → dart:ffi DynamicLibrary |
 | 桥接 | 生成 native 库加载 + 类型转换代码 |
 | 限制 | 不支持内联汇编/wasm intrinsics |
-| CLI | `--pure-only` 只退化纯子集 |
+| CLI | `--pure-only` 只转换纯子集 |
 
-## v0.5.0 — Flutter widget 退化
+## v0.5.0 — Flutter widget 转换
 
 **目标**：支持 MoonBit UI 抽象 → Flutter widget 树。
 
@@ -76,7 +76,7 @@ v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0 ─�
 
 | 项 | 内容 |
 |----|------|
-| 完整 | 所有可退化构造支持 |
+| 完整 | 所有可转换构造支持 |
 | 验证 | dart analyze + flutter test 集成 |
 | 文档 | 用户文档 + 示例 |
 | 发布 | mooncakes.io 发布 |

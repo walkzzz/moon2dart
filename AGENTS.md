@@ -67,6 +67,28 @@ ast ──> (零依赖)
 - **import 别名**：`"walkzzz/moon2dart" @lib` 语法
 - **字符串插值**：`"\{expr}"`
 
+### Sprint 状态
+
+- **S1 ast 包** ✅ — MoonType(16)/MoonExpr(9)/MoonPattern(5)/MoonDecl(3) + derive(Eq, Compare, Debug)
+- **S2 typesys 包** ✅ — DartType(12) + map_type + emit_dart + moon_to_dart_type + is_pure + needs_result_type
+- **S3 codegen 包** ✅ — emit_dart_expr + emit_dart_pattern + emit_dart_decl + emit_dart_program
+- **S4 根包 transpile 入口** ✅ — transpile / transpile_decl / transpile_expr / transpile_type
+- **S5 CLI 演示模式** ✅ — `moon run cmd/main` 输出 Dart 代码
+- **S6 工程配置** ✅ — moon.mod + AGENTS.md + CI (github actions)
+- **S7 门禁验证** ✅ — moon check --deny-warn ✓ + moon test 33/33 × 4 后端 ✓ + moon info ✓ + moon fmt ✓
+- **S8 文档完善 + 发布准备** ✅ — README.md + README.mbt.md + docs/ 全部更新 + 黑盒测试 + "退化"措辞清除
+
+### 测试
+
+33 个测试，四后端全通过（wasm / wasm-gc / js / native）：
+
+| 包 | 白盒 | 黑盒 |
+|----|------|------|
+| ast | 7 | 0 |
+| typesys | 7 | 0 |
+| codegen | 9 | 0 |
+| moon2dart (根) | 5 | 5 |
+
 ### 文档
 
-开发文档在 `docs/`：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / changelog。
+开发文档在 `docs/`（7 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / changelog。

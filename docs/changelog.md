@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.1.0 (待发布) — transpiler 骨架
+## v0.1.0 (2026-11-06) — transpiler 骨架
 
 ### 新增
 - `typesys/`：MoonBit → Dart 类型映射（16 种 MoonType → 12 种 DartType）

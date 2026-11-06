@@ -1,25 +1,25 @@
 # MoonBit → Dart 类型与构造映射规范
 
-> 待审核 · 2026-11-06 · 完整映射表
+> 已实现 v0.1.0 · 2026-11-06 · 完整映射表
 
 ## 1. 基础类型映射
 
-| MoonBit | Dart | 可纯退化 | 备注 |
+| MoonBit | Dart | 可纯转换 | 备注 |
 |---------|------|---------|------|
 | `Int` | `int` | ✅ | 64-bit |
-| `UInt` | `int` | ✅ | Dart 无 unsigned，退化有符号 |
+| `UInt` | `int` | ✅ | Dart 无 unsigned，转换有符号 |
 | `Int64` | `int` | ✅ | |
 | `UInt64` | `int` | ✅ | 同上 |
 | `Double` | `double` | ✅ | |
-| `Float` | `double` | ✅ | Dart 无 float，退化 double |
+| `Float` | `double` | ✅ | Dart 无 float，转换 double |
 | `Bool` | `bool` | ✅ | |
 | `String` | `String` | ✅ | |
-| `Char` | `int` | ✅ | Dart 无 char，退化为 rune (int) |
+| `Char` | `int` | ✅ | Dart 无 char，转换为 rune (int) |
 | `Unit` | `void` | ✅ | |
 
 ## 2. 复合类型映射
 
-| MoonBit | Dart | 可纯退化 | 备注 |
+| MoonBit | Dart | 可纯转换 | 备注 |
 |---------|------|---------|------|
 | `Array[T]` | `List<T>` | ✅ | |
 | `Map[K,V]` | `Map<K,V>` | ✅ | |
@@ -91,7 +91,7 @@ class Rect extends Shape { final double w; final double h; Rect(this.w, this.h);
 
 ## 6. trait 映射
 
-| MoonBit | Dart | 可退化 | 备注 |
+| MoonBit | Dart | 可转换 | 备注 |
 |---------|------|--------|------|
 | `trait Named { name(Self) -> String }` | `abstract class Named { String get name; }` | ✅ | 单 trait |
 | `pub(open) trait` 跨包实现 | `mixin` | ⚠️ | 多继承受限 |
@@ -142,7 +142,7 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 |-------------|------|
 | 内联汇编 | Dart 无对应 |
 | wasm intrinsics | Dart 平台无关 |
-| 编译期常量函数 | 退化为字面量，不执行 |
+| 编译期常量函数 | 转换为字面量，不执行 |
 | `pub(open) trait` 跨包多继承 | Dart mixin 限制 |
 
 ## 11. 映射表维护

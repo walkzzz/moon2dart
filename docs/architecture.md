@@ -1,6 +1,6 @@
 # moon2dart 架构设计
 
-> 待审核 · 2026-11-06
+> 已实现 v0.1.0 · 2026-11-06
 
 ## 1. 顶层架构
 
@@ -63,19 +63,19 @@ dart analyze 通过?
 .dart 文件
 ```
 
-## 4. 退化策略
+## 4. 转换策略
 
-### 4.1 纯退化（85%）
+### 4.1 纯转换（85%）
 MoonBit 构造直接映射为 Dart 构造，无运行时桥接：
 - 基础类型：`Int`→`int`、`Double`→`double`、`Bool`→`bool`、`String`→`String`
 - 复合类型：`Array[T]`→`List<T>`、`Map[K,V]`→`Map<K,V>`、`Option[T]`→`T?`
 - 逻辑构造：`fn`→函数、`struct`→`class`、`enum`→`sealed class`、模式匹配→`switch expression`
 
 ### 4.2 混合模式（15%）
-不可纯退化，需生成桥接代码：
+不可纯转换，需生成桥接代码：
 - **FFI**（`extern "C"`）：生成 `dart:ffi` 绑定 + 原生库加载代码
-- **`pub(open) trait` 跨包实现**：退化为 `mixin`，限制多继承
-- **动态分派（特征对象）**：退化为 `abstract class` 多态
+- **`pub(open) trait` 跨包实现**：转换为 `mixin`，限制多继承
+- **动态分派（特征对象）**：转换为 `abstract class` 多态
 
 ### 4.3 不支持（明确排除）
 - MoonBit 的 C FFI 内联汇编
@@ -144,13 +144,13 @@ moon2dart input.mbt -o output.dart
 moon2dart --help
 moon2dart --version
 moon2dart input.mbt -o output.dart --verify   # 调用 dart analyze 验证
-moon2dart input.mbt -o output.dart --pure-only # 只退化纯子集，FFI 报错
+moon2dart input.mbt -o output.dart --pure-only # 只转换纯子集，FFI 报错
 ```
 
 ## 8. 设计原则
 
-1. **单向退化**：MoonBit → Dart，不承诺反向（Dart → MoonBit）
+1. **单向转换**：MoonBit → Dart，不承诺反向（Dart → MoonBit）
 2. **可读输出**：生成可读 Dart 代码（非压缩），便于人工审查与修正
-3. **保守退化**：遇到不确定的构造，默认报错而非猜测生成
+3. **保守转换**：遇到不确定的构造，默认报错而非猜测生成
 4. **映射表驱动**：类型/构造映射集中在 typesys，便于版本跟随
 5. **零运行时依赖**：生成的 Dart 代码尽量不依赖 moon2dart runtime（除 FFI 桥接辅助）
