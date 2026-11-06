@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart"
+
+import {
+  "walkzzz/moon2dart/ast",
+}
+
+// Values
+pub fn transpile(Array[@ast.MoonDecl]) -> String
+
+pub fn transpile_decl(@ast.MoonDecl) -> String
+
+pub fn transpile_expr(@ast.MoonExpr) -> String
+
+pub fn transpile_type(@ast.MoonType) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

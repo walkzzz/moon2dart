@@ -2,52 +2,71 @@
 
 This is a [MoonBit](https://docs.moonbitlang.com) project.
 
-You can browse and install extra skills here:
-<https://github.com/moonbitlang/skills>
-
 ## Project Structure
 
 - MoonBit packages are organized per directory; each directory contains a
-  `moon.pkg` file listing its dependencies. Each package has its files and
-  blackbox test files (ending in `_test.mbt`) and whitebox test files (ending in
-  `_wbtest.mbt`).
+  `moon.pkg` file listing its dependencies.
 
 - In the toplevel directory, there is a `moon.mod` file listing module
   metadata.
 
 ## Coding convention
 
-- MoonBit code is organized in block style, each block is separated by `///|`,
-  the order of each block is irrelevant. In some refactorings, you can process
-  block by block independently.
+- MoonBit code is organized in block style, each block is separated by `///|`.
 
-- Try to keep deprecated blocks in file called `deprecated.mbt` in each
-  directory.
+- `pub(all) enum` 供外部包构造；`pub enum` 仅允许 match。
+
+- `derive(Eq, Compare, Debug)` 后需显式 `pub extend T with Trait::{method}`。
+
+- snake_case 函数/变量，PascalCase 类型，UPPER_SNAKE 常量。
 
 ## Tooling
 
-- `moon fmt` is used to format your code properly.
+- `moon fmt` — 格式化
+- `moon info` — 更新 .mbti 接口
+- `moon test` — 运行测试
+- `moon check --target all` — 四后端编译检查
+- `moon run cmd/main` — 运行 CLI
 
-- `moon ide` provides project navigation helpers like `peek-def`, `outline`, and
-  `find-references`. See $moonbit-agent-guide for details.
+## Project: moon2dart
 
-- `moon info` is used to update the generated interface of the package, each
-  package has a generated interface file `.mbti`, it is a brief formal
-  description of the package. If nothing in `.mbti` changes, this means your
-  change does not bring the visible changes to the external package users, it is
-  typically a safe refactoring.
+MoonBit → Dart transpiler，让 MoonBit 代码跑在 Flutter 上。
 
-- In the last step, run `moon info && moon fmt` to update the interface and
-  format the code. Check the diffs of `.mbti` file to see if the changes are
-  expected.
+### 包结构
 
-- Run `moon test` to check tests pass. MoonBit supports snapshot testing; when
-  changes affect outputs, run `moon test --update` to refresh snapshots.
+```
+moon2dart/            # 根包 — transpile 编排入口
+├── moon2dart.mbt         # transpile / transpile_decl / transpile_expr / transpile_type
+├── ast/                  # AST 类型定义（零依赖）
+│   └── ast.mbt           # MoonType / MoonExpr / MoonPattern / MoonDecl
+├── typesys/              # 类型映射
+│   └── mapping.mbt       # DartType + map_type + emit_dart + is_pure
+├── codegen/              # Dart 代码发射
+│   └── emitter.mbt       # emit_dart_expr / emit_dart_pattern / emit_dart_decl / emit_dart_program
+└── cmd/main/             # CLI 入口
+    └── main.mbt          # 演示模式
+```
 
-- Prefer `assert_eq` or `assert_true(pattern is Pattern(...))` for results that
-  are stable or very unlikely to change. For snapshot tests that record
-  structured debugging output, derive `Debug` and use `debug_inspect`, rather
-  than deriving `Show` for debugging. For solid, well-defined results (e.g.
-  scientific computations), prefer assertion tests. You can use
-  `moon coverage analyze > uncovered.log` to see which parts of your code are
-  not covered by tests.
+### 依赖关系
+
+```
+cmd/main ──> 根包 ──> ast + typesys + codegen
+codegen ──> ast + typesys
+typesys ──> ast
+ast ──> (零依赖)
+```
+
+### 多后端支持
+
+- `supported_targets = "+wasm+wasm-gc+js+native"`
+
+### MoonBit 语法要点
+
+- **derive 后必须显式 pub extend**：`derive(Eq, Compare, Debug)` 后需三条 `pub extend`
+- **pub(all) enum**：外部包可构造（测试需 pub(all)）
+- **import 别名**：`"walkzzz/moon2dart" @lib` 语法
+- **字符串插值**：`"\{expr}"`
+
+### 文档
+
+开发文档在 `docs/`：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / changelog。

@@ -1,0 +1,48 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/typesys"
+
+import {
+  "moonbitlang/core/debug",
+  "walkzzz/moon2dart/ast",
+}
+
+// Values
+pub fn emit_dart(DartType) -> String
+
+pub fn is_pure(@ast.MoonType) -> Bool
+
+pub fn map_type(@ast.MoonType) -> DartType
+
+pub fn moon_to_dart_type(@ast.MoonType) -> String
+
+pub fn needs_result_type(@ast.MoonType) -> Bool
+
+// Errors
+
+// Types and methods
+pub(all) enum DartType {
+  DInt
+  DInt64
+  DDouble
+  DBool
+  DString
+  DRune
+  DVoid
+  DList(DartType)
+  DMap(DartType, DartType)
+  DSet(DartType)
+  DNullable(DartType)
+  DCustom(String)
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartType::compare(Self, Self) -> Int32
+pub fn DartType::equal(Self, Self) -> Bool
+pub fn DartType::not_equal(Self, Self) -> Bool
+pub fn DartType::op_ge(Self, Self) -> Bool
+pub fn DartType::op_gt(Self, Self) -> Bool
+pub fn DartType::op_le(Self, Self) -> Bool
+pub fn DartType::op_lt(Self, Self) -> Bool
+pub fn DartType::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

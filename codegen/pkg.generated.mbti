@@ -1,0 +1,23 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/codegen"
+
+import {
+  "walkzzz/moon2dart/ast",
+}
+
+// Values
+pub fn emit_dart_decl(@ast.MoonDecl) -> String
+
+pub fn emit_dart_expr(@ast.MoonExpr) -> String
+
+pub fn emit_dart_pattern(@ast.MoonPattern) -> String
+
+pub fn emit_dart_program(Array[@ast.MoonDecl]) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

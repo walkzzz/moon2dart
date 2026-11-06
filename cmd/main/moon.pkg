@@ -1,5 +1,6 @@
-// import {
-//   "walkzzz/moon2dart" @lib,
-// }
+import {
+  "walkzzz/moon2dart" @lib,
+  "walkzzz/moon2dart/ast",
+}
 
 pkgtype(kind: "executable")

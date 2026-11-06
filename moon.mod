@@ -1,26 +1,15 @@
-// Learn more about moon.mod configuration:
-// https://docs.moonbitlang.com/en/latest/toolchain/moon/module.html
-//
-// To add a dependency, run this command in your terminal:
-//   moon add moonbitlang/x
-//
-// Or manually declare it in `import`, for example:
-// import {
-//   "moonbitlang/x@0.4.6",
-// }
-
 name = "walkzzz/moon2dart"
 
 version = "0.1.0"
 
 readme = "README.mbt.md"
 
-repository = ""
+repository = "https://github.com/walkzzz/moon2dart.git"
 
 license = "Apache-2.0"
 
-keywords = []
+keywords = [ "transpiler", "dart", "moonbit", "flutter", "code-generation" ]
 
-preferred_target = "wasm"
+description = "MoonBit → Dart transpiler — 让 MoonBit 代码跑在 Flutter 上"
 
-description = ""
+supported_targets = "+wasm+wasm-gc+js+native"
