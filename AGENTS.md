@@ -69,14 +69,33 @@ ast ──> (零依赖)
 
 ### Sprint 状态
 
-- **S1 ast 包** ✅ — MoonType(16)/MoonExpr(9)/MoonPattern(5)/MoonDecl(3) + derive(Eq, Compare, Debug)
-- **S2 typesys 包** ✅ — DartType(12) + map_type + emit_dart + moon_to_dart_type + is_pure + needs_result_type
-- **S3 codegen 包** ✅ — emit_dart_expr + emit_dart_pattern + emit_dart_decl + emit_dart_program
-- **S4 根包 transpile 入口** ✅ — transpile / transpile_decl / transpile_expr / transpile_type
-- **S5 CLI 演示模式** ✅ — `moon run cmd/main` 输出 Dart 代码
-- **S6 工程配置** ✅ — moon.mod + AGENTS.md + CI (github actions)
-- **S7 门禁验证** ✅ — moon check --deny-warn ✓ + moon test 33/33 × 4 后端 ✓ + moon info ✓ + moon fmt ✓
-- **S8 文档完善 + 发布准备** ✅ — README.md + README.mbt.md + docs/ 全部更新 + 黑盒测试 + "退化"措辞清除
+- **v0.1.0** ✅ 已完成 — transpiler 骨架（33 测试 × 4 后端）
+  - S1 ast 包 ✅ / S2 typesys ✅ / S3 codegen ✅ / S4 根包入口 ✅
+  - S5 CLI 演示 ✅ / S6 工程配置 ✅ / S7 门禁验证 ✅ / S8 文档发布 ✅
+- **v0.2.0** 📋 计划 — 解析器（MoonBit 源码 → AST）
+- **v0.3.0** 📋 计划 — trait + 模式匹配 + derive 生成
+- **v0.4.0** 📋 计划 — 项目级扫描 + 包结构映射
+- **v0.5.0** 📋 计划 — async + Option + Result + 泛型
+- **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
+- **v0.7.0** 📋 计划 — Flutter widget 转换
+- **v0.8.0** 📋 计划 — 自动触发 + 项目同步（核心功能）
+- **v0.9.0** 📋 计划 — MCP 服务器 + Skill（大模型消费）
+- **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
+
+### 四条交付线
+
+| 交付线 | 发布渠道 | 消费者 | 覆盖版本 |
+|--------|----------|--------|----------|
+| 库 API | `moon add walkzzz/moon2dart` | MoonBit 开发者 | v0.1.0-v0.8.0 |
+| CLI 工具 | `mooncakes.io/cli` | 命令行用户 | v0.2.0-v0.9.0 |
+| Skill | `mooncakes.io/skills` | 大模型 Agent | v0.9.0 |
+| MCP 服务器 | 随 CLI 分发 | AI 工具链 | v0.9.0 |
+
+### 技术参考
+
+- MCP 服务器架构：参考 `chrono_tz-mbt/cmd/mcp/main.mbt`（JSON-RPC + stdio，623 行）
+- MoonBit 语言特性：参考 `moonbit_learning/advanced_basics`（Json/defer/管道/is 表达式）
+- 完整路线图：`docs/roadmap.md`
 
 ### 测试
 

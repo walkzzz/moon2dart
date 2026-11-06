@@ -1,93 +1,234 @@
 # moon2dart 迭代路线图
 
-> 已实现 v0.1.0 · 2026-11-06
+> 已实现 v0.1.0 · 2026-11-06 | 更新 v0.2.0-v1.0.0 规划 · 2026-11-07
+
+## 最终目标
+
+开发者引入 moon2dart 后，**自动将整个 MoonBit 项目转换为同步的 Flutter/Dart 项目**。
+
+### 四条交付线
+
+| 交付线 | 发布渠道 | 消费者 | 覆盖版本 |
+|--------|----------|--------|----------|
+| 库 API | `moon add walkzzz/moon2dart` | MoonBit 开发者 | v0.1.0-v0.8.0 |
+| CLI 工具 | `mooncakes.io/cli` | 命令行用户 | v0.2.0, v0.4.0, v0.8.0, v0.9.0 |
+| Skill | `mooncakes.io/skills` | 大模型 Agent | v0.9.0 |
+| MCP 服务器 | 随 CLI 分发 | AI 工具链 | v0.9.0 |
 
 ## 路线总览
 
 ```
-v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0 ──► v1.0.0
-类型映射    trait     async     FFI      Flutter    完整
-纯逻辑      模式匹配   Option    混合     widget     验证
+v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0
+transpiler   parser     trait      项目级     async
+骨架         源码→AST   模式匹配    扫描       Option
+  ✅
+
+v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v1.0.0
+async      FFI       Flutter     自动       MCP+Skill   完整
+Option     混合      widget      触发同步    大模型消费   发布
 ```
 
-## v0.1.0 — 类型映射 + 纯逻辑转换
+---
 
-**目标**：建立 transpiler 骨架，支持纯逻辑子集转换。
+## v0.1.0 ✅ — transpiler 骨架（已完成）
 
-| 项 | 内容 |
-|----|------|
-| 类型映射 | 基础类型 + Array/Map/Set/Option/Result |
-| AST | 简化 AST（MoonType/MoonExpr/MoonDecl） |
-| codegen | Dart 类型/表达式/声明发射 |
-| 支持 | fn（无 trait 方法）/ struct / enum / 基础表达式 |
-| 不支持 | trait / 模式匹配 / async / FFI |
-| CLI | `moon2dart input -o output` 基本用法 |
-| 测试 | 类型映射 + codegen 单元测试 |
+**目标**：建立 transpiler 骨架，支持手动 AST → Dart 转换。
 
-**验收**：`moon check` + `moon test` 通过，能转换简单 fn/struct/enum 到 Dart。
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | ast 包：MoonType(16)/MoonExpr(9)/MoonPattern(5)/MoonDecl(3) | ✅ |
+| S2 | typesys 包：DartType(12) + map_type + emit_dart | ✅ |
+| S3 | codegen 包：emit_dart_expr/pattern/decl/program | ✅ |
+| S4 | 根包 transpile 入口 | ✅ |
+| S5 | CLI 演示模式 | ✅ |
+| S6 | moon.mod + AGENTS.md + CI | ✅ |
+| S7 | 门禁验证 + commit + push | ✅ |
+| S8 | 文档完善 + 发布准备 | ✅ |
 
-## v0.2.0 — trait → mixin + 模式匹配
+**交付**：33 测试 × 4 后端，0 warning，`transpile`/`transpile_decl`/`transpile_expr`/`transpile_type` API。
 
-**目标**：支持 trait 转换和模式匹配。
+---
 
-| 项 | 内容 |
-|----|------|
-| trait | 单 trait → abstract class，多 trait → mixin 链 |
-| 模式匹配 | match → switch expression (Dart 3) |
-| derive | Debug→toString, Eq→operator== |
-| parser | MoonBit 源码 → AST（简化解析器） |
-| 不支持 | async / FFI |
+## v0.2.0 — 解析器：MoonBit 源码 → AST
 
-## v0.3.0 — async + Option + verifier
+**目标**：实现 MoonBit 源码解析器，支持 `.mbt` 文件 → AST → Dart 单文件转换。
 
-**目标**：支持异步和 null safety，引入 dart analyze 验证。
+| Sprint | 内容 |
+|--------|------|
+| S1 | lexer：词法分析（token 流 — 关键字/标识符/字面量/运算符/分隔符） |
+| S2 | parser：语法分析（fn/struct/enum/let/表达式/类型注解/模式匹配） |
+| S3 | 单文件转换管线（`.mbt` → AST → `.dart`） |
+| S4 | CLI `moon2dart convert <file>` 子命令 |
+| S5 | 测试（lexer/parser/端到端）+ 文档 |
 
-| 项 | 内容 |
-|----|------|
-| async | async fn → Future, await → await |
-| Option | T? null safety 语义 |
-| verifier | 调用 `dart analyze` 验证生成代码 |
-| CLI | `--verify` 选项 |
+**交付线**：库 API（`parse_moonbit`）、CLI（`convert` 子命令）
 
-## v0.4.0 — FFI 混合模式
+---
+
+## v0.3.0 — trait + 模式匹配 + derive 生成
+
+**目标**：支持 trait 转换、模式匹配、derive 自动派生。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | trait → abstract class / mixin 链（单 trait → abstract，多 trait → mixin） |
+| S2 | match → switch expression (Dart 3 pattern matching) |
+| S3 | derive(Debug) → toString()，derive(Eq) → operator==，derive(Compare) → compareTo() |
+| S4 | pub(open) trait 跨包实现 → mixin + implements |
+| S5 | 测试 + 文档 |
+
+**交付线**：库 API（trait/match/derive 转换）
+
+---
+
+## v0.4.0 — 项目级扫描 + 包结构映射
+
+**目标**：扫描整个 MoonBit 项目目录，映射为 Dart 项目结构。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | 项目扫描器（遍历目录，读取 moon.mod/moon.pkg，构建依赖图） |
+| S2 | MoonBit 包结构 → Dart 包结构（pubspec.yaml + lib/ + test/） |
+| S3 | 多文件项目转换（依赖图 + 拓扑排序 + 批量转换） |
+| S4 | CLI `moon2dart project <dir> -o <output>` 子命令 |
+| S5 | 测试 + 文档 |
+
+**交付线**：库 API（`transpile_project`）、CLI（`project` 子命令）
+
+---
+
+## v0.5.0 — async + Option + Result + 泛型
+
+**目标**：支持异步、null safety、错误类型、泛型。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | async/await → Future/await |
+| S2 | Option[T] → T? null safety |
+| S3 | Result[T,E] → 自定义 Result class（sealed class + Ok/Err） |
+| S4 | 泛型类型参数支持（fn<T>、struct<T>、enum<T>） |
+| S5 | 闭包 → 箭头函数 |
+| S6 | 测试 + 文档 |
+
+**交付线**：库 API（async/Option/Result/泛型转换）
+
+---
+
+## v0.6.0 — FFI 混合模式
 
 **目标**：支持 FFI 转换（dart:ffi 桥接）。
 
-| 项 | 内容 |
-|----|------|
-| FFI | extern "C" → dart:ffi DynamicLibrary |
-| 桥接 | 生成 native 库加载 + 类型转换代码 |
-| 限制 | 不支持内联汇编/wasm intrinsics |
-| CLI | `--pure-only` 只转换纯子集 |
+| Sprint | 内容 |
+|--------|------|
+| S1 | extern "C" → dart:ffi DynamicLibrary |
+| S2 | 类型转换桥接代码生成（C 类型 ↔ Dart 类型） |
+| S3 | 原生库加载代码 |
+| S4 | CLI `--pure-only` 只转换纯子集（跳过 FFI） |
+| S5 | 测试 + 文档 |
 
-## v0.5.0 — Flutter widget 转换
+**交付线**：库 API（FFI 转换）、CLI（`--pure-only` 选项）
+
+---
+
+## v0.7.0 — Flutter widget 转换
 
 **目标**：支持 MoonBit UI 抽象 → Flutter widget 树。
 
-| 项 | 内容 |
-|----|------|
-| widget | MoonBit UI 抽象 → Flutter widget |
-| 布局 | Row/Column/Stack → Flutter 对应 |
-| 状态 | MoonBit 状态 → StatefulWidget |
+| Sprint | 内容 |
+|--------|------|
+| S1 | MoonBit UI 抽象 → Flutter widget（Text/Container/Row/Column） |
+| S2 | 布局（Row/Column/Stack/Padding/Container/Expanded） |
+| S3 | 状态管理（StatelessWidget/StatefulWidget + setState） |
+| S4 | 事件处理（onTap/onPressed/onChanged） |
+| S5 | main 入口 → runApp(MyApp()) |
+| S6 | 测试 + 文档 |
 
-## v1.0.0 — 完整 transpiler
+**交付线**：库 API（widget 转换）
 
-**目标**：生产可用。
+---
 
-| 项 | 内容 |
-|----|------|
-| 完整 | 所有可转换构造支持 |
-| 验证 | dart analyze + flutter test 集成 |
-| 文档 | 用户文档 + 示例 |
-| 发布 | mooncakes.io 发布 |
+## v0.8.0 — 自动触发 + 项目同步（核心功能）
+
+**目标**：引入库后自动触发项目转换，支持增量同步。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | 引入库自动触发机制（moon.pkg hook / build script） |
+| S2 | 文件变更检测（增量更新，只转换变更文件） |
+| S3 | 项目同步（MoonBit ↔ Dart 保持同步） |
+| S4 | CLI `moon2dart sync` / `moon2dart watch` 子命令 |
+| S5 | 配置文件（moon2dart.toml — 排除规则/映射规则/输出路径） |
+| S6 | 测试 + 文档 |
+
+**交付线**：库 API（auto_transpile）、CLI（`sync`/`watch` 子命令）
+
+---
+
+## v0.9.0 — MCP 服务器 + Skill（大模型消费）
+
+**目标**：开发 MCP 服务器和 Skill，让大模型 Agent 能调用 moon2dart。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | MCP 服务器骨架（JSON-RPC + stdio，参考 chrono_tz-mbt/cmd/mcp） |
+| S2 | MCP 工具定义（convert/project/sync/analyze/format/list_tools） |
+| S3 | Skill 描述符（mooncakes.io/skills 发布格式 — SKILL.md + 工具清单） |
+| S4 | CLI `moon2dart serve` 启动 MCP 服务器 |
+| S5 | 测试 + 文档 |
+
+**MCP 工具清单**：
+
+| 工具 | 参数 | 功能 |
+|------|------|------|
+| `moon2dart_convert` | `{file: string, output?: string}` | 单文件转换 |
+| `moon2dart_project` | `{dir: string, output: string}` | 项目级转换 |
+| `moon2dart_sync` | `{dir: string, watch?: bool}` | 项目同步 |
+| `moon2dart_analyze` | `{file: string}` | 分析 MoonBit 代码结构 |
+| `moon2dart_format` | `{code: string}` | 格式化生成的 Dart 代码 |
+| `moon2dart_list_tools` | `{}` | 列出所有可用工具 |
+
+**交付线**：CLI（`serve` 子命令）、Skill、MCP 服务器
+
+---
+
+## v1.0.0 — 验证 + 完整发布
+
+**目标**：生产可用，完整发布到 mooncakes.io。
+
+| Sprint | 内容 |
+|--------|------|
+| S1 | dart analyze 集成验证（生成的 Dart 代码零警告） |
+| S2 | flutter test 集成（生成的 Flutter 项目可测试） |
+| S3 | round-trip 测试（MoonBit → Dart → 语义对比） |
+| S4 | 完整用户文档 + 示例项目（3 个：纯逻辑/UI/FFI） |
+| S5 | mooncakes.io 发布（库 + CLI + skill 三渠道） |
+| S6 | 最终验证 + 发布 |
+
+**交付线**：全部四条交付线正式发布
+
+---
 
 ## 里程碑与风险
 
 | 版本 | 风险 | 缓解 |
 |------|------|------|
-| v0.1.0 | 🟢 低 | 纯骨架，无外部依赖 |
-| v0.2.0 | 🟡 中 | trait→mixin 映射不完整 |
-| v0.3.0 | 🟢 低 | async 语义近似 |
-| v0.4.0 | 🔴 高 | FFI 桥接复杂 |
-| v0.5.0 | 🟡 中 | widget 映射主观 |
-| v1.0.0 | 🟡 中 | 整体质量保障 |
+| v0.1.0 ✅ | 🟢 低 | 纯骨架，无外部依赖 |
+| v0.2.0 | 🟡 中 | MoonBit 语法复杂，parser 工作量大 |
+| v0.3.0 | 🟡 中 | trait→mixin 映射不完整（多继承冲突） |
+| v0.4.0 | 🟡 中 | 项目结构映射需处理依赖图 |
+| v0.5.0 | 🟢 低 | async/Option 语义近似 |
+| v0.6.0 | 🔴 高 | FFI 桥接复杂，类型安全难保证 |
+| v0.7.0 | 🟡 中 | widget 映射主观，需定义 UI 抽象层 |
+| v0.8.0 | 🔴 高 | 自动触发依赖 MoonBit build hook（机制不成熟） |
+| v0.9.0 | 🟡 中 | MCP/Skill 规范待确认 |
+| v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
+
+## 技术参考
+
+| 参考 | 用途 |
+|------|------|
+| `chrono_tz-mbt/cmd/mcp/main.mbt` | MCP 服务器架构（JSON-RPC + stdio + 工具分发，623 行） |
+| `chrono_tz-mbt/cmd/cli/main.mbt` | CLI 子命令解析模式 |
+| `moonbit_learning/advanced_basics` | MoonBit 语言特性（Json/defer/管道/is 表达式） |
+| `docs/type_mapping.md` | 类型映射规范 |
+| `docs/architecture.md` | 架构设计 |

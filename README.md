@@ -78,25 +78,33 @@ moon info                  # 更新接口
 
 ## 测试
 
-28 个测试，四后端全通过（wasm / wasm-gc / js / native）：
+33 个测试，四后端全通过（wasm / wasm-gc / js / native）：
 
-| 包 | 测试数 |
-|----|--------|
-| ast | 7 |
-| typesys | 7 |
-| codegen | 9 |
-| moon2dart (根) | 5 |
+| 包 | 白盒 | 黑盒 |
+|----|------|------|
+| ast | 7 | 0 |
+| typesys | 7 | 0 |
+| codegen | 9 | 0 |
+| moon2dart (根) | 5 | 5 |
 
 ## 路线图
 
+最终目标：引入 moon2dart 后自动将整个 MoonBit 项目转换为同步的 Flutter/Dart 项目。
+
+四条交付线：库 API（`moon add`）/ CLI（`mooncakes.io/cli`）/ Skill（`mooncakes.io/skills`）/ MCP 服务器。
+
 | 版本 | 状态 | 内容 |
 |------|------|------|
-| v0.1.0 | ✅ 已实现 | 类型映射 + AST + codegen + CLI 骨架 |
-| v0.2.0 | 📋 计划 | trait → mixin + 模式匹配 + parser |
-| v0.3.0 | 📋 计划 | async + Option + verifier |
-| v0.4.0 | 📋 计划 | FFI 混合模式 |
-| v0.5.0 | 📋 计划 | Flutter widget 转换 |
-| v1.0.0 | 📋 计划 | 完整 transpiler + 发布 |
+| v0.1.0 | ✅ 已实现 | transpiler 骨架（AST + 类型映射 + codegen） |
+| v0.2.0 | 📋 计划 | 解析器（MoonBit 源码 → AST） |
+| v0.3.0 | 📋 计划 | trait + 模式匹配 + derive 生成 |
+| v0.4.0 | 📋 计划 | 项目级扫描 + 包结构映射 |
+| v0.5.0 | 📋 计划 | async + Option + Result + 泛型 |
+| v0.6.0 | 📋 计划 | FFI 混合模式（dart:ffi） |
+| v0.7.0 | 📋 计划 | Flutter widget 转换 |
+| v0.8.0 | 📋 计划 | 自动触发 + 项目同步（核心功能） |
+| v0.9.0 | 📋 计划 | MCP 服务器 + Skill（大模型消费） |
+| v1.0.0 | 📋 计划 | 验证 + 完整发布（mooncakes.io） |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
