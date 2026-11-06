@@ -1,6 +1,11 @@
 import {
   "walkzzz/moon2dart" @lib,
   "walkzzz/moon2dart/ast",
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+  "moonbitlang/async/fs",
 }
 
 pkgtype(kind: "executable")
+
+supported_targets = "-all+native"

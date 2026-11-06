@@ -76,7 +76,8 @@ ast ──> (零依赖)
   - S1 lexer ✅（15 白盒测试，TokenKind 57 变体 + Lexer）
   - S2 parser ✅（27 白盒测试，fn/struct/enum/expr/type 解析，75 测试 × 4 后端）
   - S3 转换管线 ✅（transpile_source: src→lexer→parser→codegen→dart，8 管线测试，83 测试 × 4 后端）
-  - S4 CLI convert 子命令 📋 / S5 测试+文档+门禁 📋
+  - S4 CLI convert ✅（convert/demo/help 子命令，@fs.read_file 文件读取，native target）
+  - S5 测试+文档+门禁 📋
 - **v0.3.0** 📋 计划 — trait + 模式匹配 + derive 生成
 - **v0.4.0** 📋 计划 — 项目级扫描 + 包结构映射
 - **v0.5.0** 📋 计划 — async + Option + Result + 泛型

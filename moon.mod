@@ -13,3 +13,7 @@ keywords = [ "transpiler", "dart", "moonbit", "flutter", "code-generation" ]
 description = "MoonBit → Dart transpiler — 让 MoonBit 代码跑在 Flutter 上"
 
 supported_targets = "+wasm+wasm-gc+js+native"
+
+import {
+  "moonbitlang/async@0.22.5",
+}
