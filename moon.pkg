@@ -2,4 +2,5 @@ import {
   "walkzzz/moon2dart/ast",
   "walkzzz/moon2dart/typesys",
   "walkzzz/moon2dart/codegen",
+  "walkzzz/moon2dart/parser",
 }

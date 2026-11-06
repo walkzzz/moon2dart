@@ -5,6 +5,16 @@ pub fn transpile(decls : Array[@ast.MoonDecl]) -> String {
 }
 
 ///|
+/// 单文件转换管线 — MoonBit 源码字符串 → Dart 代码字符串。
+///
+/// 管线：source → Lexer::tokenize → Parser::parse_program → emit_dart_program
+pub fn transpile_source(src : String) -> String {
+  let tokens = @parser.Lexer::make(src).tokenize()
+  let decls = @parser.Parser::make(tokens).parse_program()
+  @codegen.emit_dart_program(decls)
+}
+
+///|
 /// 便捷：转换单个声明为 Dart 代码字符串。
 pub fn transpile_decl(decl : @ast.MoonDecl) -> String {
   @codegen.emit_dart_decl(decl)

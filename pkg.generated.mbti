@@ -12,6 +12,8 @@ pub fn transpile_decl(@ast.MoonDecl) -> String
 
 pub fn transpile_expr(@ast.MoonExpr) -> String
 
+pub fn transpile_source(String) -> String
+
 pub fn transpile_type(@ast.MoonType) -> String
 
 // Errors
