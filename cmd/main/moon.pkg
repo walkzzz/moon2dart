@@ -1,0 +1,5 @@
+// import {
+//   "walkzzz/moon2dart" @lib,
+// }
+
+pkgtype(kind: "executable")
