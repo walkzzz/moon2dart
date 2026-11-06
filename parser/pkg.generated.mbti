@@ -1,0 +1,112 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/parser"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct Lexer {
+  chars : Array[Char]
+  pos : Int32
+  line : Int32
+  col : Int32
+  tokens : Array[Token]
+}
+pub fn Lexer::make(String) -> Self
+pub fn Lexer::tokenize(Self) -> Array[Token]
+
+pub(all) struct Token {
+  kind : TokenKind
+  text : String
+  line : Int32
+  col : Int32
+} derive(Eq, @debug.Debug)
+pub fn Token::equal(Self, Self) -> Bool
+pub fn Token::not_equal(Self, Self) -> Bool
+pub fn Token::to_repr(Self) -> @debug.Repr
+
+pub(all) enum TokenKind {
+  TkInt
+  TkDouble
+  TkString
+  TkChar
+  TkIdent
+  TkUIdent
+  TkFn
+  TkLet
+  TkMut
+  TkStruct
+  TkEnum
+  TkTrait
+  TkImpl
+  TkExtend
+  TkPub
+  TkIf
+  TkElse
+  TkMatch
+  TkFor
+  TkWhile
+  TkReturn
+  TkTrue
+  TkFalse
+  TkType
+  TkDerive
+  TkRaise
+  TkTry
+  TkCatch
+  TkGuard
+  TkDefer
+  TkAsync
+  TkAwait
+  TkTest
+  TkInit
+  TkMain
+  TkAlias
+  TkPlus
+  TkMinus
+  TkStar
+  TkSlash
+  TkPercent
+  TkEqEq
+  TkNotEq
+  TkLt
+  TkGt
+  TkLeEq
+  TkGrEq
+  TkAndAnd
+  TkOrOr
+  TkNot
+  TkAssign
+  TkArrow
+  TkFatArrow
+  TkPipe
+  TkDot
+  TkDotDot
+  TkDotDotLt
+  TkLParen
+  TkRParen
+  TkLBracket
+  TkRBracket
+  TkLBrace
+  TkRBrace
+  TkComma
+  TkSemi
+  TkColon
+  TkColonColon
+  TkTilde
+  TkAt
+  TkEof
+  TkError
+} derive(Eq, @debug.Debug)
+pub fn TokenKind::equal(Self, Self) -> Bool
+pub fn TokenKind::not_equal(Self, Self) -> Bool
+pub fn TokenKind::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits
