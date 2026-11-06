@@ -3,6 +3,7 @@ package "walkzzz/moon2dart/parser"
 
 import {
   "moonbitlang/core/debug",
+  "walkzzz/moon2dart/ast",
 }
 
 // Values
@@ -19,6 +20,14 @@ pub struct Lexer {
 }
 pub fn Lexer::make(String) -> Self
 pub fn Lexer::tokenize(Self) -> Array[Token]
+
+pub struct Parser {
+  tokens : Array[Token]
+  pos : Int32
+}
+pub fn Parser::make(Array[Token]) -> Self
+pub fn Parser::parse_expr(Self) -> (@ast.MoonExpr, Self)
+pub fn Parser::parse_program(Self) -> Array[@ast.MoonDecl]
 
 pub(all) struct Token {
   kind : TokenKind
