@@ -75,3 +75,29 @@ test "MoonType Compare ordering" {
   assert_true(MBool <= MBool)
   assert_true(MString >= MInt)
 }
+
+///|
+/// v0.6.0 DExternFn 构造测试。
+
+///|
+test "DExternFn construction" {
+  let extern_fn = DExternFn("c_add", [("a", MInt), ("b", MInt)], MInt, "c_add")
+  assert_eq(
+    extern_fn,
+    DExternFn("c_add", [("a", MInt), ("b", MInt)], MInt, "c_add"),
+  )
+}
+
+///|
+test "DExternFn no_params" {
+  let extern_fn = DExternFn("c_rand", [], MInt, "rand")
+  match extern_fn {
+    DExternFn(name, params, ret, symbol) => {
+      assert_eq(name, "c_rand")
+      assert_eq(params.length(), 0)
+      assert_true(ret is MInt)
+      assert_eq(symbol, "rand")
+    }
+    _ => abort("expected DExternFn")
+  }
+}

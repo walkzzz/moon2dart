@@ -103,3 +103,53 @@ pub fn needs_result_type(t : @ast.MoonType) -> Bool {
     _ => false
   }
 }
+
+///|
+/// MoonBit 类型 → Dart ffi Native 类型字符串（用于 typedef Native）。
+pub fn ffi_native_type(t : @ast.MoonType) -> String {
+  match t {
+    @ast.MInt => "Int32"
+    @ast.MUInt => "Uint32"
+    @ast.MInt64 => "Int64"
+    @ast.MUInt64 => "Uint64"
+    @ast.MDouble => "Double"
+    @ast.MFloat => "Float"
+    @ast.MBool => "Bool"
+    @ast.MString => "Pointer<Utf8>"
+    @ast.MChar => "Uint8"
+    @ast.MUnit => "Void"
+    @ast.MArray(_) => "Pointer<Opaque>"
+    @ast.MMap(_, _) => "Pointer<Opaque>"
+    @ast.MSet(_) => "Pointer<Opaque>"
+    @ast.MOption(_) => "Pointer<Opaque>"
+    @ast.MResult(_, _) => "Pointer<Opaque>"
+    @ast.MFuture(_) => "Pointer<Opaque>"
+    @ast.MTypeVar(_) => "Pointer<Opaque>"
+    @ast.MCustom(_) => "Pointer<Opaque>"
+  }
+}
+
+///|
+/// MoonBit 类型 → Dart ffi Dart 侧类型字符串（用于 typedef Dart）。
+pub fn ffi_dart_type(t : @ast.MoonType) -> String {
+  match t {
+    @ast.MInt => "int"
+    @ast.MUInt => "int"
+    @ast.MInt64 => "int"
+    @ast.MUInt64 => "int"
+    @ast.MDouble => "double"
+    @ast.MFloat => "double"
+    @ast.MBool => "bool"
+    @ast.MString => "Pointer<Utf8>"
+    @ast.MChar => "int"
+    @ast.MUnit => "void"
+    @ast.MArray(_) => "Pointer<Opaque>"
+    @ast.MMap(_, _) => "Pointer<Opaque>"
+    @ast.MSet(_) => "Pointer<Opaque>"
+    @ast.MOption(_) => "Pointer<Opaque>?"
+    @ast.MResult(_, _) => "Pointer<Opaque>"
+    @ast.MFuture(_) => "Pointer<Opaque>"
+    @ast.MTypeVar(_) => "Pointer<Opaque>"
+    @ast.MCustom(_) => "Pointer<Opaque>"
+  }
+}

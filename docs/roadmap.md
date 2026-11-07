@@ -114,19 +114,19 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.6.0 — FFI 混合模式
+## v0.6.0 ✅ — FFI 混合模式（已完成）
 
 **目标**：支持 FFI 转换（dart:ffi 桥接）。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | extern "C" → dart:ffi DynamicLibrary |
-| S2 | 类型转换桥接代码生成（C 类型 ↔ Dart 类型） |
-| S3 | 原生库加载代码 |
-| S4 | CLI `--pure-only` 只转换纯子集（跳过 FFI） |
-| S5 | 测试 + 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | extern "C" → dart:ffi DynamicLibrary | ✅ |
+| S2 | 类型转换桥接代码生成（String ↔ Pointer<Utf8>） | ✅ |
+| S3 | 原生库加载代码（emit_dart_program_with_lib） | ✅ |
+| S4 | CLI `--pure-only` 只转换纯子集（跳过 FFI） | ✅ |
+| S5 | 测试 + 文档 | ✅ |
 
-**交付线**：库 API（FFI 转换）、CLI（`--pure-only` 选项）
+**交付**：240 测试（native），extern "c" → dart:ffi + String 桥接 + --pure-only/--lib 选项。
 
 ---
 

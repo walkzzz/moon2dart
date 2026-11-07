@@ -18,17 +18,35 @@
 async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
-    println("Usage: moon2dart convert <file.mbt>")
+    println("Usage: moon2dart convert <file.mbt> [--pure-only] [--lib <name>]")
     return
   }
   let path = args[0]
+  let mut pure_only = false
+  let mut lib_name = "libnative.so"
+  let mut i = 1
+  while i < args.length() {
+    if args[i] == "--pure-only" {
+      pure_only = true
+      i = i + 1
+    } else if args[i] == "--lib" && i + 1 < args.length() {
+      lib_name = args[i + 1]
+      i = i + 2
+    } else {
+      i = i + 1
+    }
+  }
   let content = @fs.read_file(path).text() catch {
     _ => {
       println("Error: cannot read file '\{path}'")
       return
     }
   }
-  let dart_code = @lib.transpile_source(content)
+  let dart_code = if pure_only {
+    @lib.transpile_source_pure(content)
+  } else {
+    @lib.transpile_source_with_lib(content, lib_name)
+  }
   println(dart_code)
 }
 
@@ -99,17 +117,17 @@ fn cmd_demo(_args : Array[String]) -> Unit {
   let dart_code = @lib.transpile(demo)
   println(dart_code)
   println("---")
-  println("moon2dart v0.4.0 — MoonBit → Dart transpiler (demo mode)")
+  println("moon2dart v0.6.0 — MoonBit → Dart transpiler (demo mode)")
 }
 
 ///|
 /// help — 显示用法。
 fn usage() -> Unit {
-  println("moon2dart v0.4.0 — MoonBit → Dart transpiler")
+  println("moon2dart v0.6.0 — MoonBit → Dart transpiler")
   println("")
   println("Usage:")
   println(
-    "  moon2dart convert <file.mbt>         Convert .mbt file to Dart code",
+    "  moon2dart convert <file.mbt> [--pure-only] [--lib <name>]  Convert .mbt file to Dart code",
   )
   println(
     "  moon2dart project <dir> -o <output>  Convert MoonBit project to Dart project",
@@ -119,8 +137,17 @@ fn usage() -> Unit {
   )
   println("  moon2dart help                        Show this help")
   println("")
+  println("Options:")
+  println("  --pure-only    Skip FFI declarations (only convert pure MoonBit)")
+  println(
+    "  --lib <name>   Specify native library name (default: libnative.so)",
+  )
+  println("")
   println("Example:")
   println("  moon run cmd/main --target native -- convert example.mbt")
+  println(
+    "  moon run cmd/main --target native -- convert example.mbt --pure-only",
+  )
   println(
     "  moon run cmd/main --target native -- project ./my_project -o ./dart_output",
   )

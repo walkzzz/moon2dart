@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.6.0 (2026-11-07) — FFI 混合模式（extern "c" → dart:ffi）
+
+### 新增
+- **extern "c" → dart:ffi**：DExternFn AST 节点 + TkExtern 关键字 + parse_extern_fn_decl
+  - `extern "c" fn c_add(a : Int, b : Int) -> Int = "c_add"` → typedef + lookupFunction + wrapper
+  - 生成 `typedef _CAddNative = Int32 Function(Int32 a, Int32 b);` + `typedef _CAddDart = int Function(int a, int b);`
+  - 生成 `final _c_add = _dylib.lookupFunction<_CAddNative, _CAddDart>('c_add');`
+  - 生成 `int c_add(int a, int b) { return _c_add(a, b); }`
+- **String ↔ Pointer<Utf8> 桥接**：String 参数自动转 Pointer<Utf8>，String 返回值自动 toDartString()
+  - String 参数：`using((arena) { ... param.toUtf8(allocator: arena) ... })`
+  - String 返回值：`return _func().toDartString();`
+  - 自动检测是否需要 `import 'dart:ffi'` 和 `import 'package:ffi/ffi.dart'`
+- **原生库加载配置**：emit_dart_program_with_lib + transpile_source_with_lib
+  - 可指定 DynamicLibrary.open() 的库名（默认 `libnative.so`）
+- **CLI --pure-only / --lib 选项**：
+  - `--pure-only`：跳过 FFI 声明，只转换纯 MoonBit 子集
+  - `--lib <name>`：指定原生库名
+- ffi_native_type / ffi_dart_type 类型映射函数（MoonBit → Dart FFI Native/Dart 类型）
+- filter_pure 函数：过滤 DExternFn 声明
+- to_pascal 辅助函数：snake_case → PascalCase（用于 typedef 命名）
+- 34 新测试（206 → 240 native）
+
+### 改进
+- 版本号 v0.5.0 → v0.6.0
+- emit_dart_program 版本号更新
+- 测试 206 → 240（native）
+
 ## v0.5.0 (2026-11-07) — async + Option + Result + 泛型 + 闭包
 
 ### 新增

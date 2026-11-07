@@ -416,3 +416,120 @@ test "transpile_source lambda_with_type" {
   let result = transpile_source(src)
   assert_true(result.contains("(x) => x + 1"))
 }
+
+///|
+/// v0.6.0 FFI 管线测试。
+
+///|
+test "transpile_source extern_fn" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\""
+  let result = transpile_source(src)
+  assert_true(result.contains("import 'dart:ffi';"))
+  assert_true(result.contains("DynamicLibrary.open('libnative.so')"))
+  assert_true(
+    result.contains("typedef _CAddNative = Int32 Function(Int32 a, Int32 b);"),
+  )
+  assert_true(
+    result.contains("typedef _CAddDart = int Function(int a, int b);"),
+  )
+  assert_true(
+    result.contains("lookupFunction<_CAddNative, _CAddDart>('c_add')"),
+  )
+  assert_true(result.contains("int c_add(int a, int b)"))
+}
+
+///|
+test "transpile_source extern_fn_void" {
+  let src = "extern \"c\" fn c_print(format : String) -> Unit = \"printf\""
+  let result = transpile_source(src)
+  assert_true(result.contains("import 'dart:ffi';"))
+  assert_true(
+    result.contains(
+      "typedef _CPrintNative = Void Function(Pointer<Utf8> format);",
+    ),
+  )
+  assert_true(result.contains("void c_print(String format)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("format.toUtf8(allocator: arena)"))
+}
+
+///|
+test "transpile_source extern_and_normal" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\"\nfn main() -> Int { c_add(1, 2) }"
+  let result = transpile_source(src)
+  assert_true(result.contains("import 'dart:ffi';"))
+  assert_true(result.contains("typedef _CAddNative"))
+  assert_true(result.contains("int main()"))
+  assert_true(result.contains("return c_add(1, 2);"))
+}
+
+///|
+test "transpile_source no_ffi_no_import" {
+  let src = "fn add(a : Int, b : Int) -> Int { a + b }"
+  let result = transpile_source(src)
+  assert_true(!result.contains("import 'dart:ffi';"))
+  assert_true(!result.contains("DynamicLibrary"))
+}
+
+///|
+/// v0.6.0 S2 String 桥接管线测试。
+
+///|
+test "transpile_source extern_fn_string_ret" {
+  let src = "extern \"c\" fn c_get_name() -> String = \"get_name\""
+  let result = transpile_source(src)
+  assert_true(result.contains("import 'dart:ffi';"))
+  assert_true(
+    result.contains("typedef _CGetNameNative = Pointer<Utf8> Function();"),
+  )
+  assert_true(result.contains("String c_get_name()"))
+  assert_true(result.contains("return _c_get_name().toDartString();"))
+}
+
+///|
+test "transpile_source extern_fn_string_param_and_ret" {
+  let src = "extern \"c\" fn c_concat(a : String, b : String) -> String = \"concat\""
+  let result = transpile_source(src)
+  assert_true(result.contains("String c_concat(String a, String b)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("a.toUtf8(allocator: arena)"))
+  assert_true(result.contains(".toDartString();"))
+}
+
+///|
+test "transpile_source extern_fn_mixed_params" {
+  let src = "extern \"c\" fn c_strlen(s : String) -> Int = \"strlen\""
+  let result = transpile_source(src)
+  assert_true(result.contains("int c_strlen(String s)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("s.toUtf8(allocator: arena)"))
+}
+
+///|
+/// v0.6.0 S3/S4 管线测试。
+
+///|
+test "transpile_source_with_lib custom_name" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\""
+  let result = transpile_source_with_lib(src, "libmylib.so")
+  assert_true(result.contains("DynamicLibrary.open('libmylib.so')"))
+  assert_true(!result.contains("libnative.so"))
+}
+
+///|
+test "transpile_source_pure skips ffi" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\"\nfn add(a : Int, b : Int) -> Int { a + b }"
+  let result = transpile_source_pure(src)
+  assert_true(!result.contains("import 'dart:ffi';"))
+  assert_true(!result.contains("DynamicLibrary"))
+  assert_true(!result.contains("c_add"))
+  assert_true(result.contains("int add(int a, int b)"))
+}
+
+///|
+test "transpile_source_pure no_extern" {
+  let src = "fn add(a : Int, b : Int) -> Int { a + b }"
+  let result = transpile_source_pure(src)
+  assert_true(result.contains("int add(int a, int b)"))
+  assert_true(!result.contains("import 'dart:ffi';"))
+}

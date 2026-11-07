@@ -692,3 +692,69 @@ test "parse_expr_lambda_with_type" {
     _ => abort("expected ELambda")
   }
 }
+
+///|
+/// v0.6.0 extern "c" fn 解析测试。
+
+///|
+test "parse_extern_fn_decl" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\""
+  let (decl, _) = make_parser(src).parse_extern_fn_decl()
+  match decl {
+    @ast.DExternFn(name, params, ret, symbol) => {
+      assert_eq(name, "c_add")
+      assert_eq(params.length(), 2)
+      let (p0n, p0t) = params[0]
+      let (p1n, p1t) = params[1]
+      assert_eq(p0n, "a")
+      assert_true(p0t is @ast.MInt)
+      assert_eq(p1n, "b")
+      assert_true(p1t is @ast.MInt)
+      assert_true(ret is @ast.MInt)
+      assert_eq(symbol, "c_add")
+    }
+    _ => abort("expected DExternFn")
+  }
+}
+
+///|
+test "parse_extern_fn_decl_no_params" {
+  let src = "extern \"c\" fn c_rand() -> Int = \"rand\""
+  let (decl, _) = make_parser(src).parse_extern_fn_decl()
+  match decl {
+    @ast.DExternFn(name, params, ret, symbol) => {
+      assert_eq(name, "c_rand")
+      assert_eq(params.length(), 0)
+      assert_true(ret is @ast.MInt)
+      assert_eq(symbol, "rand")
+    }
+    _ => abort("expected DExternFn")
+  }
+}
+
+///|
+test "parse_extern_fn_decl_void_ret" {
+  let src = "extern \"c\" fn c_print(format : String) -> Unit = \"printf\""
+  let (decl, _) = make_parser(src).parse_extern_fn_decl()
+  match decl {
+    @ast.DExternFn(name, params, ret, symbol) => {
+      assert_eq(name, "c_print")
+      assert_eq(params.length(), 1)
+      let (pname, ptype) = params[0]
+      assert_eq(pname, "format")
+      assert_true(ptype is @ast.MString)
+      assert_true(ret is @ast.MUnit)
+      assert_eq(symbol, "printf")
+    }
+    _ => abort("expected DExternFn")
+  }
+}
+
+///|
+test "parse_program_with_extern" {
+  let src = "extern \"c\" fn c_add(a : Int, b : Int) -> Int = \"c_add\"\nfn main() -> Unit { 0 }"
+  let decls = make_parser(src).parse_program()
+  assert_eq(decls.length(), 2)
+  assert_true(decls[0] is @ast.DExternFn("c_add", _, _, _))
+  assert_true(decls[1] is @ast.DFn("main", _, _, _, _))
+}

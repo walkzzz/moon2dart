@@ -608,3 +608,263 @@ test "emit_dart_expr lambda_complex_body" {
   )
   assert_eq(emit_dart_expr(lam), "(x) => x * 2")
 }
+
+///|
+/// v0.6.0 FFI codegen 测试。
+
+///|
+test "emit_dart_decl extern_fn" {
+  let extern_fn = @ast.DExternFn(
+    "c_add",
+    [("a", @ast.MInt), ("b", @ast.MInt)],
+    @ast.MInt,
+    "c_add",
+  )
+  let result = emit_dart_decl(extern_fn)
+  assert_true(
+    result.contains("typedef _CAddNative = Int32 Function(Int32 a, Int32 b);"),
+  )
+  assert_true(
+    result.contains("typedef _CAddDart = int Function(int a, int b);"),
+  )
+  assert_true(
+    result.contains("lookupFunction<_CAddNative, _CAddDart>('c_add')"),
+  )
+  assert_true(result.contains("int c_add(int a, int b)"))
+  assert_true(result.contains("return _c_add(a, b);"))
+}
+
+///|
+test "emit_dart_decl extern_fn_void_ret" {
+  let extern_fn = @ast.DExternFn(
+    "c_print",
+    [("format", @ast.MString)],
+    @ast.MUnit,
+    "printf",
+  )
+  let result = emit_dart_decl(extern_fn)
+  assert_true(
+    result.contains(
+      "typedef _CPrintNative = Void Function(Pointer<Utf8> format);",
+    ),
+  )
+  assert_true(
+    result.contains(
+      "typedef _CPrintDart = void Function(Pointer<Utf8> format);",
+    ),
+  )
+  assert_true(
+    result.contains("lookupFunction<_CPrintNative, _CPrintDart>('printf')"),
+  )
+  assert_true(result.contains("void c_print(String format)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("format.toUtf8(allocator: arena)"))
+}
+
+///|
+test "emit_dart_decl extern_fn_no_params" {
+  let extern_fn = @ast.DExternFn("c_rand", [], @ast.MInt, "rand")
+  let result = emit_dart_decl(extern_fn)
+  assert_true(result.contains("typedef _CRandNative = Int32 Function();"))
+  assert_true(result.contains("typedef _CRandDart = int Function();"))
+  assert_true(
+    result.contains("lookupFunction<_CRandNative, _CRandDart>('rand')"),
+  )
+  assert_true(result.contains("int c_rand()"))
+  assert_true(result.contains("return _c_rand();"))
+}
+
+///|
+test "emit_dart_program with_ffi" {
+  let prog = [
+    @ast.DExternFn(
+      "c_add",
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      "c_add",
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("import 'dart:ffi';"))
+  assert_true(result.contains("import 'package:ffi/ffi.dart';"))
+  assert_true(result.contains("DynamicLibrary.open('libnative.so')"))
+  assert_true(result.contains("typedef _CAddNative"))
+  assert_true(
+    result.contains("lookupFunction<_CAddNative, _CAddDart>('c_add')"),
+  )
+}
+
+///|
+test "emit_dart_program without_ffi" {
+  let prog = [
+    @ast.DFn(
+      "add",
+      [],
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(!result.contains("import 'dart:ffi';"))
+  assert_true(!result.contains("DynamicLibrary"))
+}
+
+///|
+test "to_pascal basic" {
+  assert_eq(to_pascal("c_add"), "CAdd")
+  assert_eq(to_pascal("c_print"), "CPrint")
+  assert_eq(to_pascal("simple"), "Simple")
+  assert_eq(to_pascal("c_add_two_nums"), "CAddTwoNums")
+}
+
+///|
+/// v0.6.0 S2 String 桥接测试。
+
+///|
+test "emit_dart_decl extern_fn_string_ret" {
+  let extern_fn = @ast.DExternFn("c_get_name", [], @ast.MString, "get_name")
+  let result = emit_dart_decl(extern_fn)
+  assert_true(
+    result.contains("typedef _CGetNameNative = Pointer<Utf8> Function();"),
+  )
+  assert_true(
+    result.contains("typedef _CGetNameDart = Pointer<Utf8> Function();"),
+  )
+  assert_true(result.contains("String c_get_name()"))
+  assert_true(result.contains("return _c_get_name().toDartString();"))
+}
+
+///|
+test "emit_dart_decl extern_fn_string_param_and_ret" {
+  let extern_fn = @ast.DExternFn(
+    "c_concat",
+    [("a", @ast.MString), ("b", @ast.MString)],
+    @ast.MString,
+    "concat",
+  )
+  let result = emit_dart_decl(extern_fn)
+  assert_true(
+    result.contains(
+      "typedef _CConcatNative = Pointer<Utf8> Function(Pointer<Utf8> a, Pointer<Utf8> b);",
+    ),
+  )
+  assert_true(result.contains("String c_concat(String a, String b)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("a.toUtf8(allocator: arena)"))
+  assert_true(result.contains("b.toUtf8(allocator: arena)"))
+  assert_true(result.contains(".toDartString();"))
+}
+
+///|
+test "emit_dart_decl extern_fn_mixed_params" {
+  let extern_fn = @ast.DExternFn(
+    "c_strlen",
+    [("s", @ast.MString)],
+    @ast.MInt,
+    "strlen",
+  )
+  let result = emit_dart_decl(extern_fn)
+  assert_true(
+    result.contains("typedef _CStrlenNative = Int32 Function(Pointer<Utf8> s);"),
+  )
+  assert_true(result.contains("int c_strlen(String s)"))
+  assert_true(result.contains("using((arena)"))
+  assert_true(result.contains("s.toUtf8(allocator: arena)"))
+}
+
+///|
+/// v0.6.0 S3 原生库加载配置测试。
+
+///|
+test "emit_dart_program_with_lib custom_name" {
+  let prog = [
+    @ast.DExternFn(
+      "c_add",
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      "c_add",
+    ),
+  ]
+  let result = emit_dart_program_with_lib(prog, "libmylib.so")
+  assert_true(result.contains("DynamicLibrary.open('libmylib.so')"))
+  assert_true(!result.contains("libnative.so"))
+}
+
+///|
+test "emit_dart_program_with_lib default" {
+  let prog = [
+    @ast.DExternFn(
+      "c_add",
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      "c_add",
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("DynamicLibrary.open('libnative.so')"))
+}
+
+///|
+/// v0.6.0 S4 filter_pure 测试。
+
+///|
+test "filter_pure removes extern_fn" {
+  let prog = [
+    @ast.DExternFn(
+      "c_add",
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      "c_add",
+    ),
+    @ast.DFn(
+      "add",
+      [],
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+    ),
+  ]
+  let pure = filter_pure(prog)
+  assert_eq(pure.length(), 1)
+  assert_true(pure[0] is @ast.DFn("add", _, _, _, _))
+}
+
+///|
+test "filter_pure no_extern" {
+  let prog = [
+    @ast.DFn(
+      "add",
+      [],
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+    ),
+  ]
+  let pure = filter_pure(prog)
+  assert_eq(pure.length(), 1)
+}
+
+///|
+test "emit_dart_program pure_no_ffi_imports" {
+  let prog = [
+    @ast.DExternFn(
+      "c_add",
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      "c_add",
+    ),
+    @ast.DFn(
+      "add",
+      [],
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+    ),
+  ]
+  let pure = filter_pure(prog)
+  let result = emit_dart_program(pure)
+  assert_true(!result.contains("import 'dart:ffi';"))
+  assert_true(!result.contains("DynamicLibrary"))
+  assert_true(result.contains("int add(int a, int b)"))
+}

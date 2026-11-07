@@ -42,6 +42,7 @@ pub(all) enum TokenKind {
   TkDefer
   TkAsync
   TkAwait
+  TkExtern
   TkTest
   TkInit
   TkMain
@@ -267,6 +268,7 @@ fn keyword_or_ident(text : String) -> TokenKind {
     "defer" => TokenKind::TkDefer
     "async" => TokenKind::TkAsync
     "await" => TokenKind::TkAwait
+    "extern" => TokenKind::TkExtern
     "test" => TokenKind::TkTest
     "init" => TokenKind::TkInit
     "main" => TokenKind::TkMain

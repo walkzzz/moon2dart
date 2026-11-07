@@ -14,6 +14,10 @@ pub fn emit_dart_pattern(@ast.MoonPattern) -> String
 
 pub fn emit_dart_program(Array[@ast.MoonDecl]) -> String
 
+pub fn emit_dart_program_with_lib(Array[@ast.MoonDecl], String) -> String
+
+pub fn filter_pure(Array[@ast.MoonDecl]) -> Array[@ast.MoonDecl]
+
 // Errors
 
 // Types and methods

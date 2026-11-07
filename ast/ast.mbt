@@ -83,6 +83,7 @@ pub(all) enum MoonDecl {
   DEnum(String, Array[String])
   DTrait(String, Array[TraitMethod])
   DImpl(String, String, Array[ImplMethod])
+  DExternFn(String, Array[(String, MoonType)], MoonType, String)
 } derive(Eq, Compare, Debug)
 
 ///|

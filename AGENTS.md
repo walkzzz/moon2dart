@@ -97,7 +97,12 @@ ast ──> (零依赖)
   - S4 泛型类型参数支持 ✅（DFn/DAsyncFn/DStruct 添加 type_params，parser 支持 `[T]` 语法，MTypeVar 类型节点，10 新测试）
   - S5 闭包 → 箭头函数 ✅（ELambda AST 节点，parser 解析 `fn(params) { body }`，`(params) => expr`，8 新测试）
   - S6 版本号+门禁+文档 ✅（版本 0.5.0，206 测试 native）
-- **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
+- **v0.6.0** ✅ 已完成 — FFI 混合模式（extern "c" → dart:ffi）
+  - S1 extern "c" → dart:ffi ✅（DExternFn AST 节点 + TkExtern 关键字 + parse_extern_fn_decl + ffi_native_type/ffi_dart_type + typedef/lookupFunction/wrapper 代码生成，20 新测试）
+  - S2 String ↔ Pointer<Utf8> 桥接 ✅（String 参数自动 toUtf8(allocator: arena) + using arena 管理 + String 返回值 toDartString()，6 新测试）
+  - S3 原生库加载配置 ✅（emit_dart_program_with_lib + transpile_source_with_lib，可指定 DynamicLibrary 库名，4 新测试）
+  - S4 CLI --pure-only ✅（filter_pure 过滤 DExternFn + transpile_source_pure + CLI --pure-only/--lib 选项，4 新测试）
+  - S5 版本号+门禁+文档 ✅（版本 0.6.0，240 测试 native）
 - **v0.7.0** 📋 计划 — Flutter widget 转换
 - **v0.8.0** 📋 计划 — 自动触发 + 项目同步（核心功能）
 - **v0.9.0** 📋 计划 — MCP 服务器 + Skill（大模型消费）

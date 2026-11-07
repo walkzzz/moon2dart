@@ -63,6 +63,10 @@ fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
       let (decl, p) = self.parse_impl_decl()
       (Some(decl), p)
     }
+    TkExtern => {
+      let (decl, p) = self.parse_extern_fn_decl()
+      (Some(decl), p)
+    }
     _ => (None, self)
   }
 }
@@ -301,6 +305,29 @@ fn Parser::parse_impl_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   }
   let p_final = p.expect(TkRBrace)
   (@ast.DImpl(trait_name, type_name, methods), p_final)
+}
+
+///|
+/// 解析 extern "c" fn 声明：extern "c" fn name(params) -> ret_type = "c_symbol"
+fn Parser::parse_extern_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+  let parser = self.expect(TkExtern)
+  let parser = parser.expect(TkString)
+  let parser = parser.expect(TkFn)
+  let (name, parser) = parser.expect_ident()
+  let (params, parser) = parser.parse_params()
+  let (ret_type, parser) = parser.parse_return_type()
+  let parser = parser.expect(TkAssign)
+  let token = parser.peek()
+  let c_symbol = if token.kind is TkString {
+    let text = token.text
+    let len = text.length()
+    let content = if len >= 2 { text[1:len - 1].to_owned() } else { "" }
+    content
+  } else {
+    name
+  }
+  let parser = parser.advance()
+  (@ast.DExternFn(name, params, ret_type, c_symbol), parser)
 }
 
 ///|

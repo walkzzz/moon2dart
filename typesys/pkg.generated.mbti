@@ -9,6 +9,10 @@ import {
 // Values
 pub fn emit_dart(DartType) -> String
 
+pub fn ffi_dart_type(@ast.MoonType) -> String
+
+pub fn ffi_native_type(@ast.MoonType) -> String
+
 pub fn is_pure(@ast.MoonType) -> Bool
 
 pub fn map_type(@ast.MoonType) -> DartType
