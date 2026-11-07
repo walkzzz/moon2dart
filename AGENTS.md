@@ -83,8 +83,13 @@ ast ──> (零依赖)
   - S2 match → switch expression ✅（parser 解析 match + pattern，codegen 生成 Dart 3 switch expression，12 新测试，103 测试 × 4 后端）
   - S3 derive 生成 ✅（DStruct 添加 derive 列表参数，parser 解析 `derive(Debug, Eq, Compare)` 语法，codegen 生成 toString/operator==/compareTo，11 新测试，114 测试 × 4 后端）
   - S4 pub(open) trait 跨包实现 ✅（DImpl + ImplMethod AST 节点，parser 解析 `impl Trait for Type`，codegen 合并 DImpl 到 DStruct 生成 `implements`，11 新测试，125 测试 × 4 后端）
-  - S5 测试+文档 📋
-- **v0.4.0** 📋 计划 — 项目级扫描 + 包结构映射
+  - S5 测试+文档+门禁 ✅（版本 0.3.0，125 测试 × 4 后端，roadmap/changelog/README 更新）
+- **v0.4.0** ✅ 已完成 — 项目级扫描 + 包结构映射
+  - S1 项目扫描器 ✅（ProjectInfo/PackageInfo/DependencyGraph 数据模型 + parse_moon_mod/parse_moon_pkg + scan_project async + 拓扑排序，9 白盒测试）
+  - S2 包结构映射 ✅（emit_pubspec_yaml + map_package_to_dart_path + emit_dart_project_files + emit_dart_imports，5 白盒测试）
+  - S3 多文件项目转换 ✅（transpile_project async + find_package_by_name + write_dart_project，3 白盒测试）
+  - S4 CLI project 子命令 ✅（`moon2dart project <dir> -o <output>`，scan+transpile+write 全管线）
+  - S5 版本号+门禁+文档 ✅（版本 0.4.0，142 测试 × 4 后端）
 - **v0.5.0** 📋 计划 — async + Option + Result + 泛型
 - **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
 - **v0.7.0** 📋 计划 — Flutter widget 转换
@@ -109,7 +114,7 @@ ast ──> (零依赖)
 
 ### 测试
 
-125 个测试，四后端全通过（wasm / wasm-gc / js / native）：
+142 个测试，四后端全通过（wasm / wasm-gc / js / native）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -117,6 +122,7 @@ ast ──> (零依赖)
 | typesys | 7 | 0 |
 | codegen | 27 | 0 |
 | parser | 33 | 0 |
+| project | 17 | 0 |
 | moon2dart (根) | 24 | 5 |
 
 ### 文档

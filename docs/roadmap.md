@@ -81,19 +81,19 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.4.0 — 项目级扫描 + 包结构映射
+## v0.4.0 ✅ — 项目级扫描 + 包结构映射（已完成）
 
 **目标**：扫描整个 MoonBit 项目目录，映射为 Dart 项目结构。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | 项目扫描器（遍历目录，读取 moon.mod/moon.pkg，构建依赖图） |
-| S2 | MoonBit 包结构 → Dart 包结构（pubspec.yaml + lib/ + test/） |
-| S3 | 多文件项目转换（依赖图 + 拓扑排序 + 批量转换） |
-| S4 | CLI `moon2dart project <dir> -o <output>` 子命令 |
-| S5 | 测试 + 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | 项目扫描器（ProjectInfo/PackageInfo/DependencyGraph + parse_moon_mod/pkg + scan_project） | ✅ |
+| S2 | MoonBit 包结构 → Dart 包结构（pubspec.yaml + lib/ + emit_dart_project_files） | ✅ |
+| S3 | 多文件项目转换（transpile_project + 拓扑排序 + write_dart_project） | ✅ |
+| S4 | CLI `moon2dart project <dir> -o <output>` 子命令 | ✅ |
+| S5 | 测试 + 文档 + 门禁 | ✅ |
 
-**交付线**：库 API（`transpile_project`）、CLI（`project` 子命令）
+**交付**：142 测试 × 4 后端，`transpile_project` API，CLI `project` 子命令。
 
 ---
 

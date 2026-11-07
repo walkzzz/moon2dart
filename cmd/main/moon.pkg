@@ -1,6 +1,7 @@
 import {
   "walkzzz/moon2dart" @lib,
   "walkzzz/moon2dart/ast",
+  "walkzzz/moon2dart/project",
   "moonbitlang/core/env",
   "moonbitlang/async",
   "moonbitlang/async/fs",

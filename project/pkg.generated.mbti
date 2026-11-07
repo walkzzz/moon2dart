@@ -1,0 +1,46 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/project"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+pub fn build_dependency_graph(Array[PackageInfo]) -> DependencyGraph
+
+pub fn infer_package_name(String, String) -> String
+
+pub fn parse_moon_mod(String) -> (String, String)
+
+pub fn parse_moon_pkg(String) -> Array[String]
+
+pub async fn scan_project(String) -> ProjectInfo
+
+// Errors
+
+// Types and methods
+pub(all) struct DependencyGraph {
+  nodes : Array[String]
+  edges : Array[(String, String)]
+} derive(@debug.Debug)
+pub fn DependencyGraph::to_repr(Self) -> @debug.Repr
+pub fn DependencyGraph::topo_sort(Self) -> Array[String]
+
+pub(all) struct PackageInfo {
+  name : String
+  path : String
+  dependencies : Array[String]
+  source_files : Array[String]
+} derive(@debug.Debug)
+pub fn PackageInfo::to_repr(Self) -> @debug.Repr
+
+pub(all) struct ProjectInfo {
+  module_name : String
+  version : String
+  packages : Array[PackageInfo]
+} derive(@debug.Debug)
+pub fn ProjectInfo::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

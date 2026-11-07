@@ -1,0 +1,9 @@
+import {
+  "walkzzz/moon2dart/ast",
+  "walkzzz/moon2dart/codegen",
+  "walkzzz/moon2dart/parser",
+  "moonbitlang/core/encoding/utf8",
+  "moonbitlang/async/fs",
+}
+
+supported_targets = "-all+native"

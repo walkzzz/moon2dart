@@ -1,6 +1,21 @@
 # Changelog
 
-## v0.3.0 (2026-11-07) — trait + 模式匹配 + derive 生成（进行中）
+## v0.4.0 (2026-11-07) — 项目级扫描 + 包结构映射
+
+### 新增
+- `project/` 包：项目级扫描与转换（native target only）
+  - `project_info.mbt`：ProjectInfo / PackageInfo / DependencyGraph 数据模型 + 拓扑排序
+  - `scanner.mbt`：parse_moon_mod / parse_moon_pkg / infer_package_name / scan_project（async）
+  - `structure.mbt`：emit_pubspec_yaml / map_package_to_dart_path / emit_dart_project_files / emit_dart_imports
+  - `transpile.mbt`：transpile_project（async）/ find_package_by_name / write_dart_project（async）
+- CLI `project <dir> -o <output>` 子命令：扫描 MoonBit 项目 → 转换 → 写入 Dart 项目
+- 17 新白盒测试（project 包）
+
+### 改进
+- 版本号 v0.3.0 → v0.4.0
+- 测试 125 → 142（× 4 后端）
+
+## v0.3.0 (2026-11-07) — trait + 模式匹配 + derive 生成
 
 ### 新增
 - `ast/ast.mbt`：DTrait 声明节点 + TraitMethod struct（trait → abstract class）
