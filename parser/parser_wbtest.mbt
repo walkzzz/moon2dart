@@ -271,3 +271,52 @@ test "parser_expect_ident" {
   assert_true(parser.peek().kind is TkIdent)
   assert_eq(parser.peek().text, "bar")
 }
+
+///|
+/// 测试解析 trait 声明。
+test "parse_trait_decl" {
+  let (decl, _) = make_parser(
+    "trait Drawable { fn draw() -> Unit; fn area() -> Double; }",
+  ).parse_trait_decl()
+  match decl {
+    @ast.DTrait(name, methods) => {
+      assert_eq(name, "Drawable")
+      assert_eq(methods.length(), 2)
+      assert_eq(methods[0].name, "draw")
+      assert_true(methods[0].ret_type is @ast.MUnit)
+      assert_eq(methods[1].name, "area")
+      assert_true(methods[1].ret_type is @ast.MDouble)
+    }
+    _ => abort("expected DTrait")
+  }
+}
+
+///|
+/// 测试解析带参数的 trait 声明。
+test "parse_trait_decl_with_params" {
+  let src = "trait Comparable { fn compare(other : Int) -> Int; }"
+  let (decl, _) = make_parser(src).parse_trait_decl()
+  match decl {
+    @ast.DTrait(name, methods) => {
+      assert_eq(name, "Comparable")
+      assert_eq(methods.length(), 1)
+      assert_eq(methods[0].name, "compare")
+      assert_eq(methods[0].params.length(), 1)
+      let (pname, ptype) = methods[0].params[0]
+      assert_eq(pname, "other")
+      assert_true(ptype is @ast.MInt)
+      assert_true(methods[0].ret_type is @ast.MInt)
+    }
+    _ => abort("expected DTrait")
+  }
+}
+
+///|
+/// 测试解析包含 trait 的完整程序。
+test "parse_program_with_trait" {
+  let src = "trait Drawable { fn draw() -> Unit; }\nstruct Circle { r : Double }"
+  let decls = make_parser(src).parse_program()
+  assert_eq(decls.length(), 2)
+  assert_true(decls[0] is @ast.DTrait("Drawable", _))
+  assert_true(decls[1] is @ast.DStruct("Circle", _))
+}

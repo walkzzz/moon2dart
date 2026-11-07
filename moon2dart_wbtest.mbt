@@ -121,3 +121,31 @@ test "transpile_source call_expr" {
   let result = transpile_source(src)
   assert_true(result.contains("return foo(1, 2);"))
 }
+
+///|
+/// v0.3.0 trait 转换测试。
+
+///|
+test "transpile_source trait" {
+  let src = "trait Drawable { fn draw() -> Unit; fn area() -> Double; }"
+  let result = transpile_source(src)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("void draw();"))
+  assert_true(result.contains("double area();"))
+}
+
+///|
+test "transpile_source trait_with_params" {
+  let src = "trait Comparable { fn compare(other : Int) -> Int; }"
+  let result = transpile_source(src)
+  assert_true(result.contains("abstract class Comparable"))
+  assert_true(result.contains("int compare(int other);"))
+}
+
+///|
+test "transpile_source trait_and_struct" {
+  let src = "trait Drawable { fn draw() -> Unit; }\nstruct Circle { r : Double }"
+  let result = transpile_source(src)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("class Circle"))
+}

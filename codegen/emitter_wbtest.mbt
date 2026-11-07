@@ -82,3 +82,25 @@ test "emit_dart_program" {
   assert_true(result.contains("int square(int x)"))
   assert_true(result.contains("return x * x;"))
 }
+
+///|
+test "emit_dart_decl trait" {
+  let trait_ = @ast.DTrait("Drawable", [
+    { name: "draw", params: [], ret_type: @ast.MUnit, },
+    { name: "area", params: [], ret_type: @ast.MDouble, },
+  ])
+  let result = emit_dart_decl(trait_)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("void draw();"))
+  assert_true(result.contains("double area();"))
+}
+
+///|
+test "emit_dart_decl trait_with_params" {
+  let trait_ = @ast.DTrait("Comparable", [
+    { name: "compare", params: [("other", @ast.MInt)], ret_type: @ast.MInt, },
+  ])
+  let result = emit_dart_decl(trait_)
+  assert_true(result.contains("abstract class Comparable"))
+  assert_true(result.contains("int compare(int other);"))
+}

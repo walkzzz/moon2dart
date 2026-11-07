@@ -81,6 +81,21 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
         .join("\n")
       "sealed class \{name} {}\n\{variant_str}"
     }
+    @ast.DTrait(name, methods) => {
+      let method_str = methods
+        .map(fn(m) {
+          let param_str = m.params
+            .map(fn(pair) {
+              let (pname, ptype) = pair
+              "\{@typesys.emit_dart(@typesys.map_type(ptype))} \{pname}"
+            })
+            .join(", ")
+          let ret_str = @typesys.emit_dart(@typesys.map_type(m.ret_type))
+          "  \{ret_str} \{m.name}(\{param_str});"
+        })
+        .join("\n")
+      "abstract class \{name} {\n\{method_str}\n}"
+    }
   }
 }
 

@@ -51,6 +51,10 @@ fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
       let (decl, p) = self.parse_enum_decl()
       (Some(decl), p)
     }
+    TkTrait => {
+      let (decl, p) = self.parse_trait_decl()
+      (Some(decl), p)
+    }
     _ => (None, self)
   }
 }
@@ -151,6 +155,33 @@ fn Parser::parse_enum_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   }
   let p_final = p.expect(TkRBrace)
   (@ast.DEnum(name, variants), p_final)
+}
+
+///|
+/// 解析 trait 声明：trait Name { fn method(params) -> ret_type; ... }
+fn Parser::parse_trait_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+  let parser = self.expect(TkTrait)
+  let (name, parser) = parser.expect_ident()
+  let p = parser.expect(TkLBrace)
+  let mut p = p
+  let methods : Array[@ast.TraitMethod] = []
+  while !(p.peek().kind is TkRBrace) {
+    if p.peek().kind is TkFn {
+      let p1 = p.expect(TkFn)
+      let (mname, p2) = p1.expect_ident()
+      let (params, p3) = p2.parse_params()
+      let (ret_type, p4) = p3.parse_return_type()
+      p = p4
+      if p.peek().kind is TkSemi {
+        p = p.advance()
+      }
+      methods.push({ name: mname, params, ret_type, })
+    } else {
+      p = p.advance()
+    }
+  }
+  let p_final = p.expect(TkRBrace)
+  (@ast.DTrait(name, methods), p_final)
 }
 
 ///|

@@ -14,6 +14,7 @@ pub(all) enum MoonDecl {
   DFn(String, Array[(String, MoonType)], MoonType, MoonExpr)
   DStruct(String, Array[(String, MoonType)])
   DEnum(String, Array[String])
+  DTrait(String, Array[TraitMethod])
 } derive(Compare, Eq, @debug.Debug)
 pub fn MoonDecl::compare(Self, Self) -> Int32
 pub fn MoonDecl::equal(Self, Self) -> Bool
@@ -86,6 +87,20 @@ pub fn MoonType::op_gt(Self, Self) -> Bool
 pub fn MoonType::op_le(Self, Self) -> Bool
 pub fn MoonType::op_lt(Self, Self) -> Bool
 pub fn MoonType::to_repr(Self) -> @debug.Repr
+
+pub(all) struct TraitMethod {
+  name : String
+  params : Array[(String, MoonType)]
+  ret_type : MoonType
+} derive(Compare, Eq, @debug.Debug)
+pub fn TraitMethod::compare(Self, Self) -> Int32
+pub fn TraitMethod::equal(Self, Self) -> Bool
+pub fn TraitMethod::not_equal(Self, Self) -> Bool
+pub fn TraitMethod::op_ge(Self, Self) -> Bool
+pub fn TraitMethod::op_gt(Self, Self) -> Bool
+pub fn TraitMethod::op_le(Self, Self) -> Bool
+pub fn TraitMethod::op_lt(Self, Self) -> Bool
+pub fn TraitMethod::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

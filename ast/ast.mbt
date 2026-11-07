@@ -76,6 +76,7 @@ pub(all) enum MoonDecl {
   DFn(String, Array[(String, MoonType)], MoonType, MoonExpr)
   DStruct(String, Array[(String, MoonType)])
   DEnum(String, Array[String])
+  DTrait(String, Array[TraitMethod])
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -86,3 +87,20 @@ pub extend MoonDecl with Compare::{op_lt, op_le, op_ge, compare, op_gt}
 
 ///|
 pub extend MoonDecl with Debug::{to_repr}
+
+///|
+/// Trait 方法签名 — 方法名 + 参数列表 + 返回类型。
+pub(all) struct TraitMethod {
+  name : String
+  params : Array[(String, MoonType)]
+  ret_type : MoonType
+} derive(Eq, Compare, Debug)
+
+///|
+pub extend TraitMethod with Eq::{equal, not_equal}
+
+///|
+pub extend TraitMethod with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+pub extend TraitMethod with Debug::{to_repr}

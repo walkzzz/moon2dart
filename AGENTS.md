@@ -78,7 +78,9 @@ ast ──> (零依赖)
   - S3 转换管线 ✅（transpile_source: src→lexer→parser→codegen→dart，8 管线测试，83 测试 × 4 后端）
   - S4 CLI convert ✅（convert/demo/help 子命令，@fs.read_file 文件读取，native target）
   - S5 测试+文档+门禁 ✅（版本 0.2.0，83 测试 × 4 后端，roadmap/changelog/README 更新）
-- **v0.3.0** 📋 计划 — trait + 模式匹配 + derive 生成
+- **v0.3.0** 🔄 进行中 — trait + 模式匹配 + derive 生成
+  - S1 trait → abstract class ✅（DTrait + TraitMethod AST 节点，parser 解析 trait 声明，codegen 生成 abstract class，8 新测试，91 测试 × 4 后端）
+  - S2 match → switch expression 📋 / S3 derive 生成 📋 / S4 pub(open) trait 📋 / S5 测试+文档 📋
 - **v0.4.0** 📋 计划 — 项目级扫描 + 包结构映射
 - **v0.5.0** 📋 计划 — async + Option + Result + 泛型
 - **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
