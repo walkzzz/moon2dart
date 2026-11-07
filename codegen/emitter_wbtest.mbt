@@ -55,7 +55,7 @@ test "emit_dart_decl fn" {
 
 ///|
 test "emit_dart_decl struct" {
-  let struct_ = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)])
+  let struct_ = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [])
   let expected = "class Point {\n  int x;\n  int y;\n  Point({required this.x, required this.y});\n}"
   assert_eq(emit_dart_decl(struct_), expected)
 }
@@ -157,4 +157,55 @@ test "emit_dart_pattern ctor_empty" {
 test "emit_dart_pattern ctor_with_args" {
   let p = @ast.PCtor("Point", [@ast.PVar("x"), @ast.PVar("y")])
   assert_eq(emit_dart_pattern(p), "Point(var x, var y)")
+}
+
+///|
+test "emit_dart_decl struct_derive_debug" {
+  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], ["Debug"])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("class Point"))
+  assert_true(result.contains("toString()"))
+  assert_true(result.contains("Point(x: $x, y: $y)"))
+}
+
+///|
+test "emit_dart_decl struct_derive_eq" {
+  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], ["Eq"])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("operator=="))
+  assert_true(result.contains("other is Point"))
+  assert_true(result.contains("other.x == x"))
+  assert_true(result.contains("other.y == y"))
+}
+
+///|
+test "emit_dart_decl struct_derive_compare" {
+  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [
+    "Compare",
+  ])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("compareTo"))
+  assert_true(result.contains("x.compareTo(other.x)"))
+  assert_true(result.contains("y.compareTo(other.y)"))
+}
+
+///|
+test "emit_dart_decl struct_derive_all" {
+  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [
+    "Debug", "Eq", "Compare",
+  ])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("toString()"))
+  assert_true(result.contains("operator=="))
+  assert_true(result.contains("compareTo"))
+}
+
+///|
+test "emit_dart_decl struct_no_derive" {
+  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("class Point"))
+  assert_true(!result.contains("toString()"))
+  assert_true(!result.contains("operator=="))
+  assert_true(!result.contains("compareTo"))
 }

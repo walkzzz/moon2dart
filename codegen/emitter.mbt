@@ -60,7 +60,7 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
       let ret_str = @typesys.emit_dart(@typesys.map_type(ret))
       "\{ret_str} \{name}(\{param_str}) {\n  return \{emit_dart_expr(body)};\n}"
     }
-    @ast.DStruct(name, fields) => {
+    @ast.DStruct(name, fields, derives) => {
       let field_str = fields
         .map(fn(pair) {
           let (fname, ftype) = pair
@@ -73,7 +73,8 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
           "required this.\{fname}"
         })
         .join(", ")
-      "class \{name} {\n\{field_str}\n  \{name}({\{ctor_params}});\n}"
+      let derive_methods = emit_derive_methods(name, fields, derives)
+      "class \{name} {\n\{field_str}\n  \{name}({\{ctor_params}});\{derive_methods}\n}"
     }
     @ast.DEnum(name, variants) => {
       let variant_str = variants
@@ -97,6 +98,52 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
       "abstract class \{name} {\n\{method_str}\n}"
     }
   }
+}
+
+///|
+/// 根据 derive 列表生成 Dart 方法（Debug→toString, Eq→operator==, Compare→compareTo）。
+fn emit_derive_methods(
+  name : String,
+  fields : Array[(String, @ast.MoonType)],
+  derives : Array[String],
+) -> String {
+  let mut methods = ""
+  for d in derives {
+    match d {
+      "Debug" => {
+        let field_list = fields
+          .map(fn(pair) {
+            let (fname, _) = pair
+            "\{fname}: $\{fname}"
+          })
+          .join(", ")
+        methods = methods +
+          "\n  @override\n  String toString() => '\{name}(\{field_list})';"
+      }
+      "Eq" => {
+        let field_cmps = fields
+          .map(fn(pair) {
+            let (fname, _) = pair
+            "other.\{fname} == \{fname}"
+          })
+          .join(" && ")
+        methods = methods +
+          "\n  @override\n  bool operator==(Object other) =>\n    other is \{name} && \{field_cmps};"
+      }
+      "Compare" => {
+        let field_cmps = fields
+          .map(fn(pair) {
+            let (fname, _) = pair
+            "\{fname}.compareTo(other.\{fname})"
+          })
+          .join(" ?? ")
+        methods = methods +
+          "\n  @override\n  int compareTo(\{name} other) =>\n    \{field_cmps};"
+      }
+      _ => ()
+    }
+  }
+  methods
 }
 
 ///|

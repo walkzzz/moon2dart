@@ -14,7 +14,7 @@ test "transpile single fn" {
 test "transpile multiple decls" {
   let prog = [
     @ast.DEnum("Color", ["Red", "Green", "Blue"]),
-    @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)]),
+    @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], []),
     @ast.DFn(
       "add",
       [("a", @ast.MInt), ("b", @ast.MInt)],
@@ -169,4 +169,33 @@ test "transpile_source match_ctor" {
   assert_true(result.contains("switch (s)"))
   assert_true(result.contains("Red() => 1"))
   assert_true(result.contains("Green() => 2"))
+}
+
+///|
+/// v0.3.0 derive 生成管线测试。
+
+///|
+test "transpile_source struct_derive_debug" {
+  let src = "struct Point derive(Debug) { x : Int, y : Int }"
+  let result = transpile_source(src)
+  assert_true(result.contains("class Point"))
+  assert_true(result.contains("toString()"))
+  assert_true(result.contains("Point(x: $x, y: $y)"))
+}
+
+///|
+test "transpile_source struct_derive_eq" {
+  let src = "struct Point derive(Eq) { x : Int, y : Int }"
+  let result = transpile_source(src)
+  assert_true(result.contains("operator=="))
+  assert_true(result.contains("other is Point"))
+}
+
+///|
+test "transpile_source struct_derive_all" {
+  let src = "struct Point derive(Debug, Eq, Compare) { x : Int, y : Int }"
+  let result = transpile_source(src)
+  assert_true(result.contains("toString()"))
+  assert_true(result.contains("operator=="))
+  assert_true(result.contains("compareTo"))
 }

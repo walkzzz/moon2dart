@@ -81,7 +81,8 @@ ast ──> (零依赖)
 - **v0.3.0** 🔄 进行中 — trait + 模式匹配 + derive 生成
   - S1 trait → abstract class ✅（DTrait + TraitMethod AST 节点，parser 解析 trait 声明，codegen 生成 abstract class，8 新测试，91 测试 × 4 后端）
   - S2 match → switch expression ✅（parser 解析 match + pattern，codegen 生成 Dart 3 switch expression，12 新测试，103 测试 × 4 后端）
-  - S3 derive 生成 📋 / S4 pub(open) trait 📋 / S5 测试+文档 📋
+  - S3 derive 生成 ✅（DStruct 添加 derive 列表参数，parser 解析 `derive(Debug, Eq, Compare)` 语法，codegen 生成 toString/operator==/compareTo，11 新测试，114 测试 × 4 后端）
+  - S4 pub(open) trait 跨包实现 📋 / S5 测试+文档 📋
 - **v0.4.0** 📋 计划 — 项目级扫描 + 包结构映射
 - **v0.5.0** 📋 计划 — async + Option + Result + 泛型
 - **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
@@ -107,14 +108,15 @@ ast ──> (零依赖)
 
 ### 测试
 
-33 个测试，四后端全通过（wasm / wasm-gc / js / native）：
+114 个测试，四后端全通过（wasm / wasm-gc / js / native）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
 | ast | 7 | 0 |
 | typesys | 7 | 0 |
-| codegen | 9 | 0 |
-| moon2dart (根) | 5 | 5 |
+| codegen | 22 | 0 |
+| parser | 30 | 0 |
+| moon2dart (根) | 21 | 5 |
 
 ### 文档
 

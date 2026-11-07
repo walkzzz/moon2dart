@@ -108,12 +108,28 @@ fn Parser::parse_return_type(self : Parser) -> (@ast.MoonType, Parser) {
 }
 
 ///|
-/// 解析 struct 声明：struct Name { field : Type, ... }
+/// 解析 struct 声明：struct Name [derive(...)] { field : Type, ... }
 fn Parser::parse_struct_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkStruct)
   let (name, parser) = parser.expect_ident()
-  let p = parser.expect(TkLBrace)
-  let mut p = p
+  let mut p = parser
+  let derives : Array[String] = []
+  if p.peek().kind is TkDerive {
+    p = p.advance()
+    p = p.expect(TkLParen)
+    while true {
+      let (dname, p1) = p.expect_ident()
+      p = p1
+      derives.push(dname)
+      if p.peek().kind is TkComma {
+        p = p.advance()
+      } else {
+        break
+      }
+    }
+    p = p.expect(TkRParen)
+  }
+  p = p.expect(TkLBrace)
   let fields : Array[(String, @ast.MoonType)] = []
   if !(p.peek().kind is TkRBrace) {
     while true {
@@ -130,7 +146,7 @@ fn Parser::parse_struct_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
     }
   }
   let p_final = p.expect(TkRBrace)
-  (@ast.DStruct(name, fields), p_final)
+  (@ast.DStruct(name, fields, derives), p_final)
 }
 
 ///|

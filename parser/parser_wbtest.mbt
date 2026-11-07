@@ -204,7 +204,7 @@ test "parse_fn_decl_no_ret" {
 test "parse_struct_decl" {
   let (decl, _) = make_parser("struct Point { x : Int, y : Int }").parse_struct_decl()
   match decl {
-    @ast.DStruct(name, fields) => {
+    @ast.DStruct(name, fields, _) => {
       assert_eq(name, "Point")
       assert_eq(fields.length(), 2)
       let (f0n, f0t) = fields[0]
@@ -241,7 +241,7 @@ test "parse_program" {
   let decls = make_parser(src).parse_program()
   assert_eq(decls.length(), 3)
   assert_true(decls[0] is @ast.DFn("id", _, _, _))
-  assert_true(decls[1] is @ast.DStruct("Foo", _))
+  assert_true(decls[1] is @ast.DStruct("Foo", _, _))
   assert_true(decls[2] is @ast.DEnum("Bar", _))
 }
 
@@ -318,7 +318,7 @@ test "parse_program_with_trait" {
   let decls = make_parser(src).parse_program()
   assert_eq(decls.length(), 2)
   assert_true(decls[0] is @ast.DTrait("Drawable", _))
-  assert_true(decls[1] is @ast.DStruct("Circle", _))
+  assert_true(decls[1] is @ast.DStruct("Circle", _, _))
 }
 
 ///|
@@ -399,5 +399,53 @@ test "parse_expr_match_string" {
       assert_true(p1 is @ast.PWild)
     }
     _ => abort("expected EMatch")
+  }
+}
+
+///|
+/// 测试解析带 derive 的 struct 声明。
+test "parse_struct_decl_derive" {
+  let (decl, _) = make_parser("struct Point derive(Debug) { x : Int, y : Int }").parse_struct_decl()
+  match decl {
+    @ast.DStruct(name, fields, derives) => {
+      assert_eq(name, "Point")
+      assert_eq(fields.length(), 2)
+      assert_eq(derives.length(), 1)
+      assert_eq(derives[0], "Debug")
+    }
+    _ => abort("expected DStruct")
+  }
+}
+
+///|
+/// 测试解析带多个 derive 的 struct 声明。
+test "parse_struct_decl_multi_derive" {
+  let (decl, _) = make_parser(
+    "struct Point derive(Debug, Eq, Compare) { x : Int, y : Int }",
+  ).parse_struct_decl()
+  match decl {
+    @ast.DStruct(name, fields, derives) => {
+      assert_eq(name, "Point")
+      assert_eq(fields.length(), 2)
+      assert_eq(derives.length(), 3)
+      assert_eq(derives[0], "Debug")
+      assert_eq(derives[1], "Eq")
+      assert_eq(derives[2], "Compare")
+    }
+    _ => abort("expected DStruct")
+  }
+}
+
+///|
+/// 测试解析无 derive 的 struct 声明（默认空列表）。
+test "parse_struct_decl_no_derive" {
+  let (decl, _) = make_parser("struct Point { x : Int, y : Int }").parse_struct_decl()
+  match decl {
+    @ast.DStruct(name, fields, derives) => {
+      assert_eq(name, "Point")
+      assert_eq(fields.length(), 2)
+      assert_eq(derives.length(), 0)
+    }
+    _ => abort("expected DStruct")
   }
 }

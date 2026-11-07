@@ -52,7 +52,7 @@ test "MoonDecl construction" {
     MInt,
     EBinOp("+", EVar("a"), EVar("b")),
   )
-  let struct_ = DStruct("Point", [("x", MInt), ("y", MInt)])
+  let struct_ = DStruct("Point", [("x", MInt), ("y", MInt)], [])
   let enum_ = DEnum("Color", ["Red", "Green", "Blue"])
   assert_eq(
     fn_,
@@ -63,7 +63,7 @@ test "MoonDecl construction" {
       EBinOp("+", EVar("a"), EVar("b")),
     ),
   )
-  assert_eq(struct_, DStruct("Point", [("x", MInt), ("y", MInt)]))
+  assert_eq(struct_, DStruct("Point", [("x", MInt), ("y", MInt)], []))
   assert_eq(enum_, DEnum("Color", ["Red", "Green", "Blue"]))
 }
 

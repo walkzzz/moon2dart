@@ -36,7 +36,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
 fn cmd_demo(_args : Array[String]) -> Unit {
   let demo = [
     @ast.DEnum("Color", ["Red", "Green", "Blue"]),
-    @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)]),
+    @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], []),
     @ast.DFn(
       "add",
       [("a", @ast.MInt), ("b", @ast.MInt)],

@@ -74,7 +74,7 @@ pub extend MoonPattern with Debug::{to_repr}
 /// MoonBit 声明节点。
 pub(all) enum MoonDecl {
   DFn(String, Array[(String, MoonType)], MoonType, MoonExpr)
-  DStruct(String, Array[(String, MoonType)])
+  DStruct(String, Array[(String, MoonType)], Array[String])
   DEnum(String, Array[String])
   DTrait(String, Array[TraitMethod])
 } derive(Eq, Compare, Debug)
