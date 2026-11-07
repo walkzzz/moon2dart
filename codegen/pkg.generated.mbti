@@ -16,7 +16,13 @@ pub fn emit_dart_program(Array[@ast.MoonDecl]) -> String
 
 pub fn emit_dart_program_with_lib(Array[@ast.MoonDecl], String) -> String
 
+pub fn emit_flutter_expr(@ast.MoonExpr) -> String
+
+pub fn emit_flutter_program(Array[@ast.MoonDecl]) -> String
+
 pub fn filter_pure(Array[@ast.MoonDecl]) -> Array[@ast.MoonDecl]
+
+pub fn needs_flutter(Array[@ast.MoonDecl]) -> Bool
 
 // Errors
 

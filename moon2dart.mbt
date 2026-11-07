@@ -57,3 +57,17 @@ pub fn transpile_expr(expr : @ast.MoonExpr) -> String {
 pub fn transpile_type(t : @ast.MoonType) -> String {
   @typesys.moon_to_dart_type(t)
 }
+
+///|
+/// Flutter 转换入口 — 将 MoonBit AST 声明数组转为完整 Flutter 应用代码。
+pub fn transpile_flutter(decls : Array[@ast.MoonDecl]) -> String {
+  @codegen.emit_flutter_program(decls)
+}
+
+///|
+/// 单文件 Flutter 转换管线 — MoonBit 源码字符串 → Flutter 应用代码字符串。
+pub fn transpile_source_flutter(src : String) -> String {
+  let tokens = @parser.Lexer::make(src).tokenize()
+  let decls = @parser.Parser::make(tokens).parse_program()
+  @codegen.emit_flutter_program(decls)
+}

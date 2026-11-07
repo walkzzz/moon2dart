@@ -130,20 +130,20 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.7.0 — Flutter widget 转换
+## v0.7.0 ✅ — Flutter widget 转换（已完成）
 
 **目标**：支持 MoonBit UI 抽象 → Flutter widget 树。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | MoonBit UI 抽象 → Flutter widget（Text/Container/Row/Column） |
-| S2 | 布局（Row/Column/Stack/Padding/Container/Expanded） |
-| S3 | 状态管理（StatelessWidget/StatefulWidget + setState） |
-| S4 | 事件处理（onTap/onPressed/onChanged） |
-| S5 | main 入口 → runApp(MyApp()) |
-| S6 | 测试 + 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | MoonBit UI 抽象 → Flutter widget（Text/Container/Row/Column） | ✅ |
+| S2 | 布局（Row/Column/Stack/Padding/Container/Expanded/Center/SizedBox） | ✅ |
+| S3 | 状态管理（StatelessWidget/StatefulWidget + setState） | ✅ |
+| S4 | 事件处理（onTap/onPressed/onChanged + TextField/Switch/Checkbox/Slider） | ✅ |
+| S5 | main 入口 → runApp(My?App()) | ✅ |
+| S6 | 测试 + 文档 | ✅ |
 
-**交付线**：库 API（widget 转换）
+**交付**：316 测试（native），50+ Flutter widget 转换 + StatelessWidget/StatefulWidget + 事件处理 + Flutter 辅助类。
 
 ---
 

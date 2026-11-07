@@ -12,7 +12,11 @@ pub fn transpile_decl(@ast.MoonDecl) -> String
 
 pub fn transpile_expr(@ast.MoonExpr) -> String
 
+pub fn transpile_flutter(Array[@ast.MoonDecl]) -> String
+
 pub fn transpile_source(String) -> String
+
+pub fn transpile_source_flutter(String) -> String
 
 pub fn transpile_source_pure(String) -> String
 

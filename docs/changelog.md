@@ -1,5 +1,41 @@
 # Changelog
 
+## v0.7.0 (2026-11-07) — Flutter widget 转换
+
+### 新增
+- **Flutter widget 表达式识别**：`codegen/flutter_emitter.mbt` — 50+ Flutter widget 构造器名称识别
+  - `Text("hello")` → `Text('hello')`
+  - `Row(Text("A"), Text("B"))` → `Row(children: [Text('A'), Text('B')])`
+  - `Column(...)` / `Stack(...)` → `children: [...]`
+  - `Container(child)` → `Container(child: ...)`
+  - `Padding(padding, child)` → `Padding(padding: ..., child: ...)`
+  - `Expanded/Center/Flexible/Align` → `child: ...`
+  - `SizedBox(width, height, child)` → `SizedBox(width: ..., height: ..., child: ...)`
+- **布局 widget**：Stack/Padding/Expanded/Center/SizedBox/Positioned/AspectRatio/ConstrainedBox/
+  LimitedBox/Opacity/Transform/DecoratedBox/ClipRRect/ClipOval/FittedBox/IntrinsicHeight/IntrinsicWidth/
+  Offstage/Spacer/Divider/Card/ListTile/Icon/AppBar/Scaffold/MaterialApp
+- **状态管理**：
+  - `fn xxx() { Widget(...) }` → `class Xxx extends StatelessWidget { Widget build(BuildContext context) { return ...; } }`
+  - `struct Counter { count : Int } impl Widget for Counter { fn build(...) { ... } }` → `class Counter extends StatelessWidget { final int count; const Counter({required this.count}); @override Widget build(BuildContext context) { return ...; } }`
+  - `impl StatefulWidget for Type` → `class Type extends StatefulWidget { ... State<Type> createState() => _TypeState(); } class _TypeState extends State<Type> { ... }`
+  - Widget impl + 其他 trait impl → `extends StatelessWidget implements OtherTrait`
+- **事件处理**：
+  - `ElevatedButton(onPressed_lambda, child)` → `ElevatedButton(onPressed: () { ... }, child: ...)`
+  - `GestureDetector(onTap_lambda, child)` → `GestureDetector(onTap: () { ... }, child: ...)`
+  - `FloatingActionButton(onPressed_lambda, child)` → `FloatingActionButton(onPressed: () { ... }, child: ...)`
+  - `TextField(onChanged_lambda, decoration?)` → `TextField(onChanged: (value) { ... }, decoration: ...)`
+  - `Switch/Checkbox/Radio/Slider/DropdownButton/InkWell/PopupMenuButton` — value + onChanged/onTap 参数映射
+- **main 入口**：`fn main() { MaterialApp(...) }` → `void main() { runApp(MaterialApp(...)); }`
+- **Flutter 辅助类**：EdgeInsets.all/symmetric/only、BorderRadius.circular、TextStyle、BoxDecoration、Matrix4.identity
+- **完整 Flutter 程序生成**：`emit_flutter_program` — 生成含 `import 'package:flutter/material.dart'`、`void main() { runApp(...); }`、StatelessWidget 类的完整 Flutter 应用
+- 根包新增 API：`transpile_flutter(decls)` / `transpile_source_flutter(src)`
+- 76 新测试（240 → 316 native）
+
+### 改进
+- 版本号 v0.6.0 → v0.7.0
+- emit_dart_program 版本号更新
+- 测试 240 → 316（native）
+
 ## v0.6.0 (2026-11-07) — FFI 混合模式（extern "c" → dart:ffi）
 
 ### 新增
