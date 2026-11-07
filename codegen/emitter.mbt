@@ -29,7 +29,7 @@ pub fn emit_dart_expr(e : @ast.MoonExpr) -> String {
 }
 
 ///|
-/// Dart 模式发射。
+/// Dart 模式发射 — 将 MoonBit 模式节点转为 Dart 3 pattern 语法。
 pub fn emit_dart_pattern(p : @ast.MoonPattern) -> String {
   match p {
     @ast.PVar(name) => "var \{name}"
@@ -38,7 +38,7 @@ pub fn emit_dart_pattern(p : @ast.MoonPattern) -> String {
     @ast.PWild => "_"
     @ast.PCtor(name, args) =>
       if args.length() == 0 {
-        name
+        "\{name}()"
       } else {
         let arg_str = args.map(emit_dart_pattern).join(", ")
         "\{name}(\{arg_str})"

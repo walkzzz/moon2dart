@@ -149,3 +149,24 @@ test "transpile_source trait_and_struct" {
   assert_true(result.contains("abstract class Drawable"))
   assert_true(result.contains("class Circle"))
 }
+
+///|
+/// v0.3.0 match 转换测试。
+
+///|
+test "transpile_source match_basic" {
+  let src = "fn classify(x : Int) -> Int { match x { 1 => 10, _ => 0 } }"
+  let result = transpile_source(src)
+  assert_true(result.contains("switch (x)"))
+  assert_true(result.contains("1 => 10"))
+  assert_true(result.contains("_ => 0"))
+}
+
+///|
+test "transpile_source match_ctor" {
+  let src = "fn get_color(s : Color) -> Int { match s { Red => 1, Green => 2, Blue => 3 } }"
+  let result = transpile_source(src)
+  assert_true(result.contains("switch (s)"))
+  assert_true(result.contains("Red() => 1"))
+  assert_true(result.contains("Green() => 2"))
+}

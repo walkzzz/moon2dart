@@ -104,3 +104,57 @@ test "emit_dart_decl trait_with_params" {
   assert_true(result.contains("abstract class Comparable"))
   assert_true(result.contains("int compare(int other);"))
 }
+
+///|
+test "emit_dart_expr match_basic" {
+  let m = @ast.EMatch(@ast.EVar("x"), [
+    (@ast.PInt(1), @ast.EVar("a")),
+    (@ast.PWild, @ast.EVar("b")),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("switch (x)"))
+  assert_true(result.contains("1 => a"))
+  assert_true(result.contains("_ => b"))
+}
+
+///|
+test "emit_dart_expr match_ctor" {
+  let m = @ast.EMatch(@ast.EVar("s"), [
+    (@ast.PCtor("Red", []), @ast.EInt(1)),
+    (@ast.PCtor("Green", []), @ast.EInt(2)),
+    (@ast.PWild, @ast.EInt(0)),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("switch (s)"))
+  assert_true(result.contains("Red() => 1"))
+  assert_true(result.contains("Green() => 2"))
+  assert_true(result.contains("_ => 0"))
+}
+
+///|
+test "emit_dart_expr match_ctor_with_args" {
+  let m = @ast.EMatch(@ast.EVar("e"), [
+    (@ast.PCtor("Point", [@ast.PVar("x"), @ast.PVar("y")]), @ast.EVar("x")),
+    (@ast.PWild, @ast.EInt(0)),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("switch (e)"))
+  assert_true(result.contains("Point(var x, var y) => x"))
+  assert_true(result.contains("_ => 0"))
+}
+
+///|
+test "emit_dart_pattern wild" {
+  assert_eq(emit_dart_pattern(@ast.PWild), "_")
+}
+
+///|
+test "emit_dart_pattern ctor_empty" {
+  assert_eq(emit_dart_pattern(@ast.PCtor("Red", [])), "Red()")
+}
+
+///|
+test "emit_dart_pattern ctor_with_args" {
+  let p = @ast.PCtor("Point", [@ast.PVar("x"), @ast.PVar("y")])
+  assert_eq(emit_dart_pattern(p), "Point(var x, var y)")
+}

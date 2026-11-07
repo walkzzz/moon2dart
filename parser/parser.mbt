@@ -264,6 +264,7 @@ fn Parser::parse_expr_prec(
       op is TkComma ||
       op is TkElse ||
       op is TkArrow ||
+      op is TkFatArrow ||
       op is TkColon {
       break
     }
@@ -338,6 +339,12 @@ fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
       }
       (@ast.EIf(cond, then_expr, else_expr), p3)
     }
+    TkMatch => {
+      let parser = self.advance()
+      let (scrutinee, p1) = parser.parse_expr()
+      let (cases, p2) = p1.parse_match_arms()
+      (@ast.EMatch(scrutinee, cases), p2)
+    }
     _ => {
       let parser = self.advance()
       (@ast.EInt(0), parser)
@@ -352,6 +359,104 @@ fn Parser::parse_block_expr(self : Parser) -> (@ast.MoonExpr, Parser) {
   let (expr, p) = parser.parse_expr()
   let p_final = p.expect(TkRBrace)
   (expr, p_final)
+}
+
+///|
+/// 解析 match 分支列表 { Pattern => body, ... }
+fn Parser::parse_match_arms(
+  self : Parser,
+) -> (Array[(@ast.MoonPattern, @ast.MoonExpr)], Parser) {
+  let parser = self.expect(TkLBrace)
+  let mut p = parser
+  let cases : Array[(@ast.MoonPattern, @ast.MoonExpr)] = []
+  while !(p.peek().kind is TkRBrace) {
+    let (pat, p1) = p.parse_pattern()
+    let p2 = p1.expect(TkFatArrow)
+    let (body, p3) = p2.parse_expr()
+    p = p3
+    cases.push((pat, body))
+    if p.peek().kind is TkComma {
+      p = p.advance()
+    }
+  }
+  let p_final = p.expect(TkRBrace)
+  (cases, p_final)
+}
+
+///|
+/// 解析模式匹配节点。
+fn Parser::parse_pattern(self : Parser) -> (@ast.MoonPattern, Parser) {
+  let token = self.peek()
+  match token.kind {
+    TkInt => {
+      let parser = self.advance()
+      let n = parse_int_safe(token.text)
+      (@ast.PInt(n), parser)
+    }
+    TkString => {
+      let parser = self.advance()
+      let text = token.text
+      let len = text.length()
+      let content = if len >= 2 { text[1:len - 1].to_owned() } else { "" }
+      (@ast.PString(content), parser)
+    }
+    TkIdent => {
+      let name = token.text
+      let parser = self.advance()
+      if name == "_" {
+        (@ast.PWild, parser)
+      } else if parser.peek().kind is TkLParen {
+        let p1 = parser.advance()
+        let mut p = p1
+        let args : Array[@ast.MoonPattern] = []
+        if !(p.peek().kind is TkRParen) {
+          while true {
+            let (arg, p2) = p.parse_pattern()
+            p = p2
+            args.push(arg)
+            if p.peek().kind is TkComma {
+              p = p.advance()
+            } else {
+              break
+            }
+          }
+        }
+        let p_final = p.expect(TkRParen)
+        (@ast.PCtor(name, args), p_final)
+      } else {
+        (@ast.PVar(name), parser)
+      }
+    }
+    TkUIdent => {
+      let name = token.text
+      let parser = self.advance()
+      if parser.peek().kind is TkLParen {
+        let p1 = parser.advance()
+        let mut p = p1
+        let args : Array[@ast.MoonPattern] = []
+        if !(p.peek().kind is TkRParen) {
+          while true {
+            let (arg, p2) = p.parse_pattern()
+            p = p2
+            args.push(arg)
+            if p.peek().kind is TkComma {
+              p = p.advance()
+            } else {
+              break
+            }
+          }
+        }
+        let p_final = p.expect(TkRParen)
+        (@ast.PCtor(name, args), p_final)
+      } else {
+        (@ast.PCtor(name, []), parser)
+      }
+    }
+    _ => {
+      let parser = self.advance()
+      (@ast.PWild, parser)
+    }
+  }
 }
 
 ///|

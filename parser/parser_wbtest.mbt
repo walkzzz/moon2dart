@@ -320,3 +320,84 @@ test "parse_program_with_trait" {
   assert_true(decls[0] is @ast.DTrait("Drawable", _))
   assert_true(decls[1] is @ast.DStruct("Circle", _))
 }
+
+///|
+/// 测试解析 match 表达式（基本）。
+test "parse_expr_match_basic" {
+  let src = "match x { 1 => a, _ => b }"
+  let (expr, _) = make_parser(src).parse_expr()
+  match expr {
+    @ast.EMatch(scrutinee, cases) => {
+      assert_true(scrutinee is @ast.EVar("x"))
+      assert_eq(cases.length(), 2)
+      let (p0, b0) = cases[0]
+      let (p1, b1) = cases[1]
+      assert_true(p0 is @ast.PInt(1))
+      assert_true(b0 is @ast.EVar("a"))
+      assert_true(p1 is @ast.PWild)
+      assert_true(b1 is @ast.EVar("b"))
+    }
+    _ => abort("expected EMatch")
+  }
+}
+
+///|
+/// 测试解析 match 表达式（构造器模式）。
+test "parse_expr_match_ctor" {
+  let src = "match s { Red => 1, Green => 2, Blue => 3 }"
+  let (expr, _) = make_parser(src).parse_expr()
+  match expr {
+    @ast.EMatch(_, cases) => {
+      assert_eq(cases.length(), 3)
+      let (p0, _) = cases[0]
+      let (p1, _) = cases[1]
+      let (p2, _) = cases[2]
+      assert_true(p0 is @ast.PCtor("Red", []))
+      assert_true(p1 is @ast.PCtor("Green", []))
+      assert_true(p2 is @ast.PCtor("Blue", []))
+    }
+    _ => abort("expected EMatch")
+  }
+}
+
+///|
+/// 测试解析 match 表达式（带参数构造器模式）。
+test "parse_expr_match_ctor_with_args" {
+  let src = "match e { Point(x, y) => x, _ => 0 }"
+  let (expr, _) = make_parser(src).parse_expr()
+  match expr {
+    @ast.EMatch(_, cases) => {
+      assert_eq(cases.length(), 2)
+      let (p0, _) = cases[0]
+      let (p1, _) = cases[1]
+      match p0 {
+        @ast.PCtor(name, args) => {
+          assert_eq(name, "Point")
+          assert_eq(args.length(), 2)
+          assert_true(args[0] is @ast.PVar("x"))
+          assert_true(args[1] is @ast.PVar("y"))
+        }
+        _ => abort("expected PCtor")
+      }
+      assert_true(p1 is @ast.PWild)
+    }
+    _ => abort("expected EMatch")
+  }
+}
+
+///|
+/// 测试解析 match 表达式（字符串模式）。
+test "parse_expr_match_string" {
+  let src = "match s { \"hello\" => 1, _ => 0 }"
+  let (expr, _) = make_parser(src).parse_expr()
+  match expr {
+    @ast.EMatch(_, cases) => {
+      assert_eq(cases.length(), 2)
+      let (p0, _) = cases[0]
+      let (p1, _) = cases[1]
+      assert_true(p0 is @ast.PString("hello"))
+      assert_true(p1 is @ast.PWild)
+    }
+    _ => abort("expected EMatch")
+  }
+}
