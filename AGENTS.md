@@ -90,7 +90,13 @@ ast ──> (零依赖)
   - S3 多文件项目转换 ✅（transpile_project async + find_package_by_name + write_dart_project，3 白盒测试）
   - S4 CLI project 子命令 ✅（`moon2dart project <dir> -o <output>`，scan+transpile+write 全管线）
   - S5 版本号+门禁+文档 ✅（版本 0.4.0，142 测试 × 4 后端）
-- **v0.5.0** 📋 计划 — async + Option + Result + 泛型
+- **v0.5.0** ✅ 已完成 — async + Option + Result + 泛型 + 闭包
+  - S1 async/await → Future/await ✅（DAsyncFn + EAwait + MFuture/DFuture，`async fn` → `Future<T> name() async`，`await` → `await`，5 新测试）
+  - S2 Option[T] → T? null safety ✅（Some(x) → x，None → null，Option match 中 null case 排序，TkUIdent parser 支持，8 新测试）
+  - S3 Result[T,E] → sealed class Ok/Err ✅（自动检测 Result 类型使用，生成 sealed class Result<T,E> + Ok + Err，8 新测试）
+  - S4 泛型类型参数支持 ✅（DFn/DAsyncFn/DStruct 添加 type_params，parser 支持 `[T]` 语法，MTypeVar 类型节点，10 新测试）
+  - S5 闭包 → 箭头函数 ✅（ELambda AST 节点，parser 解析 `fn(params) { body }`，`(params) => expr`，8 新测试）
+  - S6 版本号+门禁+文档 ✅（版本 0.5.0，206 测试 native）
 - **v0.6.0** 📋 计划 — FFI 混合模式（dart:ffi）
 - **v0.7.0** 📋 计划 — Flutter widget 转换
 - **v0.8.0** 📋 计划 — 自动触发 + 项目同步（核心功能）
@@ -114,16 +120,16 @@ ast ──> (零依赖)
 
 ### 测试
 
-142 个测试，四后端全通过（wasm / wasm-gc / js / native）：
+206 个测试，native 后端全通过：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
 | ast | 7 | 0 |
 | typesys | 7 | 0 |
-| codegen | 27 | 0 |
-| parser | 33 | 0 |
+| codegen | 39 | 0 |
+| parser | 42 | 0 |
 | project | 17 | 0 |
-| moon2dart (根) | 24 | 5 |
+| moon2dart (根) | 36 | 5 |
 
 ### 文档
 
