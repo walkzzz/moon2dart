@@ -53,13 +53,13 @@ fn cmd_demo(_args : Array[String]) -> Unit {
   let dart_code = @lib.transpile(demo)
   println(dart_code)
   println("---")
-  println("moon2dart v0.2.0 — MoonBit → Dart transpiler (demo mode)")
+  println("moon2dart v0.3.0 — MoonBit → Dart transpiler (demo mode)")
 }
 
 ///|
 /// help — 显示用法。
 fn usage() -> Unit {
-  println("moon2dart v0.2.0 — MoonBit → Dart transpiler")
+  println("moon2dart v0.3.0 — MoonBit → Dart transpiler")
   println("")
   println("Usage:")
   println("  moon2dart convert <file.mbt>    Convert .mbt file to Dart code")

@@ -65,19 +65,19 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.3.0 — trait + 模式匹配 + derive 生成
+## v0.3.0 ✅ — trait + 模式匹配 + derive 生成（已完成）
 
 **目标**：支持 trait 转换、模式匹配、derive 自动派生。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | trait → abstract class / mixin 链（单 trait → abstract，多 trait → mixin） |
-| S2 | match → switch expression (Dart 3 pattern matching) |
-| S3 | derive(Debug) → toString()，derive(Eq) → operator==，derive(Compare) → compareTo() |
-| S4 | pub(open) trait 跨包实现 → mixin + implements |
-| S5 | 测试 + 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | trait → abstract class（DTrait + TraitMethod AST，parser，codegen） | ✅ |
+| S2 | match → switch expression（Dart 3 pattern matching） | ✅ |
+| S3 | derive(Debug) → toString()，derive(Eq) → operator==，derive(Compare) → compareTo() | ✅ |
+| S4 | pub(open) trait 跨包实现 → impl Trait for Type → class Type implements Trait | ✅ |
+| S5 | 测试 + 文档 + 门禁 | ✅ |
 
-**交付线**：库 API（trait/match/derive 转换）
+**交付**：125 测试 × 4 后端，0 warning，trait/match/derive/impl 转换。
 
 ---
 
