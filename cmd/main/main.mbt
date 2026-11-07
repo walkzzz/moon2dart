@@ -80,15 +80,17 @@ async fn cmd_project(args : Array[String]) -> Unit {
 fn cmd_demo(_args : Array[String]) -> Unit {
   let demo = [
     @ast.DEnum("Color", ["Red", "Green", "Blue"]),
-    @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], []),
+    @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], []),
     @ast.DFn(
       "add",
+      [],
       [("a", @ast.MInt), ("b", @ast.MInt)],
       @ast.MInt,
       @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
     ),
     @ast.DFn(
       "greet",
+      [],
       [("name", @ast.MString)],
       @ast.MString,
       @ast.EString("Hello"),

@@ -35,16 +35,14 @@ test "emit_dart_pattern" {
   assert_eq(emit_dart_pattern(@ast.PInt(42)), "42")
   assert_eq(emit_dart_pattern(@ast.PString("hi")), "\"hi\"")
   assert_eq(emit_dart_pattern(@ast.PWild), "_")
-  assert_eq(
-    emit_dart_pattern(@ast.PCtor("Some", [@ast.PVar("x")])),
-    "Some(var x)",
-  )
+  assert_eq(emit_dart_pattern(@ast.PCtor("Some", [@ast.PVar("x")])), "var x")
 }
 
 ///|
 test "emit_dart_decl fn" {
   let fn_ = @ast.DFn(
     "add",
+    [],
     [("a", @ast.MInt), ("b", @ast.MInt)],
     @ast.MInt,
     @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
@@ -55,7 +53,12 @@ test "emit_dart_decl fn" {
 
 ///|
 test "emit_dart_decl struct" {
-  let struct_ = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [])
+  let struct_ = @ast.DStruct(
+    "Point",
+    [],
+    [("x", @ast.MInt), ("y", @ast.MInt)],
+    [],
+  )
   let expected = "class Point {\n  int x;\n  int y;\n  Point({required this.x, required this.y});\n}"
   assert_eq(emit_dart_decl(struct_), expected)
 }
@@ -72,6 +75,7 @@ test "emit_dart_program" {
   let prog = [
     @ast.DFn(
       "square",
+      [],
       [("x", @ast.MInt)],
       @ast.MInt,
       @ast.EBinOp("*", @ast.EVar("x"), @ast.EVar("x")),
@@ -161,7 +165,9 @@ test "emit_dart_pattern ctor_with_args" {
 
 ///|
 test "emit_dart_decl struct_derive_debug" {
-  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], ["Debug"])
+  let s = @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], [
+    "Debug",
+  ])
   let result = emit_dart_decl(s)
   assert_true(result.contains("class Point"))
   assert_true(result.contains("toString()"))
@@ -170,7 +176,7 @@ test "emit_dart_decl struct_derive_debug" {
 
 ///|
 test "emit_dart_decl struct_derive_eq" {
-  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], ["Eq"])
+  let s = @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], ["Eq"])
   let result = emit_dart_decl(s)
   assert_true(result.contains("operator=="))
   assert_true(result.contains("other is Point"))
@@ -180,7 +186,7 @@ test "emit_dart_decl struct_derive_eq" {
 
 ///|
 test "emit_dart_decl struct_derive_compare" {
-  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [
+  let s = @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], [
     "Compare",
   ])
   let result = emit_dart_decl(s)
@@ -191,7 +197,7 @@ test "emit_dart_decl struct_derive_compare" {
 
 ///|
 test "emit_dart_decl struct_derive_all" {
-  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [
+  let s = @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], [
     "Debug", "Eq", "Compare",
   ])
   let result = emit_dart_decl(s)
@@ -202,7 +208,7 @@ test "emit_dart_decl struct_derive_all" {
 
 ///|
 test "emit_dart_decl struct_no_derive" {
-  let s = @ast.DStruct("Point", [("x", @ast.MInt), ("y", @ast.MInt)], [])
+  let s = @ast.DStruct("Point", [], [("x", @ast.MInt), ("y", @ast.MInt)], [])
   let result = emit_dart_decl(s)
   assert_true(result.contains("class Point"))
   assert_true(!result.contains("toString()"))
@@ -244,7 +250,7 @@ test "emit_dart_program struct_with_impl" {
     @ast.DTrait("Drawable", [
       { name: "draw", params: [], ret_type: @ast.MUnit, },
     ]),
-    @ast.DStruct("Circle", [("r", @ast.MDouble)], []),
+    @ast.DStruct("Circle", [], [("r", @ast.MDouble)], []),
     @ast.DImpl("Drawable", "Circle", [
       { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
     ]),
@@ -268,7 +274,7 @@ test "emit_dart_program struct_with_multi_impl" {
         ret_type: @ast.MInt,
       },
     ]),
-    @ast.DStruct("Circle", [("r", @ast.MDouble)], []),
+    @ast.DStruct("Circle", [], [("r", @ast.MDouble)], []),
     @ast.DImpl("Drawable", "Circle", [
       { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
     ]),
@@ -297,4 +303,308 @@ test "emit_dart_program impl_no_struct" {
   ]
   let result = emit_dart_program(prog)
   assert_true(result.contains("class Circle implements Drawable"))
+}
+
+///|
+/// v0.5.0 S1 async/await 测试。
+
+///|
+test "emit_dart_expr await" {
+  let aw = @ast.EAwait(@ast.ECall("fetchData", []))
+  assert_eq(emit_dart_expr(aw), "await fetchData()")
+}
+
+///|
+test "emit_dart_decl async_fn" {
+  let afn = @ast.DAsyncFn(
+    "fetchData",
+    [],
+    [],
+    @ast.MString,
+    @ast.EString("hello"),
+  )
+  let result = emit_dart_decl(afn)
+  assert_true(result.contains("Future<String> fetchData() async"))
+  assert_true(result.contains("return \"hello\";"))
+}
+
+///|
+test "emit_dart_decl async_fn_with_params" {
+  let afn = @ast.DAsyncFn(
+    "compute",
+    [],
+    [("x", @ast.MInt)],
+    @ast.MInt,
+    @ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1)),
+  )
+  let result = emit_dart_decl(afn)
+  assert_true(result.contains("Future<int> compute(int x) async"))
+  assert_true(result.contains("return x + 1;"))
+}
+
+///|
+test "emit_dart_decl async_fn_with_await" {
+  let afn = @ast.DAsyncFn(
+    "getData",
+    [],
+    [],
+    @ast.MString,
+    @ast.EAwait(@ast.ECall("fetch", [])),
+  )
+  let result = emit_dart_decl(afn)
+  assert_true(result.contains("Future<String> getData() async"))
+  assert_true(result.contains("return await fetch();"))
+}
+
+///|
+test "emit_dart_program async_fn" {
+  let prog = [
+    @ast.DAsyncFn("fetchData", [], [], @ast.MString, @ast.EString("data")),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("Future<String> fetchData() async"))
+  assert_true(result.contains("return \"data\";"))
+}
+
+///|
+/// v0.5.0 S2 Option null safety 测试。
+
+///|
+test "emit_dart_expr some" {
+  let some = @ast.ECall("Some", [@ast.EInt(42)])
+  assert_eq(emit_dart_expr(some), "42")
+}
+
+///|
+test "emit_dart_expr none_var" {
+  let none = @ast.EVar("None")
+  assert_eq(emit_dart_expr(none), "null")
+}
+
+///|
+test "emit_dart_expr none_call" {
+  let none = @ast.ECall("None", [])
+  assert_eq(emit_dart_expr(none), "null")
+}
+
+///|
+test "emit_dart_expr some_string" {
+  let some = @ast.ECall("Some", [@ast.EString("hello")])
+  assert_eq(emit_dart_expr(some), "\"hello\"")
+}
+
+///|
+test "emit_dart_pattern none" {
+  let p = @ast.PCtor("None", [])
+  assert_eq(emit_dart_pattern(p), "null")
+}
+
+///|
+test "emit_dart_pattern some_var" {
+  let p = @ast.PCtor("Some", [@ast.PVar("x")])
+  assert_eq(emit_dart_pattern(p), "var x")
+}
+
+///|
+test "emit_dart_expr match_option" {
+  let m = @ast.EMatch(@ast.EVar("opt"), [
+    (@ast.PCtor("Some", [@ast.PVar("x")]), @ast.EVar("x")),
+    (@ast.PCtor("None", []), @ast.EInt(0)),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("switch (opt)"))
+  assert_true(result.contains("null => 0"))
+  assert_true(result.contains("var x => x"))
+}
+
+///|
+test "emit_dart_expr match_option_none_first" {
+  let m = @ast.EMatch(@ast.EVar("opt"), [
+    (@ast.PCtor("None", []), @ast.EInt(0)),
+    (@ast.PCtor("Some", [@ast.PVar("x")]), @ast.EVar("x")),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("null => 0"))
+  assert_true(result.contains("var x => x"))
+}
+
+///|
+/// v0.5.0 S3 Result sealed class 测试。
+
+///|
+test "emit_dart_program result_class_auto" {
+  let prog = [
+    @ast.DFn(
+      "parse",
+      [],
+      [],
+      @ast.MResult(@ast.MInt, @ast.MString),
+      @ast.ECall("Ok", [@ast.EInt(42)]),
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("sealed class Result<T, E>"))
+  assert_true(result.contains("class Ok<T, E> extends Result<T, E>"))
+  assert_true(result.contains("class Err<T, E> extends Result<T, E>"))
+}
+
+///|
+test "emit_dart_program no_result_class" {
+  let prog = [
+    @ast.DFn(
+      "add",
+      [],
+      [("a", @ast.MInt), ("b", @ast.MInt)],
+      @ast.MInt,
+      @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(!result.contains("sealed class Result"))
+}
+
+///|
+test "emit_dart_expr ok_call" {
+  let ok = @ast.ECall("Ok", [@ast.EInt(42)])
+  assert_eq(emit_dart_expr(ok), "Ok(42)")
+}
+
+///|
+test "emit_dart_expr err_call" {
+  let err = @ast.ECall("Err", [@ast.EString("fail")])
+  assert_eq(emit_dart_expr(err), "Err(\"fail\")")
+}
+
+///|
+test "emit_dart_pattern ok" {
+  let p = @ast.PCtor("Ok", [@ast.PVar("v")])
+  assert_eq(emit_dart_pattern(p), "Ok(var v)")
+}
+
+///|
+test "emit_dart_pattern err" {
+  let p = @ast.PCtor("Err", [@ast.PVar("e")])
+  assert_eq(emit_dart_pattern(p), "Err(var e)")
+}
+
+///|
+test "emit_dart_expr match_result" {
+  let m = @ast.EMatch(@ast.EVar("r"), [
+    (@ast.PCtor("Ok", [@ast.PVar("v")]), @ast.EVar("v")),
+    (@ast.PCtor("Err", [@ast.PVar("e")]), @ast.EInt(0)),
+  ])
+  let result = emit_dart_expr(m)
+  assert_true(result.contains("switch (r)"))
+  assert_true(result.contains("Ok(var v) => v"))
+  assert_true(result.contains("Err(var e) => 0"))
+}
+
+///|
+test "emit_dart_program result_in_struct_field" {
+  let prog = [
+    @ast.DStruct(
+      "Wrapper",
+      [],
+      [("data", @ast.MResult(@ast.MInt, @ast.MString))],
+      [],
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("sealed class Result<T, E>"))
+  assert_true(result.contains("Result<int, String> data"))
+}
+
+///|
+/// v0.5.0 S4 泛型类型参数测试。
+
+///|
+test "emit_dart_decl generic_fn" {
+  let fn_ = @ast.DFn(
+    "identity",
+    ["T"],
+    [("x", @ast.MCustom("T"))],
+    @ast.MCustom("T"),
+    @ast.EVar("x"),
+  )
+  let result = emit_dart_decl(fn_)
+  assert_true(result.contains("T identity<T>"))
+  assert_true(result.contains("T x"))
+  assert_true(result.contains("return x;"))
+}
+
+///|
+test "emit_dart_decl generic_fn_multi_params" {
+  let fn_ = @ast.DFn(
+    "map",
+    ["T", "E"],
+    [("x", @ast.MCustom("T"))],
+    @ast.MCustom("E"),
+    @ast.EVar("x"),
+  )
+  let result = emit_dart_decl(fn_)
+  assert_true(result.contains("E map<T, E>"))
+  assert_true(result.contains("T x"))
+}
+
+///|
+test "emit_dart_decl generic_struct" {
+  let s = @ast.DStruct("Container", ["T"], [("value", @ast.MCustom("T"))], [])
+  let result = emit_dart_decl(s)
+  assert_true(result.contains("class Container<T>"))
+  assert_true(result.contains("T value;"))
+  assert_true(result.contains("Container<T>("))
+}
+
+///|
+test "emit_dart_decl generic_async_fn" {
+  let afn = @ast.DAsyncFn("fetch", ["T"], [], @ast.MCustom("T"), @ast.EVar("x"))
+  let result = emit_dart_decl(afn)
+  assert_true(result.contains("Future<T> fetch<T>() async"))
+}
+
+///|
+test "emit_dart_decl non_generic_fn_no_angle_brackets" {
+  let fn_ = @ast.DFn(
+    "add",
+    [],
+    [("a", @ast.MInt), ("b", @ast.MInt)],
+    @ast.MInt,
+    @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+  )
+  let result = emit_dart_decl(fn_)
+  assert_true(!result.contains("<"))
+  assert_true(result.contains("int add(int a, int b)"))
+}
+
+///|
+/// v0.5.0 S5 闭包 → 箭头函数测试。
+
+///|
+test "emit_dart_expr lambda_no_params" {
+  let lam = @ast.ELambda([], @ast.EInt(42))
+  assert_eq(emit_dart_expr(lam), "() => 42")
+}
+
+///|
+test "emit_dart_expr lambda_one_param" {
+  let lam = @ast.ELambda([("x", @ast.MInt)], @ast.EVar("x"))
+  assert_eq(emit_dart_expr(lam), "(x) => x")
+}
+
+///|
+test "emit_dart_expr lambda_two_params" {
+  let lam = @ast.ELambda(
+    [("a", @ast.MInt), ("b", @ast.MInt)],
+    @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+  )
+  assert_eq(emit_dart_expr(lam), "(a, b) => a + b")
+}
+
+///|
+test "emit_dart_expr lambda_complex_body" {
+  let lam = @ast.ELambda(
+    [("x", @ast.MInt)],
+    @ast.EBinOp("*", @ast.EVar("x"), @ast.EInt(2)),
+  )
+  assert_eq(emit_dart_expr(lam), "(x) => x * 2")
 }

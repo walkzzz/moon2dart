@@ -12,6 +12,7 @@ pub(all) enum DartType {
   DMap(DartType, DartType)
   DSet(DartType)
   DNullable(DartType)
+  DFuture(DartType)
   DCustom(String)
 } derive(Eq, Compare, Debug)
 
@@ -42,6 +43,8 @@ pub fn map_type(t : @ast.MoonType) -> DartType {
     @ast.MMap(k, v) => DMap(map_type(k), map_type(v))
     @ast.MSet(inner) => DSet(map_type(inner))
     @ast.MOption(inner) => DNullable(map_type(inner))
+    @ast.MFuture(inner) => DFuture(map_type(inner))
+    @ast.MTypeVar(name) => DCustom(name)
     @ast.MResult(ok, err) =>
       DCustom("Result<\{emit_dart(map_type(ok))}, \{emit_dart(map_type(err))}>")
     @ast.MCustom(name) => DCustom(name)
@@ -63,6 +66,7 @@ pub fn emit_dart(t : DartType) -> String {
     DMap(k, v) => "Map<\{emit_dart(k)}, \{emit_dart(v)}>"
     DSet(inner) => "Set<\{emit_dart(inner)}>"
     DNullable(inner) => "\{emit_dart(inner)}?"
+    DFuture(inner) => "Future<\{emit_dart(inner)}>"
     DCustom(name) => name
   }
 }

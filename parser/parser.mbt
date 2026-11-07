@@ -39,6 +39,10 @@ pub fn Parser::parse_program(self : Parser) -> Array[@ast.MoonDecl] {
 fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
   let kind = self.peek().kind
   match kind {
+    TkAsync => {
+      let (decl, p) = self.parse_async_fn_decl()
+      (Some(decl), p)
+    }
     TkFn => {
       let (decl, p) = self.parse_fn_decl()
       (Some(decl), p)
@@ -64,14 +68,81 @@ fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
 }
 
 ///|
-/// 解析 fn 声明：fn name(params) -> ret_type { body }
+/// 解析类型参数列表：[T] 或 [T, E]
+fn Parser::parse_type_params(self : Parser) -> (Array[String], Parser) {
+  if !(self.peek().kind is TkLBracket) {
+    return ([], self)
+  }
+  let parser = self.advance()
+  let mut p = parser
+  let params : Array[String] = []
+  while true {
+    let (name, p1) = p.expect_ident()
+    p = p1
+    params.push(name)
+    if p.peek().kind is TkComma {
+      p = p.advance()
+    } else {
+      break
+    }
+  }
+  let p_final = p.expect(TkRBracket)
+  (params, p_final)
+}
+
+///|
+/// 解析 fn 声明：fn name[T](params) -> ret_type { body }
 fn Parser::parse_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkFn)
   let (name, parser) = parser.expect_ident()
+  let (type_params, parser) = parser.parse_type_params()
   let (params, parser2) = parser.parse_params()
   let (ret_type, parser3) = parser2.parse_return_type()
   let (body, p4) = parser3.parse_block_expr()
-  (@ast.DFn(name, params, ret_type, body), p4)
+  (@ast.DFn(name, type_params, params, ret_type, body), p4)
+}
+
+///|
+/// 解析 async fn 声明：async fn name[T](params) -> ret_type { body }
+fn Parser::parse_async_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+  let parser = self.expect(TkAsync)
+  let parser = parser.expect(TkFn)
+  let (name, parser) = parser.expect_ident()
+  let (type_params, parser) = parser.parse_type_params()
+  let (params, parser2) = parser.parse_params()
+  let (ret_type, parser3) = parser2.parse_return_type()
+  let (body, p4) = parser3.parse_block_expr()
+  (@ast.DAsyncFn(name, type_params, params, ret_type, body), p4)
+}
+
+///|
+/// 解析闭包参数列表：(x) 或 (x : Type, y : Type)
+fn Parser::parse_lambda_params(
+  self : Parser,
+) -> (Array[(String, @ast.MoonType)], Parser) {
+  let parser = self.expect(TkLParen)
+  let mut p = parser
+  let params : Array[(String, @ast.MoonType)] = []
+  if !(p.peek().kind is TkRParen) {
+    while true {
+      let (name, p1) = p.expect_ident()
+      let (ty, p2) = if p1.peek().kind is TkColon {
+        let p3 = p1.advance()
+        p3.parse_type()
+      } else {
+        (@ast.MCustom(name), p1)
+      }
+      p = p2
+      params.push((name, ty))
+      if p.peek().kind is TkComma {
+        p = p.advance()
+      } else {
+        break
+      }
+    }
+  }
+  let p_final = p.expect(TkRParen)
+  (params, p_final)
 }
 
 ///|
@@ -112,10 +183,11 @@ fn Parser::parse_return_type(self : Parser) -> (@ast.MoonType, Parser) {
 }
 
 ///|
-/// 解析 struct 声明：struct Name [derive(...)] { field : Type, ... }
+/// 解析 struct 声明：struct Name[T] [derive(...)] { field : Type, ... }
 fn Parser::parse_struct_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkStruct)
   let (name, parser) = parser.expect_ident()
+  let (type_params, parser) = parser.parse_type_params()
   let mut p = parser
   let derives : Array[String] = []
   if p.peek().kind is TkDerive {
@@ -150,7 +222,7 @@ fn Parser::parse_struct_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
     }
   }
   let p_final = p.expect(TkRBrace)
-  (@ast.DStruct(name, fields, derives), p_final)
+  (@ast.DStruct(name, type_params, fields, derives), p_final)
 }
 
 ///|
@@ -374,6 +446,31 @@ fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
         (@ast.EVar(name), parser)
       }
     }
+    TkUIdent => {
+      let name = token.text
+      let parser = self.advance()
+      if parser.peek().kind is TkLParen {
+        let p1 = parser.advance()
+        let mut p = p1
+        let args : Array[@ast.MoonExpr] = []
+        if !(p.peek().kind is TkRParen) {
+          while true {
+            let (arg, p2) = p.parse_expr()
+            p = p2
+            args.push(arg)
+            if p.peek().kind is TkComma {
+              p = p.advance()
+            } else {
+              break
+            }
+          }
+        }
+        let p_final = p.expect(TkRParen)
+        (@ast.ECall(name, args), p_final)
+      } else {
+        (@ast.EVar(name), parser)
+      }
+    }
     TkIf => {
       let parser = self.advance()
       let (cond, p1) = parser.parse_expr()
@@ -391,6 +488,21 @@ fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
       let (scrutinee, p1) = parser.parse_expr()
       let (cases, p2) = p1.parse_match_arms()
       (@ast.EMatch(scrutinee, cases), p2)
+    }
+    TkAwait => {
+      let parser = self.advance()
+      let (inner, p1) = parser.parse_primary()
+      (@ast.EAwait(inner), p1)
+    }
+    TkFn => {
+      let parser = self.advance()
+      if parser.peek().kind is TkLParen {
+        let (params, p1) = parser.parse_lambda_params()
+        let (body, p2) = p1.parse_block_expr()
+        (@ast.ELambda(params, body), p2)
+      } else {
+        (@ast.EInt(0), parser)
+      }
     }
     _ => {
       let parser = self.advance()

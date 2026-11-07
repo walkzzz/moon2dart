@@ -6,18 +6,24 @@ pub fn emit_dart_expr(e : @ast.MoonExpr) -> String {
     @ast.EDouble(d) => d.to_string()
     @ast.EBool(b) => if b { "true" } else { "false" }
     @ast.EString(s) => "\"\{s}\""
-    @ast.EVar(name) => name
-    @ast.ECall(name, args) => {
-      let arg_str = args.map(emit_dart_expr).join(", ")
-      "\{name}(\{arg_str})"
-    }
+    @ast.EVar(name) => if name == "None" { "null" } else { name }
+    @ast.ECall(name, args) =>
+      if name == "Some" && args.length() == 1 {
+        emit_dart_expr(args[0])
+      } else if name == "None" && args.length() == 0 {
+        "null"
+      } else {
+        let arg_str = args.map(emit_dart_expr).join(", ")
+        "\{name}(\{arg_str})"
+      }
     @ast.EBinOp(op, lhs, rhs) =>
       "\{emit_dart_expr(lhs)} \{op} \{emit_dart_expr(rhs)}"
     @ast.EIf(cond, then_, else_) =>
       "\{emit_dart_expr(cond)} ? \{emit_dart_expr(then_)} : \{emit_dart_expr(else_)}"
     @ast.EMatch(scrutinee, cases) => {
       let scrut = emit_dart_expr(scrutinee)
-      let arms = cases
+      let sorted = sort_option_cases(cases)
+      let arms = sorted
         .map(fn(pair) {
           let (pat, body) = pair
           "  \{emit_dart_pattern(pat)} => \{emit_dart_expr(body)}"
@@ -25,7 +31,42 @@ pub fn emit_dart_expr(e : @ast.MoonExpr) -> String {
         .join(",\n")
       "switch (\{scrut}) {\n\{arms}\n}"
     }
+    @ast.EAwait(inner) => "await \{emit_dart_expr(inner)}"
+    @ast.ELambda(params, body) => {
+      let param_str = params
+        .map(fn(pair) {
+          let (pname, _) = pair
+          pname
+        })
+        .join(", ")
+      "(\{param_str}) => \{emit_dart_expr(body)}"
+    }
   }
+}
+
+///|
+/// 将 None pattern（对应 null）的 case 排到最前面，确保 Dart 3 switch expression 中 null case 先匹配。
+fn sort_option_cases(
+  cases : Array[(@ast.MoonPattern, @ast.MoonExpr)],
+) -> Array[(@ast.MoonPattern, @ast.MoonExpr)] {
+  let null_cases : Array[(@ast.MoonPattern, @ast.MoonExpr)] = []
+  let other_cases : Array[(@ast.MoonPattern, @ast.MoonExpr)] = []
+  for c in cases {
+    let (pat, _) = c
+    match pat {
+      @ast.PCtor(name, args) =>
+        if name == "None" && args.length() == 0 {
+          null_cases.push(c)
+        } else {
+          other_cases.push(c)
+        }
+      _ => other_cases.push(c)
+    }
+  }
+  for c in other_cases {
+    null_cases.push(c)
+  }
+  null_cases
 }
 
 ///|
@@ -37,7 +78,11 @@ pub fn emit_dart_pattern(p : @ast.MoonPattern) -> String {
     @ast.PString(s) => "\"\{s}\""
     @ast.PWild => "_"
     @ast.PCtor(name, args) =>
-      if args.length() == 0 {
+      if name == "None" && args.length() == 0 {
+        "null"
+      } else if name == "Some" && args.length() == 1 {
+        emit_dart_pattern(args[0])
+      } else if args.length() == 0 {
         "\{name}()"
       } else {
         let arg_str = args.map(emit_dart_pattern).join(", ")
@@ -50,7 +95,7 @@ pub fn emit_dart_pattern(p : @ast.MoonPattern) -> String {
 /// Dart 声明发射。
 pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
   match d {
-    @ast.DFn(name, params, ret, body) => {
+    @ast.DFn(name, type_params, params, ret, body) => {
       let param_str = params
         .map(fn(pair) {
           let (pname, ptype) = pair
@@ -58,9 +103,29 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
         })
         .join(", ")
       let ret_str = @typesys.emit_dart(@typesys.map_type(ret))
-      "\{ret_str} \{name}(\{param_str}) {\n  return \{emit_dart_expr(body)};\n}"
+      let generic = if type_params.length() > 0 {
+        "<\{type_params.join(", ")}>"
+      } else {
+        ""
+      }
+      "\{ret_str} \{name}\{generic}(\{param_str}) {\n  return \{emit_dart_expr(body)};\n}"
     }
-    @ast.DStruct(name, fields, derives) => {
+    @ast.DAsyncFn(name, type_params, params, ret, body) => {
+      let param_str = params
+        .map(fn(pair) {
+          let (pname, ptype) = pair
+          "\{@typesys.emit_dart(@typesys.map_type(ptype))} \{pname}"
+        })
+        .join(", ")
+      let ret_str = @typesys.emit_dart(@typesys.map_type(ret))
+      let generic = if type_params.length() > 0 {
+        "<\{type_params.join(", ")}>"
+      } else {
+        ""
+      }
+      "Future<\{ret_str}> \{name}\{generic}(\{param_str}) async {\n  return \{emit_dart_expr(body)};\n}"
+    }
+    @ast.DStruct(name, type_params, fields, derives) => {
       let field_str = fields
         .map(fn(pair) {
           let (fname, ftype) = pair
@@ -74,7 +139,12 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
         })
         .join(", ")
       let derive_methods = emit_derive_methods(name, fields, derives)
-      "class \{name} {\n\{field_str}\n  \{name}({\{ctor_params}});\{derive_methods}\n}"
+      let generic = if type_params.length() > 0 {
+        "<\{type_params.join(", ")}>"
+      } else {
+        ""
+      }
+      "class \{name}\{generic} {\n\{field_str}\n  \{name}\{generic}({\{ctor_params}});\{derive_methods}\n}"
     }
     @ast.DEnum(name, variants) => {
       let variant_str = variants
@@ -162,14 +232,103 @@ fn emit_derive_methods(
 }
 
 ///|
-/// 完整程序发射（含文件头，DImpl 合并到 DStruct）。
+/// 完整程序发射（含文件头，DImpl 合并到 DStruct，Result class 自动生成）。
 pub fn emit_dart_program(decls : Array[@ast.MoonDecl]) -> String {
-  let header = "// Generated by moon2dart v0.4.0\n// DO NOT EDIT BY HAND\n\n"
+  let header = "// Generated by moon2dart v0.5.0\n// DO NOT EDIT BY HAND\n\n"
+  let result_class = if needs_result_class(decls) {
+    emit_result_class() + "\n\n"
+  } else {
+    ""
+  }
   let body = decls
     .map(fn(d) { emit_dart_decl_in_program(d, decls) })
     .filter(fn(s) { s != "" })
     .join("\n\n")
-  "\{header}\{body}\n"
+  "\{header}\{result_class}\{body}\n"
+}
+
+///|
+/// 检测声明数组中是否使用了 Result 类型。
+fn needs_result_class(decls : Array[@ast.MoonDecl]) -> Bool {
+  for d in decls {
+    match d {
+      @ast.DFn(_, _, params, ret, _) => {
+        for p in params {
+          let (_, t) = p
+          if type_has_result(t) {
+            return true
+          }
+        }
+        if type_has_result(ret) {
+          return true
+        }
+      }
+      @ast.DAsyncFn(_, _, params, ret, _) => {
+        for p in params {
+          let (_, t) = p
+          if type_has_result(t) {
+            return true
+          }
+        }
+        if type_has_result(ret) {
+          return true
+        }
+      }
+      @ast.DStruct(_, _, fields, _) =>
+        for f in fields {
+          let (_, t) = f
+          if type_has_result(t) {
+            return true
+          }
+        }
+      @ast.DTrait(_, methods) =>
+        for m in methods {
+          for p in m.params {
+            let (_, t) = p
+            if type_has_result(t) {
+              return true
+            }
+          }
+          if type_has_result(m.ret_type) {
+            return true
+          }
+        }
+      @ast.DImpl(_, _, methods) =>
+        for m in methods {
+          for p in m.params {
+            let (_, t) = p
+            if type_has_result(t) {
+              return true
+            }
+          }
+          if type_has_result(m.ret_type) {
+            return true
+          }
+        }
+      _ => ()
+    }
+  }
+  false
+}
+
+///|
+/// 检测类型中是否包含 Result。
+fn type_has_result(t : @ast.MoonType) -> Bool {
+  match t {
+    @ast.MResult(_, _) => true
+    @ast.MArray(inner) => type_has_result(inner)
+    @ast.MMap(k, v) => type_has_result(k) || type_has_result(v)
+    @ast.MSet(inner) => type_has_result(inner)
+    @ast.MOption(inner) => type_has_result(inner)
+    @ast.MFuture(inner) => type_has_result(inner)
+    _ => false
+  }
+}
+
+///|
+/// 生成 Result sealed class 定义。
+fn emit_result_class() -> String {
+  "sealed class Result<T, E> {}\nclass Ok<T, E> extends Result<T, E> {\n  final T value;\n  Ok(this.value);\n}\nclass Err<T, E> extends Result<T, E> {\n  final E error;\n  Err(this.error);\n}"
 }
 
 ///|
@@ -185,10 +344,10 @@ fn emit_dart_decl_in_program(
       } else {
         emit_dart_decl(d)
       }
-    @ast.DStruct(name, fields, derives) => {
+    @ast.DStruct(name, type_params, fields, derives) => {
       let impls = collect_impls_for(all_decls, name)
       if impls.length() > 0 {
-        emit_dart_struct_with_impls(name, fields, derives, impls)
+        emit_dart_struct_with_impls(name, type_params, fields, derives, impls)
       } else {
         emit_dart_decl(d)
       }
@@ -202,7 +361,7 @@ fn emit_dart_decl_in_program(
 fn has_struct_named(decls : Array[@ast.MoonDecl], name : String) -> Bool {
   for d in decls {
     match d {
-      @ast.DStruct(n, _, _) => if n == name { return true }
+      @ast.DStruct(n, _, _, _) => if n == name { return true }
       _ => ()
     }
   }
@@ -232,6 +391,7 @@ fn collect_impls_for(
 /// 发射带 impl 合并的 DStruct — class Name implements Trait1, Trait2 { ... }
 fn emit_dart_struct_with_impls(
   name : String,
+  type_params : Array[String],
   fields : Array[(String, @ast.MoonType)],
   derives : Array[String],
   impls : Array[(String, Array[@ast.ImplMethod])],
@@ -249,6 +409,11 @@ fn emit_dart_struct_with_impls(
     })
     .join(", ")
   let derive_methods = emit_derive_methods(name, fields, derives)
+  let generic = if type_params.length() > 0 {
+    "<\{type_params.join(", ")}>"
+  } else {
+    ""
+  }
   let implements_clause = impls
     .map(fn(pair) {
       let (trait_name, _) = pair
@@ -272,5 +437,5 @@ fn emit_dart_struct_with_impls(
       .join("\n")
     })
     .join("\n")
-  "class \{name} implements \{implements_clause} {\n\{field_str}\n  \{name}({\{ctor_params}});\{derive_methods}\n\{impl_methods}\n}"
+  "class \{name}\{generic} implements \{implements_clause} {\n\{field_str}\n  \{name}\{generic}({\{ctor_params}});\{derive_methods}\n\{impl_methods}\n}"
 }

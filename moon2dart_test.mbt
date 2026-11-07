@@ -6,6 +6,7 @@ test "blackbox: transpile fn" {
   let prog = [
     @ast.DFn(
       "square",
+      [],
       [("x", @ast.MInt)],
       @ast.MInt,
       @ast.EBinOp("*", @ast.EVar("x"), @ast.EVar("x")),
@@ -19,7 +20,7 @@ test "blackbox: transpile fn" {
 ///|
 test "blackbox: transpile struct" {
   let prog = [
-    @ast.DStruct("Point", [("x", @ast.MDouble), ("y", @ast.MDouble)], []),
+    @ast.DStruct("Point", [], [("x", @ast.MDouble), ("y", @ast.MDouble)], []),
   ]
   let result = @moon2dart.transpile(prog)
   assert_true(result.contains("class Point"))

@@ -168,7 +168,7 @@ test "parse_type_option" {
 test "parse_fn_decl" {
   let (decl, _) = make_parser("fn add(a : Int, b : Int) -> Int { a + b }").parse_fn_decl()
   match decl {
-    @ast.DFn(name, params, ret, body) => {
+    @ast.DFn(name, _, params, ret, body) => {
       assert_eq(name, "add")
       assert_eq(params.length(), 2)
       let (p0n, p0t) = params[0]
@@ -189,7 +189,7 @@ test "parse_fn_decl" {
 test "parse_fn_decl_no_ret" {
   let (decl, _) = make_parser("fn foo(x : Int) { x }").parse_fn_decl()
   match decl {
-    @ast.DFn(name, params, ret, body) => {
+    @ast.DFn(name, _, params, ret, body) => {
       assert_eq(name, "foo")
       assert_eq(params.length(), 1)
       assert_true(ret is @ast.MUnit)
@@ -204,7 +204,7 @@ test "parse_fn_decl_no_ret" {
 test "parse_struct_decl" {
   let (decl, _) = make_parser("struct Point { x : Int, y : Int }").parse_struct_decl()
   match decl {
-    @ast.DStruct(name, fields, _) => {
+    @ast.DStruct(name, _, fields, _) => {
       assert_eq(name, "Point")
       assert_eq(fields.length(), 2)
       let (f0n, f0t) = fields[0]
@@ -240,8 +240,8 @@ test "parse_program" {
   let src = "fn id(x : Int) -> Int { x }\nstruct Foo { a : Int }\nenum Bar { A, B }"
   let decls = make_parser(src).parse_program()
   assert_eq(decls.length(), 3)
-  assert_true(decls[0] is @ast.DFn("id", _, _, _))
-  assert_true(decls[1] is @ast.DStruct("Foo", _, _))
+  assert_true(decls[0] is @ast.DFn("id", _, _, _, _))
+  assert_true(decls[1] is @ast.DStruct("Foo", _, _, _))
   assert_true(decls[2] is @ast.DEnum("Bar", _))
 }
 
@@ -318,7 +318,7 @@ test "parse_program_with_trait" {
   let decls = make_parser(src).parse_program()
   assert_eq(decls.length(), 2)
   assert_true(decls[0] is @ast.DTrait("Drawable", _))
-  assert_true(decls[1] is @ast.DStruct("Circle", _, _))
+  assert_true(decls[1] is @ast.DStruct("Circle", _, _, _))
 }
 
 ///|
@@ -407,7 +407,7 @@ test "parse_expr_match_string" {
 test "parse_struct_decl_derive" {
   let (decl, _) = make_parser("struct Point derive(Debug) { x : Int, y : Int }").parse_struct_decl()
   match decl {
-    @ast.DStruct(name, fields, derives) => {
+    @ast.DStruct(name, _, fields, derives) => {
       assert_eq(name, "Point")
       assert_eq(fields.length(), 2)
       assert_eq(derives.length(), 1)
@@ -424,7 +424,7 @@ test "parse_struct_decl_multi_derive" {
     "struct Point derive(Debug, Eq, Compare) { x : Int, y : Int }",
   ).parse_struct_decl()
   match decl {
-    @ast.DStruct(name, fields, derives) => {
+    @ast.DStruct(name, _, fields, derives) => {
       assert_eq(name, "Point")
       assert_eq(fields.length(), 2)
       assert_eq(derives.length(), 3)
@@ -441,7 +441,7 @@ test "parse_struct_decl_multi_derive" {
 test "parse_struct_decl_no_derive" {
   let (decl, _) = make_parser("struct Point { x : Int, y : Int }").parse_struct_decl()
   match decl {
-    @ast.DStruct(name, fields, derives) => {
+    @ast.DStruct(name, _, fields, derives) => {
       assert_eq(name, "Point")
       assert_eq(fields.length(), 2)
       assert_eq(derives.length(), 0)
@@ -495,6 +495,200 @@ test "parse_program_with_impl" {
   let decls = make_parser(src).parse_program()
   assert_eq(decls.length(), 3)
   assert_true(decls[0] is @ast.DTrait("Drawable", _))
-  assert_true(decls[1] is @ast.DStruct("Circle", _, _))
+  assert_true(decls[1] is @ast.DStruct("Circle", _, _, _))
   assert_true(decls[2] is @ast.DImpl("Drawable", "Circle", _))
+}
+
+///|
+/// v0.5.0 S1 async/await 解析测试。
+
+///|
+test "parse_async_fn_decl" {
+  let (decl, _) = make_parser("async fn fetchData() -> String { \"hello\" }").parse_async_fn_decl()
+  match decl {
+    @ast.DAsyncFn(name, _, params, ret, body) => {
+      assert_eq(name, "fetchData")
+      assert_eq(params.length(), 0)
+      assert_true(ret is @ast.MString)
+      assert_true(body is @ast.EString("hello"))
+    }
+    _ => abort("expected DAsyncFn")
+  }
+}
+
+///|
+test "parse_async_fn_decl_with_params" {
+  let src = "async fn compute(x : Int) -> Int { x + 1 }"
+  let (decl, _) = make_parser(src).parse_async_fn_decl()
+  match decl {
+    @ast.DAsyncFn(name, _, params, ret, body) => {
+      assert_eq(name, "compute")
+      assert_eq(params.length(), 1)
+      let (pname, ptype) = params[0]
+      assert_eq(pname, "x")
+      assert_true(ptype is @ast.MInt)
+      assert_true(ret is @ast.MInt)
+      assert_true(body is @ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1)))
+    }
+    _ => abort("expected DAsyncFn")
+  }
+}
+
+///|
+test "parse_expr_await" {
+  let (expr, _) = make_parser("await fetch()").parse_expr()
+  match expr {
+    @ast.EAwait(inner) => assert_true(inner is @ast.ECall("fetch", []))
+    _ => abort("expected EAwait")
+  }
+}
+
+///|
+test "parse_program_with_async_fn" {
+  let src = "async fn fetchData() -> String { \"hello\" }\nfn main() -> Unit { 0 }"
+  let decls = make_parser(src).parse_program()
+  assert_eq(decls.length(), 2)
+  assert_true(decls[0] is @ast.DAsyncFn("fetchData", _, _, _, _))
+  assert_true(decls[1] is @ast.DFn("main", _, _, _, _))
+}
+
+///|
+/// v0.5.0 S4 泛型类型参数解析测试。
+
+///|
+test "parse_generic_fn_decl" {
+  let (decl, _) = make_parser("fn identity[T](x : T) -> T { x }").parse_fn_decl()
+  match decl {
+    @ast.DFn(name, type_params, params, ret, body) => {
+      assert_eq(name, "identity")
+      assert_eq(type_params.length(), 1)
+      assert_eq(type_params[0], "T")
+      assert_eq(params.length(), 1)
+      let (pname, ptype) = params[0]
+      assert_eq(pname, "x")
+      assert_true(ptype is @ast.MCustom("T"))
+      assert_true(ret is @ast.MCustom("T"))
+      assert_true(body is @ast.EVar("x"))
+    }
+    _ => abort("expected DFn")
+  }
+}
+
+///|
+test "parse_generic_fn_multi_params" {
+  let src = "fn map[T, E](x : T) -> E { x }"
+  let (decl, _) = make_parser(src).parse_fn_decl()
+  match decl {
+    @ast.DFn(name, type_params, params, ret, _) => {
+      assert_eq(name, "map")
+      assert_eq(type_params.length(), 2)
+      assert_eq(type_params[0], "T")
+      assert_eq(type_params[1], "E")
+      assert_eq(params.length(), 1)
+      assert_true(ret is @ast.MCustom("E"))
+    }
+    _ => abort("expected DFn")
+  }
+}
+
+///|
+test "parse_generic_struct_decl" {
+  let (decl, _) = make_parser("struct Container[T] { value : T }").parse_struct_decl()
+  match decl {
+    @ast.DStruct(name, type_params, fields, _) => {
+      assert_eq(name, "Container")
+      assert_eq(type_params.length(), 1)
+      assert_eq(type_params[0], "T")
+      assert_eq(fields.length(), 1)
+      let (fname, ftype) = fields[0]
+      assert_eq(fname, "value")
+      assert_true(ftype is @ast.MCustom("T"))
+    }
+    _ => abort("expected DStruct")
+  }
+}
+
+///|
+test "parse_non_generic_fn_no_type_params" {
+  let (decl, _) = make_parser("fn add(a : Int, b : Int) -> Int { a + b }").parse_fn_decl()
+  match decl {
+    @ast.DFn(_, type_params, _, _, _) => assert_eq(type_params.length(), 0)
+    _ => abort("expected DFn")
+  }
+}
+
+///|
+test "parse_generic_async_fn_decl" {
+  let src = "async fn fetch[T]() -> T { x }"
+  let (decl, _) = make_parser(src).parse_async_fn_decl()
+  match decl {
+    @ast.DAsyncFn(name, type_params, params, ret, _) => {
+      assert_eq(name, "fetch")
+      assert_eq(type_params.length(), 1)
+      assert_eq(type_params[0], "T")
+      assert_eq(params.length(), 0)
+      assert_true(ret is @ast.MCustom("T"))
+    }
+    _ => abort("expected DAsyncFn")
+  }
+}
+
+///|
+/// v0.5.0 S5 闭包解析测试。
+
+///|
+test "parse_expr_lambda_no_params" {
+  let (expr, _) = make_parser("fn() { 42 }").parse_expr()
+  match expr {
+    @ast.ELambda(params, body) => {
+      assert_eq(params.length(), 0)
+      assert_true(body is @ast.EInt(42))
+    }
+    _ => abort("expected ELambda")
+  }
+}
+
+///|
+test "parse_expr_lambda_one_param" {
+  let (expr, _) = make_parser("fn(x) { x }").parse_expr()
+  match expr {
+    @ast.ELambda(params, body) => {
+      assert_eq(params.length(), 1)
+      let (pname, _) = params[0]
+      assert_eq(pname, "x")
+      assert_true(body is @ast.EVar("x"))
+    }
+    _ => abort("expected ELambda")
+  }
+}
+
+///|
+test "parse_expr_lambda_two_params" {
+  let (expr, _) = make_parser("fn(a, b) { a + b }").parse_expr()
+  match expr {
+    @ast.ELambda(params, body) => {
+      assert_eq(params.length(), 2)
+      let (p0n, _) = params[0]
+      let (p1n, _) = params[1]
+      assert_eq(p0n, "a")
+      assert_eq(p1n, "b")
+      assert_true(body is @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")))
+    }
+    _ => abort("expected ELambda")
+  }
+}
+
+///|
+test "parse_expr_lambda_with_type" {
+  let (expr, _) = make_parser("fn(x : Int) { x + 1 }").parse_expr()
+  match expr {
+    @ast.ELambda(params, body) => {
+      assert_eq(params.length(), 1)
+      let (pname, ptype) = params[0]
+      assert_eq(pname, "x")
+      assert_true(ptype is @ast.MInt)
+      assert_true(body is @ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1)))
+    }
+    _ => abort("expected ELambda")
+  }
 }

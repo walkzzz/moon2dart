@@ -16,6 +16,8 @@ pub(all) enum MoonType {
   MSet(MoonType)
   MOption(MoonType)
   MResult(MoonType, MoonType)
+  MFuture(MoonType)
+  MTypeVar(String)
   MCustom(String)
 } derive(Eq, Compare, Debug)
 
@@ -40,6 +42,8 @@ pub(all) enum MoonExpr {
   EBinOp(String, MoonExpr, MoonExpr)
   EIf(MoonExpr, MoonExpr, MoonExpr)
   EMatch(MoonExpr, Array[(MoonPattern, MoonExpr)])
+  EAwait(MoonExpr)
+  ELambda(Array[(String, MoonType)], MoonExpr)
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -73,8 +77,9 @@ pub extend MoonPattern with Debug::{to_repr}
 ///|
 /// MoonBit 声明节点。
 pub(all) enum MoonDecl {
-  DFn(String, Array[(String, MoonType)], MoonType, MoonExpr)
-  DStruct(String, Array[(String, MoonType)], Array[String])
+  DFn(String, Array[String], Array[(String, MoonType)], MoonType, MoonExpr)
+  DAsyncFn(String, Array[String], Array[(String, MoonType)], MoonType, MoonExpr)
+  DStruct(String, Array[String], Array[(String, MoonType)], Array[String])
   DEnum(String, Array[String])
   DTrait(String, Array[TraitMethod])
   DImpl(String, String, Array[ImplMethod])

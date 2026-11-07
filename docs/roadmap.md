@@ -97,20 +97,20 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.5.0 — async + Option + Result + 泛型
+## v0.5.0 ✅ — async + Option + Result + 泛型（已完成）
 
 **目标**：支持异步、null safety、错误类型、泛型。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | async/await → Future/await |
-| S2 | Option[T] → T? null safety |
-| S3 | Result[T,E] → 自定义 Result class（sealed class + Ok/Err） |
-| S4 | 泛型类型参数支持（fn<T>、struct<T>、enum<T>） |
-| S5 | 闭包 → 箭头函数 |
-| S6 | 测试 + 文档 |
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | async/await → Future/await | ✅ |
+| S2 | Option[T] → T? null safety | ✅ |
+| S3 | Result[T,E] → 自定义 Result class（sealed class + Ok/Err） | ✅ |
+| S4 | 泛型类型参数支持（fn<T>、struct<T>） | ✅ |
+| S5 | 闭包 → 箭头函数 | ✅ |
+| S6 | 测试 + 文档 | ✅ |
 
-**交付线**：库 API（async/Option/Result/泛型转换）
+**交付**：206 测试（native），async/Option/Result/泛型/闭包转换。
 
 ---
 
