@@ -42,7 +42,8 @@ moon2dart/            # 根包 — transpile 编排入口
 ├── typesys/              # 类型映射
 │   └── mapping.mbt       # DartType + map_type + emit_dart + is_pure
 ├── codegen/              # Dart 代码发射
-│   └── emitter.mbt       # emit_dart_expr / emit_dart_pattern / emit_dart_decl / emit_dart_program
+│   ├── emitter.mbt       # emit_dart_expr / emit_dart_pattern / emit_dart_decl / emit_dart_program
+│   └── flutter_emitter.mbt # emit_flutter_expr / emit_flutter_program / emit_flutter_widget_struct
 └── cmd/main/             # CLI 入口
     └── main.mbt          # 演示模式
 ```
@@ -103,7 +104,13 @@ ast ──> (零依赖)
   - S3 原生库加载配置 ✅（emit_dart_program_with_lib + transpile_source_with_lib，可指定 DynamicLibrary 库名，4 新测试）
   - S4 CLI --pure-only ✅（filter_pure 过滤 DExternFn + transpile_source_pure + CLI --pure-only/--lib 选项，4 新测试）
   - S5 版本号+门禁+文档 ✅（版本 0.6.0，240 测试 native）
-- **v0.7.0** 📋 计划 — Flutter widget 转换
+- **v0.7.0** ✅ 已完成 — Flutter widget 转换（316 测试 native）
+  - S1 Widget 表达式识别 ✅（`codegen/flutter_emitter.mbt` — 50+ Flutter widget 构造器名称识别 + 位置参数→命名参数映射，Text/Container/Row/Column，30 白盒测试）
+  - S2 布局 widget ✅（Stack/Padding/Expanded/Center/SizedBox/Positioned/AspectRatio/ConstrainedBox/LimitedBox/Opacity/Transform/DecoratedBox/ClipRRect/Card/ListTile/Icon/AppBar/Scaffold/MaterialApp 等，20 白盒测试）
+  - S3 状态管理 ✅（`fn xxx() { Widget(...) }` → `class Xxx extends StatelessWidget`；`struct + impl Widget` → StatelessWidget；`struct + impl StatefulWidget` → StatefulWidget + State 类；Widget impl + 其他 trait → `extends StatelessWidget implements OtherTrait`，10 白盒测试）
+  - S4 事件处理 ✅（ElevatedButton/GestureDetector/FloatingActionButton/InkWell → onTap/onPressed lambda；TextField/TextFormField → onChanged + InputDecoration；Switch/Checkbox/Radio/Slider/DropdownButton → value + onChanged，10 白盒测试）
+  - S5 main 入口 ✅（`fn main() { MaterialApp(...) }` → `void main() { runApp(...); }` + `import 'package:flutter/material.dart'`）
+  - S6 版本号+门禁+文档 ✅（版本 0.7.0，316 测试 native，零警告，roadmap/changelog/README 更新）
 - **v0.8.0** 📋 计划 — 自动触发 + 项目同步（核心功能）
 - **v0.9.0** 📋 计划 — MCP 服务器 + Skill（大模型消费）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
@@ -125,16 +132,16 @@ ast ──> (零依赖)
 
 ### 测试
 
-206 个测试，native 后端全通过：
+316 个测试，native 后端全通过：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
-| ast | 7 | 0 |
-| typesys | 7 | 0 |
-| codegen | 39 | 0 |
-| parser | 42 | 0 |
+| ast | 9 | 0 |
+| typesys | 11 | 0 |
+| codegen | 121 | 0 |
+| parser | 38 | 0 |
 | project | 17 | 0 |
-| moon2dart (根) | 36 | 5 |
+| moon2dart (根) | 32 | 5 |
 
 ### 文档
 
