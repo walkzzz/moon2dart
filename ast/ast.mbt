@@ -77,6 +77,7 @@ pub(all) enum MoonDecl {
   DStruct(String, Array[(String, MoonType)], Array[String])
   DEnum(String, Array[String])
   DTrait(String, Array[TraitMethod])
+  DImpl(String, String, Array[ImplMethod])
 } derive(Eq, Compare, Debug)
 
 ///|
@@ -104,3 +105,21 @@ pub extend TraitMethod with Compare::{op_lt, op_le, op_ge, compare, op_gt}
 
 ///|
 pub extend TraitMethod with Debug::{to_repr}
+
+///|
+/// impl 方法实现 — 方法名 + 参数列表 + 返回类型 + 方法体。
+pub(all) struct ImplMethod {
+  name : String
+  params : Array[(String, MoonType)]
+  ret_type : MoonType
+  body : MoonExpr
+} derive(Eq, Compare, Debug)
+
+///|
+pub extend ImplMethod with Eq::{equal, not_equal}
+
+///|
+pub extend ImplMethod with Compare::{op_lt, op_le, op_ge, compare, op_gt}
+
+///|
+pub extend ImplMethod with Debug::{to_repr}

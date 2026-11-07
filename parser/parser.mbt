@@ -55,6 +55,10 @@ fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
       let (decl, p) = self.parse_trait_decl()
       (Some(decl), p)
     }
+    TkImpl => {
+      let (decl, p) = self.parse_impl_decl()
+      (Some(decl), p)
+    }
     _ => (None, self)
   }
 }
@@ -201,6 +205,33 @@ fn Parser::parse_trait_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 }
 
 ///|
+/// 解析 impl 声明：impl Trait for Type { fn method(params) -> ret_type { body } ... }
+fn Parser::parse_impl_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+  let parser = self.expect(TkImpl)
+  let (trait_name, parser) = parser.expect_ident()
+  let parser = parser.expect(TkFor)
+  let (type_name, parser) = parser.expect_ident()
+  let parser = parser.expect(TkLBrace)
+  let mut p = parser
+  let methods : Array[@ast.ImplMethod] = []
+  while !(p.peek().kind is TkRBrace) {
+    if p.peek().kind is TkFn {
+      let p1 = p.expect(TkFn)
+      let (mname, p2) = p1.expect_ident()
+      let (params, p3) = p2.parse_params()
+      let (ret_type, p4) = p3.parse_return_type()
+      let (body, p5) = p4.parse_block_expr()
+      p = p5
+      methods.push({ name: mname, params, ret_type, body, })
+    } else {
+      p = p.advance()
+    }
+  }
+  let p_final = p.expect(TkRBrace)
+  (@ast.DImpl(trait_name, type_name, methods), p_final)
+}
+
+///|
 /// 解析类型注解。
 fn Parser::parse_type(self : Parser) -> (@ast.MoonType, Parser) {
   let (name, parser) = self.expect_ident()
@@ -245,7 +276,7 @@ fn Parser::parse_type(self : Parser) -> (@ast.MoonType, Parser) {
       let p5 = p4.expect(TkRBracket)
       (@ast.MResult(t, e), p5)
     }
-    _ => (@ast.MInt, parser)
+    _ => (@ast.MCustom(name), parser)
   }
   (ty, p)
 }

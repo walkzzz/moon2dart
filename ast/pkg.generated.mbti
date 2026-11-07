@@ -10,11 +10,27 @@ import {
 // Errors
 
 // Types and methods
+pub(all) struct ImplMethod {
+  name : String
+  params : Array[(String, MoonType)]
+  ret_type : MoonType
+  body : MoonExpr
+} derive(Compare, Eq, @debug.Debug)
+pub fn ImplMethod::compare(Self, Self) -> Int32
+pub fn ImplMethod::equal(Self, Self) -> Bool
+pub fn ImplMethod::not_equal(Self, Self) -> Bool
+pub fn ImplMethod::op_ge(Self, Self) -> Bool
+pub fn ImplMethod::op_gt(Self, Self) -> Bool
+pub fn ImplMethod::op_le(Self, Self) -> Bool
+pub fn ImplMethod::op_lt(Self, Self) -> Bool
+pub fn ImplMethod::to_repr(Self) -> @debug.Repr
+
 pub(all) enum MoonDecl {
   DFn(String, Array[(String, MoonType)], MoonType, MoonExpr)
   DStruct(String, Array[(String, MoonType)], Array[String])
   DEnum(String, Array[String])
   DTrait(String, Array[TraitMethod])
+  DImpl(String, String, Array[ImplMethod])
 } derive(Compare, Eq, @debug.Debug)
 pub fn MoonDecl::compare(Self, Self) -> Int32
 pub fn MoonDecl::equal(Self, Self) -> Bool

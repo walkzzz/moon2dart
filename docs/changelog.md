@@ -4,13 +4,16 @@
 
 ### 新增
 - `ast/ast.mbt`：DTrait 声明节点 + TraitMethod struct（trait → abstract class）
-- `parser/parser.mbt`：parse_trait_decl / parse_match_arms / parse_pattern（trait + match 解析）
+- `ast/ast.mbt`：DImpl 声明节点 + ImplMethod struct（impl Trait for Type → implements）
+- `parser/parser.mbt`：parse_trait_decl / parse_match_arms / parse_pattern / parse_impl_decl
 - `codegen/emitter.mbt`：emit_derive_methods（Debug→toString, Eq→operator==, Compare→compareTo）
+- `codegen/emitter.mbt`：emit_dart_program 合并 DImpl 到 DStruct（`class Type implements Trait`）
 - DStruct 添加第三个参数 `Array[String]`（derive 列表），parser 支持 `struct Name derive(...) { }` 语法
 - match 表达式 → Dart 3 switch expression（含 PVar/PInt/PString/PWild/PCtor 模式）
+- parse_type 自定义类型 fallback 改为 MCustom(name)（之前错误返回 MInt）
 
 ### 改进
-- 测试 83 → 114（× 4 后端）
+- 测试 83 → 125（× 4 后端）
 - parse_pattern 中 `_` 标识符特殊处理为 PWild
 - PCtor 空参数生成 `Name()`（Dart 3 语法）
 

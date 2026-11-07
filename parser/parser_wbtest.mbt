@@ -449,3 +449,52 @@ test "parse_struct_decl_no_derive" {
     _ => abort("expected DStruct")
   }
 }
+
+///|
+/// 测试解析 impl 声明（基本）。
+test "parse_impl_decl" {
+  let src = "impl Drawable for Circle { fn draw() -> Unit { 0 } }"
+  let (decl, _) = make_parser(src).parse_impl_decl()
+  match decl {
+    @ast.DImpl(trait_name, type_name, methods) => {
+      assert_eq(trait_name, "Drawable")
+      assert_eq(type_name, "Circle")
+      assert_eq(methods.length(), 1)
+      assert_eq(methods[0].name, "draw")
+      assert_true(methods[0].ret_type is @ast.MUnit)
+    }
+    _ => abort("expected DImpl")
+  }
+}
+
+///|
+/// 测试解析带参数的 impl 声明。
+test "parse_impl_decl_with_params" {
+  let src = "impl Comparable for Circle { fn compare(other : Circle) -> Int { 0 } }"
+  let (decl, _) = make_parser(src).parse_impl_decl()
+  match decl {
+    @ast.DImpl(trait_name, type_name, methods) => {
+      assert_eq(trait_name, "Comparable")
+      assert_eq(type_name, "Circle")
+      assert_eq(methods.length(), 1)
+      assert_eq(methods[0].name, "compare")
+      assert_eq(methods[0].params.length(), 1)
+      let (pname, ptype) = methods[0].params[0]
+      assert_eq(pname, "other")
+      assert_true(ptype is @ast.MCustom("Circle"))
+      assert_true(methods[0].ret_type is @ast.MInt)
+    }
+    _ => abort("expected DImpl")
+  }
+}
+
+///|
+/// 测试解析包含 impl 的完整程序。
+test "parse_program_with_impl" {
+  let src = "trait Drawable { fn draw() -> Unit; }\nstruct Circle { r : Double }\nimpl Drawable for Circle { fn draw() -> Unit { 0 } }"
+  let decls = make_parser(src).parse_program()
+  assert_eq(decls.length(), 3)
+  assert_true(decls[0] is @ast.DTrait("Drawable", _))
+  assert_true(decls[1] is @ast.DStruct("Circle", _, _))
+  assert_true(decls[2] is @ast.DImpl("Drawable", "Circle", _))
+}

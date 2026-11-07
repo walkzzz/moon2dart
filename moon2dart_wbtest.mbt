@@ -199,3 +199,33 @@ test "transpile_source struct_derive_all" {
   assert_true(result.contains("operator=="))
   assert_true(result.contains("compareTo"))
 }
+
+///|
+/// v0.3.0 S4 impl 转换管线测试。
+
+///|
+test "transpile_source impl" {
+  let src = "trait Drawable { fn draw() -> Unit; }\nimpl Drawable for Circle { fn draw() -> Unit { 0 } }"
+  let result = transpile_source(src)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("class Circle implements Drawable"))
+  assert_true(result.contains("void draw()"))
+}
+
+///|
+test "transpile_source struct_with_impl" {
+  let src = "trait Drawable { fn draw() -> Unit; }\nstruct Circle { r : Double }\nimpl Drawable for Circle { fn draw() -> Unit { 0 } }"
+  let result = transpile_source(src)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("class Circle implements Drawable"))
+  assert_true(result.contains("double r;"))
+  assert_true(result.contains("void draw()"))
+}
+
+///|
+test "transpile_source impl_with_params" {
+  let src = "trait Comparable { fn compare(other : Int) -> Int; }\nimpl Comparable for Foo { fn compare(other : Int) -> Int { 0 } }"
+  let result = transpile_source(src)
+  assert_true(result.contains("class Foo implements Comparable"))
+  assert_true(result.contains("int compare(int other)"))
+}

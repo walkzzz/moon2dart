@@ -209,3 +209,92 @@ test "emit_dart_decl struct_no_derive" {
   assert_true(!result.contains("operator=="))
   assert_true(!result.contains("compareTo"))
 }
+
+///|
+/// v0.3.0 S4 impl 转换测试。
+
+///|
+test "emit_dart_decl impl" {
+  let impl_ = @ast.DImpl("Drawable", "Circle", [
+    { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
+  ])
+  let result = emit_dart_decl(impl_)
+  assert_true(result.contains("class Circle implements Drawable"))
+  assert_true(result.contains("void draw()"))
+}
+
+///|
+test "emit_dart_decl impl_with_params" {
+  let impl_ = @ast.DImpl("Comparable", "Circle", [
+    {
+      name: "compare",
+      params: [("other", @ast.MCustom("Circle"))],
+      ret_type: @ast.MInt,
+      body: @ast.EInt(0),
+    },
+  ])
+  let result = emit_dart_decl(impl_)
+  assert_true(result.contains("class Circle implements Comparable"))
+  assert_true(result.contains("int compare(Circle other)"))
+}
+
+///|
+test "emit_dart_program struct_with_impl" {
+  let prog = [
+    @ast.DTrait("Drawable", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, },
+    ]),
+    @ast.DStruct("Circle", [("r", @ast.MDouble)], []),
+    @ast.DImpl("Drawable", "Circle", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
+    ]),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("abstract class Drawable"))
+  assert_true(result.contains("class Circle implements Drawable"))
+  assert_true(result.contains("void draw()"))
+}
+
+///|
+test "emit_dart_program struct_with_multi_impl" {
+  let prog = [
+    @ast.DTrait("Drawable", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, },
+    ]),
+    @ast.DTrait("Comparable", [
+      {
+        name: "compare",
+        params: [("other", @ast.MCustom("Circle"))],
+        ret_type: @ast.MInt,
+      },
+    ]),
+    @ast.DStruct("Circle", [("r", @ast.MDouble)], []),
+    @ast.DImpl("Drawable", "Circle", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
+    ]),
+    @ast.DImpl("Comparable", "Circle", [
+      {
+        name: "compare",
+        params: [("other", @ast.MCustom("Circle"))],
+        ret_type: @ast.MInt,
+        body: @ast.EInt(0),
+      },
+    ]),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("class Circle implements Drawable, Comparable"))
+}
+
+///|
+test "emit_dart_program impl_no_struct" {
+  let prog = [
+    @ast.DTrait("Drawable", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, },
+    ]),
+    @ast.DImpl("Drawable", "Circle", [
+      { name: "draw", params: [], ret_type: @ast.MUnit, body: @ast.EInt(0), },
+    ]),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("class Circle implements Drawable"))
+}
