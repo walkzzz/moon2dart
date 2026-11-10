@@ -1,0 +1,30 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/reverse_codegen"
+
+import {
+  "walkzzz/moon2dart/ast",
+  "walkzzz/moon2dart/dart_ast",
+}
+
+// Values
+pub fn dart_type_to_moon(@dart_ast.DartType) -> String
+
+pub fn dart_type_to_moon_ast(@dart_ast.DartType) -> @ast.MoonType
+
+pub fn emit_moon_decl(@dart_ast.DartDecl) -> String
+
+pub fn emit_moon_expr(@dart_ast.DartExpr) -> String
+
+pub fn emit_moon_pattern(@dart_ast.DartPattern) -> String
+
+pub fn emit_moon_program(Array[@dart_ast.DartDecl]) -> String
+
+pub fn reverse_transpile_source(String) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

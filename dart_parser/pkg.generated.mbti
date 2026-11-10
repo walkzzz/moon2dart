@@ -1,0 +1,148 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/dart_parser"
+
+import {
+  "moonbitlang/core/debug",
+  "walkzzz/moon2dart/dart_ast",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub struct DartLexer {
+  chars : Array[Char]
+  pos : Int32
+  line : Int32
+  col : Int32
+  tokens : Array[DartToken]
+}
+pub fn DartLexer::make(String) -> Self
+pub fn DartLexer::tokenize(Self) -> Array[DartToken]
+
+pub struct DartParser {
+  tokens : Array[DartToken]
+  pos : Int32
+}
+pub fn DartParser::make(Array[DartToken]) -> Self
+pub fn DartParser::parse_expr(Self) -> (@dart_ast.DartExpr, Self)
+pub fn DartParser::parse_program(Self) -> Array[@dart_ast.DartDecl]
+
+pub(all) struct DartToken {
+  kind : DartTokenKind
+  text : String
+  line : Int32
+  col : Int32
+} derive(Eq, @debug.Debug)
+pub fn DartToken::equal(Self, Self) -> Bool
+pub fn DartToken::not_equal(Self, Self) -> Bool
+pub fn DartToken::to_repr(Self) -> @debug.Repr
+
+pub(all) enum DartTokenKind {
+  DtInt
+  DtDouble
+  DtString
+  DtIdent
+  DtUIdent
+  DtClass
+  DtSealed
+  DtAbstract
+  DtExtends
+  DtImplements
+  DtReturn
+  DtIf
+  DtElse
+  DtSwitch
+  DtAwait
+  DtAsync
+  DtNull
+  DtTrue
+  DtFalse
+  DtFinal
+  DtVar
+  DtConst
+  DtRequired
+  DtThis
+  DtOverride
+  DtStatic
+  DtEnum
+  DtMixin
+  DtWith
+  DtOn
+  DtIs
+  DtAs
+  DtTry
+  DtCatch
+  DtFinally
+  DtThrow
+  DtNew
+  DtGet
+  DtSet
+  DtFactory
+  DtOperator
+  DtTypedef
+  DtDynamic
+  DtLate
+  DtExternal
+  DtFor
+  DtWhile
+  DtDo
+  DtIn
+  DtYield
+  DtImport
+  DtExport
+  DtPart
+  DtShow
+  DtHide
+  DtDeferred
+  DtVoid
+  DtIntType
+  DtDoubleType
+  DtStringType
+  DtBoolType
+  DtListType
+  DtMapType
+  DtSetType
+  DtFutureType
+  DtPlus
+  DtMinus
+  DtStar
+  DtSlash
+  DtPercent
+  DtEqEq
+  DtNotEq
+  DtLt
+  DtGt
+  DtLeEq
+  DtGrEq
+  DtAndAnd
+  DtOrOr
+  DtNot
+  DtAssign
+  DtArrow
+  DtNullAware
+  DtNullCoalesce
+  DtCascade
+  DtQuestion
+  DtLParen
+  DtRParen
+  DtLBracket
+  DtRBracket
+  DtLBrace
+  DtRBrace
+  DtComma
+  DtSemi
+  DtColon
+  DtDot
+  DtAt
+  DtEof
+  DtError
+} derive(Eq, @debug.Debug)
+pub fn DartTokenKind::equal(Self, Self) -> Bool
+pub fn DartTokenKind::not_equal(Self, Self) -> Bool
+pub fn DartTokenKind::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

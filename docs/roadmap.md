@@ -1,10 +1,10 @@
 # moon2dart 迭代路线图
 
-> 已实现 v0.1.0-v0.2.0 · 2026-11-07 | 更新 v0.3.0-v1.0.0 规划
+> 已实现 v0.1.0-v0.8.0 · 2026-11-11 | 更新 v0.9.0-v1.0.0 规划
 
 ## 最终目标
 
-开发者引入 moon2dart 后，**自动将整个 MoonBit 项目转换为同步的 Flutter/Dart 项目**。
+开发者引入 moon2dart 后，**双向转换 MoonBit ↔ Dart/Flutter 项目**。
 
 ### 四条交付线
 
@@ -21,11 +21,12 @@
 v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0
 transpiler   parser     trait      项目级     async
 骨架         源码→AST   模式匹配    扫描       Option
-  ✅
+  ✅           ✅          ✅         ✅         ✅
 
 v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v1.0.0
-async      FFI       Flutter     自动       MCP+Skill   完整
-Option     混合      widget      触发同步    大模型消费   发布
+async      FFI       Flutter     Dart→MB    MCP+Skill   完整
+Option     混合      widget      反向骨架    大模型消费   发布
+  ✅           ✅          ✅         ✅
 ```
 
 ---
@@ -147,47 +148,51 @@ Option     混合      widget      触发同步    大模型消费   发布
 
 ---
 
-## v0.8.0 — 自动触发 + 项目同步（核心功能）
+## v0.8.0 ✅ — Dart → MoonBit 反向转换骨架（已完成）
 
-**目标**：引入库后自动触发项目转换，支持增量同步。
+**目标**：建立反向转换管线，支持 Dart 源码 → MoonBit 源码。
+
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | dart_ast 包：DartType/DartExpr/DartPattern/DartDecl/DartMethod/DartVariant（14 白盒测试） | ✅ |
+| S2 | dart_parser 包：DartLexer（DartTokenKind 67 变体）+ DartParser（fn/class/sealed/abstract/expr） | ✅ |
+| S3 | reverse_codegen 包：dart_type_to_moon/emit_moon_expr/emit_moon_decl/emit_moon_program | ✅ |
+| S4 | 根包 reverse_transpile/reverse_transpile_source API | ✅ |
+| S5 | CLI `--reverse` 选项（convert <file.dart> --reverse） | ✅ |
+| S6 | 测试 + 文档 | ✅ |
+
+**交付**：347 测试（native），Dart→MoonBit 反向转换管线，CLI `--reverse` 选项。
+
+**新增 API**：
+- `reverse_transpile(decls)` — Dart AST → MoonBit 源码
+- `reverse_transpile_source(src)` — Dart 源码 → MoonBit 源码
+- `reverse_transpile_type(t)` — Dart 类型 → MoonBit 类型字符串
+- `reverse_transpile_expr(e)` — Dart 表达式 → MoonBit 表达式字符串
+- `reverse_transpile_decl(d)` — Dart 声明 → MoonBit 声明字符串
+
+**新增包**：
+- `dart_ast/` — Dart AST 节点定义（零依赖）
+- `dart_parser/` — Dart 词法+语法分析（依赖 dart_ast）
+- `reverse_codegen/` — Dart AST → MoonBit 代码发射（依赖 dart_ast + ast + dart_parser）
+
+---
+
+## v0.9.0 — 自动触发 + 项目同步 + MCP/Skill
+
+**目标**：引入库后自动触发项目转换，支持增量同步；MCP 服务器和 Skill 让大模型 Agent 能调用 moon2dart。
 
 | Sprint | 内容 |
 |--------|------|
 | S1 | 引入库自动触发机制（moon.pkg hook / build script） |
 | S2 | 文件变更检测（增量更新，只转换变更文件） |
-| S3 | 项目同步（MoonBit ↔ Dart 保持同步） |
+| S3 | 项目同步（MoonBit ↔ Dart 保持双向同步） |
 | S4 | CLI `moon2dart sync` / `moon2dart watch` 子命令 |
-| S5 | 配置文件（moon2dart.toml — 排除规则/映射规则/输出路径） |
-| S6 | 测试 + 文档 |
+| S5 | MCP 服务器骨架（JSON-RPC + stdio） |
+| S6 | MCP 工具定义（convert/project/sync/analyze/reverse） |
+| S7 | Skill 描述符（mooncakes.io/skills 发布格式） |
+| S8 | 测试 + 文档 |
 
-**交付线**：库 API（auto_transpile）、CLI（`sync`/`watch` 子命令）
-
----
-
-## v0.9.0 — MCP 服务器 + Skill（大模型消费）
-
-**目标**：开发 MCP 服务器和 Skill，让大模型 Agent 能调用 moon2dart。
-
-| Sprint | 内容 |
-|--------|------|
-| S1 | MCP 服务器骨架（JSON-RPC + stdio，参考 chrono_tz-mbt/cmd/mcp） |
-| S2 | MCP 工具定义（convert/project/sync/analyze/format/list_tools） |
-| S3 | Skill 描述符（mooncakes.io/skills 发布格式 — SKILL.md + 工具清单） |
-| S4 | CLI `moon2dart serve` 启动 MCP 服务器 |
-| S5 | 测试 + 文档 |
-
-**MCP 工具清单**：
-
-| 工具 | 参数 | 功能 |
-|------|------|------|
-| `moon2dart_convert` | `{file: string, output?: string}` | 单文件转换 |
-| `moon2dart_project` | `{dir: string, output: string}` | 项目级转换 |
-| `moon2dart_sync` | `{dir: string, watch?: bool}` | 项目同步 |
-| `moon2dart_analyze` | `{file: string}` | 分析 MoonBit 代码结构 |
-| `moon2dart_format` | `{code: string}` | 格式化生成的 Dart 代码 |
-| `moon2dart_list_tools` | `{}` | 列出所有可用工具 |
-
-**交付线**：CLI（`serve` 子命令）、Skill、MCP 服务器
+**交付线**：库 API（auto_transpile）、CLI（`sync`/`watch`/`serve` 子命令）、Skill、MCP 服务器
 
 ---
 
@@ -219,8 +224,8 @@ Option     混合      widget      触发同步    大模型消费   发布
 | v0.5.0 | 🟢 低 | async/Option 语义近似 |
 | v0.6.0 | 🔴 高 | FFI 桥接复杂，类型安全难保证 |
 | v0.7.0 | 🟡 中 | widget 映射主观，需定义 UI 抽象层 |
-| v0.8.0 | 🔴 高 | 自动触发依赖 MoonBit build hook（机制不成熟） |
-| v0.9.0 | 🟡 中 | MCP/Skill 规范待确认 |
+| v0.8.0 ✅ | � 中 | Dart 语法复杂，parser 工作量大 |
+| v0.9.0 | �🔴 高 | 自动触发依赖 MoonBit build hook（机制不成熟）+ MCP/Skill 规范待确认 |
 | v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
 
 ## 技术参考

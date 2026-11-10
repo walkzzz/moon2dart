@@ -1,0 +1,124 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/dart_ast"
+
+import {
+  "moonbitlang/core/debug",
+}
+
+// Values
+
+// Errors
+
+// Types and methods
+pub(all) enum DartDecl {
+  DTopFn(String, Array[String], Array[(String, DartType)], DartType, DartExpr)
+  DAsyncTopFn(String, Array[String], Array[(String, DartType)], DartType, DartExpr)
+  DClass(String, Array[String], Array[(String, DartType)], Array[DartMethod])
+  DSealedClass(String, Array[DartVariant])
+  DAbstractClass(String, Array[DartMethod])
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartDecl::compare(Self, Self) -> Int32
+pub fn DartDecl::equal(Self, Self) -> Bool
+pub fn DartDecl::not_equal(Self, Self) -> Bool
+pub fn DartDecl::op_ge(Self, Self) -> Bool
+pub fn DartDecl::op_gt(Self, Self) -> Bool
+pub fn DartDecl::op_le(Self, Self) -> Bool
+pub fn DartDecl::op_lt(Self, Self) -> Bool
+pub fn DartDecl::to_repr(Self) -> @debug.Repr
+
+pub(all) enum DartExpr {
+  DIntLit(Int32)
+  DDoubleLit(Double)
+  DBoolLit(Bool)
+  DStringLit(String)
+  DVarRef(String)
+  DMethodCall(String, String, Array[DartExpr])
+  DFunctionCall(String, Array[DartExpr])
+  DBinOp(String, DartExpr, DartExpr)
+  DIfExpr(DartExpr, DartExpr, DartExpr)
+  DSwitchExpr(DartExpr, Array[(DartPattern, DartExpr)])
+  DAwaitExpr(DartExpr)
+  DArrowFn(Array[String], DartExpr)
+  DNullLit
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartExpr::compare(Self, Self) -> Int32
+pub fn DartExpr::equal(Self, Self) -> Bool
+pub fn DartExpr::not_equal(Self, Self) -> Bool
+pub fn DartExpr::op_ge(Self, Self) -> Bool
+pub fn DartExpr::op_gt(Self, Self) -> Bool
+pub fn DartExpr::op_le(Self, Self) -> Bool
+pub fn DartExpr::op_lt(Self, Self) -> Bool
+pub fn DartExpr::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DartMethod {
+  name : String
+  params : Array[(String, DartType)]
+  ret_type : DartType
+  body : DartExpr
+  is_async : Bool
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartMethod::compare(Self, Self) -> Int32
+pub fn DartMethod::equal(Self, Self) -> Bool
+pub fn DartMethod::not_equal(Self, Self) -> Bool
+pub fn DartMethod::op_ge(Self, Self) -> Bool
+pub fn DartMethod::op_gt(Self, Self) -> Bool
+pub fn DartMethod::op_le(Self, Self) -> Bool
+pub fn DartMethod::op_lt(Self, Self) -> Bool
+pub fn DartMethod::to_repr(Self) -> @debug.Repr
+
+pub(all) enum DartPattern {
+  DPVar(String)
+  DPInt(Int32)
+  DPString(String)
+  DPWild
+  DPNull
+  DPCtor(String, Array[DartPattern])
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartPattern::compare(Self, Self) -> Int32
+pub fn DartPattern::equal(Self, Self) -> Bool
+pub fn DartPattern::not_equal(Self, Self) -> Bool
+pub fn DartPattern::op_ge(Self, Self) -> Bool
+pub fn DartPattern::op_gt(Self, Self) -> Bool
+pub fn DartPattern::op_le(Self, Self) -> Bool
+pub fn DartPattern::op_lt(Self, Self) -> Bool
+pub fn DartPattern::to_repr(Self) -> @debug.Repr
+
+pub(all) enum DartType {
+  DInt
+  DDouble
+  DBool
+  DString
+  DRune
+  DVoid
+  DList(DartType)
+  DMap(DartType, DartType)
+  DSet(DartType)
+  DNullable(DartType)
+  DFuture(DartType)
+  DCustom(String)
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartType::compare(Self, Self) -> Int32
+pub fn DartType::equal(Self, Self) -> Bool
+pub fn DartType::not_equal(Self, Self) -> Bool
+pub fn DartType::op_ge(Self, Self) -> Bool
+pub fn DartType::op_gt(Self, Self) -> Bool
+pub fn DartType::op_le(Self, Self) -> Bool
+pub fn DartType::op_lt(Self, Self) -> Bool
+pub fn DartType::to_repr(Self) -> @debug.Repr
+
+pub(all) struct DartVariant {
+  name : String
+  fields : Array[(String, DartType)]
+} derive(Compare, Eq, @debug.Debug)
+pub fn DartVariant::compare(Self, Self) -> Int32
+pub fn DartVariant::equal(Self, Self) -> Bool
+pub fn DartVariant::not_equal(Self, Self) -> Bool
+pub fn DartVariant::op_ge(Self, Self) -> Bool
+pub fn DartVariant::op_gt(Self, Self) -> Bool
+pub fn DartVariant::op_le(Self, Self) -> Bool
+pub fn DartVariant::op_lt(Self, Self) -> Bool
+pub fn DartVariant::to_repr(Self) -> @debug.Repr
+
+// Type aliases
+
+// Traits

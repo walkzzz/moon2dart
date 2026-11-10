@@ -71,3 +71,36 @@ pub fn transpile_source_flutter(src : String) -> String {
   let decls = @parser.Parser::make(tokens).parse_program()
   @codegen.emit_flutter_program(decls)
 }
+
+///|
+// === 反向转换 API（Dart → MoonBit）===
+
+///|
+/// 反向转换 — Dart AST 声明数组 → MoonBit 源码字符串。
+pub fn reverse_transpile(decls : Array[@dart_ast.DartDecl]) -> String {
+  @reverse_codegen.emit_moon_program(decls)
+}
+
+///|
+/// 反向转换管线 — Dart 源码字符串 → MoonBit 源码字符串。
+pub fn reverse_transpile_source(src : String) -> String {
+  @reverse_codegen.reverse_transpile_source(src)
+}
+
+///|
+/// 便捷：Dart 类型 → MoonBit 类型字符串。
+pub fn reverse_transpile_type(t : @dart_ast.DartType) -> String {
+  @reverse_codegen.dart_type_to_moon(t)
+}
+
+///|
+/// 便捷：Dart 表达式 → MoonBit 表达式字符串。
+pub fn reverse_transpile_expr(e : @dart_ast.DartExpr) -> String {
+  @reverse_codegen.emit_moon_expr(e)
+}
+
+///|
+/// 便捷：Dart 声明 → MoonBit 声明字符串。
+pub fn reverse_transpile_decl(d : @dart_ast.DartDecl) -> String {
+  @reverse_codegen.emit_moon_decl(d)
+}

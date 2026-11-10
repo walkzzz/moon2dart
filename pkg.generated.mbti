@@ -3,9 +3,20 @@ package "walkzzz/moon2dart"
 
 import {
   "walkzzz/moon2dart/ast",
+  "walkzzz/moon2dart/dart_ast",
 }
 
 // Values
+pub fn reverse_transpile(Array[@dart_ast.DartDecl]) -> String
+
+pub fn reverse_transpile_decl(@dart_ast.DartDecl) -> String
+
+pub fn reverse_transpile_expr(@dart_ast.DartExpr) -> String
+
+pub fn reverse_transpile_source(String) -> String
+
+pub fn reverse_transpile_type(@dart_ast.DartType) -> String
+
 pub fn transpile(Array[@ast.MoonDecl]) -> String
 
 pub fn transpile_decl(@ast.MoonDecl) -> String

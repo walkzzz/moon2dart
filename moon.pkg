@@ -3,4 +3,6 @@ import {
   "walkzzz/moon2dart/typesys",
   "walkzzz/moon2dart/codegen",
   "walkzzz/moon2dart/parser",
+  "walkzzz/moon2dart/dart_ast",
+  "walkzzz/moon2dart/reverse_codegen",
 }

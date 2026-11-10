@@ -1,8 +1,9 @@
 ///|
-/// moon2dart CLI — MoonBit → Dart 转换工具。
+/// moon2dart CLI — MoonBit ↔ Dart 双向转换工具。
 ///
 /// 用法：
 ///   moon2dart convert <file.mbt>    转换 .mbt 文件为 Dart 代码
+///   moon2dart convert <file.dart> --reverse  转换 .dart 文件为 MoonBit 代码
 ///   moon2dart project <dir> -o <output>  转换整个 MoonBit 项目为 Dart 项目
 ///   moon2dart demo                  演示模式（内置示例）
 ///   moon2dart help                  显示帮助
@@ -14,19 +15,25 @@
 // ============================================================
 
 ///|
-/// convert — 转换 .mbt 文件为 Dart 代码。
+/// convert — 转换文件（默认 MoonBit→Dart，--reverse 时 Dart→MoonBit）。
 async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
-    println("Usage: moon2dart convert <file.mbt> [--pure-only] [--lib <name>]")
+    println(
+      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--lib <name>]",
+    )
     return
   }
   let path = args[0]
+  let mut reverse = false
   let mut pure_only = false
   let mut lib_name = "libnative.so"
   let mut i = 1
   while i < args.length() {
-    if args[i] == "--pure-only" {
+    if args[i] == "--reverse" {
+      reverse = true
+      i = i + 1
+    } else if args[i] == "--pure-only" {
       pure_only = true
       i = i + 1
     } else if args[i] == "--lib" && i + 1 < args.length() {
@@ -42,12 +49,16 @@ async fn cmd_convert(args : Array[String]) -> Unit {
       return
     }
   }
-  let dart_code = if pure_only {
-    @lib.transpile_source_pure(content)
+  if reverse {
+    let moon_code = @lib.reverse_transpile_source(content)
+    println(moon_code)
+  } else if pure_only {
+    let dart_code = @lib.transpile_source_pure(content)
+    println(dart_code)
   } else {
-    @lib.transpile_source_with_lib(content, lib_name)
+    let dart_code = @lib.transpile_source_with_lib(content, lib_name)
+    println(dart_code)
   }
-  println(dart_code)
 }
 
 ///|
@@ -117,17 +128,18 @@ fn cmd_demo(_args : Array[String]) -> Unit {
   let dart_code = @lib.transpile(demo)
   println(dart_code)
   println("---")
-  println("moon2dart v0.7.0 — MoonBit → Dart transpiler (demo mode)")
+  println("moon2dart v0.8.0 — MoonBit ↔ Dart transpiler (demo mode)")
 }
 
 ///|
 /// help — 显示用法。
 fn usage() -> Unit {
-  println("moon2dart v0.7.0 — MoonBit → Dart transpiler")
+  println("moon2dart v0.8.0 — MoonBit ↔ Dart transpiler")
   println("")
   println("Usage:")
+  println("  moon2dart convert <file> [--reverse] [--pure-only] [--lib <name>]")
   println(
-    "  moon2dart convert <file.mbt> [--pure-only] [--lib <name>]  Convert .mbt file to Dart code",
+    "    Convert file (default: MoonBit→Dart, --reverse: Dart→MoonBit)",
   )
   println(
     "  moon2dart project <dir> -o <output>  Convert MoonBit project to Dart project",
@@ -138,6 +150,7 @@ fn usage() -> Unit {
   println("  moon2dart help                        Show this help")
   println("")
   println("Options:")
+  println("  --reverse      Reverse mode: convert Dart source to MoonBit")
   println("  --pure-only    Skip FFI declarations (only convert pure MoonBit)")
   println(
     "  --lib <name>   Specify native library name (default: libnative.so)",
@@ -146,7 +159,7 @@ fn usage() -> Unit {
   println("Example:")
   println("  moon run cmd/main --target native -- convert example.mbt")
   println(
-    "  moon run cmd/main --target native -- convert example.mbt --pure-only",
+    "  moon run cmd/main --target native -- convert example.dart --reverse",
   )
   println(
     "  moon run cmd/main --target native -- project ./my_project -o ./dart_output",
