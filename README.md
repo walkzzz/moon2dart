@@ -87,15 +87,15 @@ moon run cmd/main --target native -- help                              # 显示�
 ## 开发
 
 ```bash
-moon check --target all    # 四后端类型检查
-moon test --target all     # 四后端测试（316/316 native）
-moon fmt                   # 格式化
-moon info                  # 更新接口
+moon check --target all --deny-warn    # 四后端类型检查（零警告）
+moon test --target all                 # 四后端测试
+moon fmt                               # 格式化
+moon info                              # 更新接口
 ```
 
 ## 测试
 
-316 个测试，native 后端全通过：
+364 个测试，native 后端全通过：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -104,6 +104,9 @@ moon info                  # 更新接口
 | codegen | 121 | 0 |
 | parser | 38 | 0 |
 | project | 17 | 0 |
+| dart_ast | 14 | 0 |
+| dart_parser | 0 | 0 |
+| reverse_codegen | 0 | 0 |
 | moon2dart (根) | 32 | 5 |
 
 ## 路线图
@@ -121,8 +124,8 @@ moon info                  # 更新接口
 | v0.5.0 | ✅ 已实现 | async + Option + Result + 泛型 + 闭包 |
 | v0.6.0 | ✅ 已实现 | FFI 混合模式（extern c to dart:ffi + String bridge + --pure-only） |
 | v0.7.0 | ✅ 已实现 | Flutter widget 转换（50+ widget + StatelessWidget/StatefulWidget + 事件处理） |
-| v0.8.0 | 📋 计划 | 自动触发 + 项目同步（核心功能） |
-| v0.9.0 | 📋 计划 | MCP 服务器 + Skill（大模型消费） |
+| v0.8.0 | ✅ 已实现 | Dart → MoonBit 反向转换骨架（dart_ast + dart_parser + reverse_codegen） |
+| v0.9.0 | 📋 计划 | 自动触发 + 项目同步 + MCP/Skill |
 | v1.0.0 | 📋 计划 | 验证 + 完整发布（mooncakes.io） |
 
 详见 [docs/roadmap.md](docs/roadmap.md)。

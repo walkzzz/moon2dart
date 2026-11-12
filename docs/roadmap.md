@@ -177,6 +177,35 @@ Option     混合      widget      反向骨架    大模型消费   发布
 
 ---
 
+## v0.8.0 ✅ — Dart → MoonBit 反向转换骨架（已完成）
+
+**目标**：建立反向转换管线，支持 Dart 源码 → MoonBit 源码。
+
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | dart_ast 包：DartType/DartExpr/DartPattern/DartDecl/DartMethod/DartVariant（14 白盒测试） | ✅ |
+| S2 | dart_parser 包：DartLexer（DartTokenKind 67 变体）+ DartParser（fn/class/sealed/abstract/expr） | ✅ |
+| S3 | reverse_codegen 包：dart_type_to_moon/emit_moon_expr/emit_moon_decl/emit_moon_program | ✅ |
+| S4 | 根包 reverse_transpile/reverse_transpile_source API | ✅ |
+| S5 | CLI `--reverse` 选项（convert <file.dart> --reverse） | ✅ |
+| S6 | 测试 + 文档 | ✅ |
+
+**交付**：364 测试（native），Dart→MoonBit 反向转换管线，CLI `--reverse` 选项。
+
+**新增 API**：
+- `reverse_transpile(decls)` — Dart AST → MoonBit 源码
+- `reverse_transpile_source(src)` — Dart 源码 → MoonBit 源码
+- `reverse_transpile_type(t)` — Dart 类型 → MoonBit 类型字符串
+- `reverse_transpile_expr(e)` — Dart 表达式 → MoonBit 表达式字符串
+- `reverse_transpile_decl(d)` — Dart 声明 → MoonBit 声明字符串
+
+**新增包**：
+- `dart_ast/` — Dart AST 节点定义（零依赖）
+- `dart_parser/` — Dart 词法+语法分析（依赖 dart_ast）
+- `reverse_codegen/` — Dart AST → MoonBit 代码发射（依赖 dart_ast + ast + dart_parser）
+
+---
+
 ## v0.9.0 — 自动触发 + 项目同步 + MCP/Skill
 
 **目标**：引入库后自动触发项目转换，支持增量同步；MCP 服务器和 Skill 让大模型 Agent 能调用 moon2dart。

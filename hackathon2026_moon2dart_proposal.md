@@ -30,22 +30,40 @@ mooncakes 生态调研确认：截至 2026-11-07，**无任何 MoonBit → Dart/
 
 ---
 
-## 当前完成状态（v0.1.0）
+## 预期使用场景
+
+### 场景一：MoonBit 后端逻辑 → Flutter 前端快速复用
+
+开发者用 MoonBit 编写了一套数据验证/业务逻辑库（如 `validator` 包），希望让 Flutter 前端团队直接复用这套逻辑，而不需要用 Dart 手动重写一遍。通过 `moon add walkzzz/moon2dart` 引入本库后，调用 `transpile_source(src)` 即可将 MoonBit 源码自动转换为等价的 Dart 代码，前端团队直接集成到 Flutter 项目中。这解决了"同一套业务逻辑需要用两种语言维护"的痛点，避免逻辑漂移和重复劳动。
+
+### 场景二：MoonBit 项目 → 完整 Flutter 应用一键生成
+
+开发者用 MoonBit 构建了一个命令行工具或后端服务，希望快速生成一个 Flutter UI 壳来展示其功能。通过 `transpile_source_flutter(src)` 或 CLI `moon2dart project <dir> -o <output>`，可以扫描整个 MoonBit 项目目录，自动生成包含 `pubspec.yaml`、`lib/*.dart`、Flutter widget 树（StatelessWidget/StatefulWidget）、事件处理（onTap/onChanged）和 `runApp()` 入口的完整 Flutter 项目。开发者只需关注 MoonBit 侧的业务逻辑，前端代码由 moon2dart 自动生成并保持同步。
+
+### 场景三：AI Agent 通过 MCP 自动完成跨语言转换
+
+大模型 Agent（如 Claude Desktop、VS Code Copilot）需要将 MoonBit 代码转换为 Dart/Flutter 代码时，通过 MCP 服务器（JSON-RPC + stdio）调用 `moon2dart_convert`、`moon2dart_project`、`moon2dart_sync` 等工具，自动完成单文件转换、项目级转换和增量同步。AI Agent 不需要理解 MoonBit 和 Dart 的语法差异，只需调用 MCP 工具即可完成跨语言代码生成。这降低了 AI 辅助跨语言开发的门槛，让 MoonBit → Dart 的转换成为 AI 工具链的原生能力。
+
+---
+
+## 当前完成状态（v0.8.0）
 
 | 指标 | 数值 |
 |------|------|
-| 包数 | **5**（根 + ast + typesys + codegen + cmd/main） |
-| 测试数 | **33**（全部通过，四后端 wasm/wasm-gc/js/native） |
-| 后端覆盖 | ✅ **四后端全绿**（`moon check --target all` + `moon test --target all` 33/33 ✓） |
+| 包数 | **11**（根 + ast + typesys + codegen + parser + project + dart_ast + dart_parser + reverse_codegen + cmd/main） |
+| 测试数 | **364**（native 后端全通过） |
+| 后端覆盖 | ✅ **四后端全绿**（`moon check --target all`） |
 | 工程严格度 | ✅ `--deny-warn` 零警告 |
 | Warnings | **0** |
 | Errors | **0** |
-| Sprint 迭代 | **8** 轮（S1-S8 全部完成） |
+| Sprint 迭代 | **48** 轮（v0.1.0-v0.8.0 全部完成） |
 | 版本规划 | **10** 个版本（v0.1.0 → v1.0.0，每版本含 Sprint 拆解） |
-| AST 节点 | MoonType(16) + MoonExpr(9) + MoonPattern(5) + MoonDecl(3) |
+| AST 节点 | MoonType(16+) + MoonExpr(12+) + MoonPattern(7) + MoonDecl(8) + DartType(14) + DartExpr/DartDecl/DartMethod/DartVariant |
 | Dart 类型 | DartType(12) — 完整类型映射 |
 | 交付线 | **4** 条（库 / CLI / Skill / MCP） |
 | 工具链 | MoonBit v0.1.20260920 |
+| mooncakes.io | ✅ v0.8.0 已发布 |
+| 双向转换 | ✅ MoonBit→Dart + Dart→MoonBit（反向转换骨架） |
 
 ---
 
@@ -196,14 +214,14 @@ moon2dart/
 | 版本 | 状态 | 内容 | 交付线 |
 |------|------|------|--------|
 | v0.1.0 | ✅ 已实现 | transpiler 骨架（AST + 类型映射 + codegen） | 库 |
-| v0.2.0 | 📋 计划 | 解析器（MoonBit 源码 → AST） | 库 + CLI |
-| v0.3.0 | 📋 计划 | trait + 模式匹配 + derive 生成 | 库 |
-| v0.4.0 | 📋 计划 | 项目级扫描 + 包结构映射 | 库 + CLI |
-| v0.5.0 | 📋 计划 | async + Option + Result + 泛型 | 库 |
-| v0.6.0 | 📋 计划 | FFI 混合模式（dart:ffi） | 库 + CLI |
-| v0.7.0 | 📋 计划 | Flutter widget 转换 | 库 |
-| v0.8.0 | 📋 计划 | 自动触发 + 项目同步（核心功能） | 库 + CLI |
-| v0.9.0 | 📋 计划 | MCP 服务器 + Skill（大模型消费） | CLI + Skill + MCP |
+| v0.2.0 | ✅ 已实现 | 解析器（MoonBit 源码 → AST） | 库 + CLI |
+| v0.3.0 | ✅ 已实现 | trait + 模式匹配 + derive 生成 | 库 |
+| v0.4.0 | ✅ 已实现 | 项目级扫描 + 包结构映射 | 库 + CLI |
+| v0.5.0 | ✅ 已实现 | async + Option + Result + 泛型 + 闭包 | 库 |
+| v0.6.0 | ✅ 已实现 | FFI 混合模式（dart:ffi） | 库 + CLI |
+| v0.7.0 | ✅ 已实现 | Flutter widget 转换 | 库 |
+| v0.8.0 | ✅ 已实现 | Dart → MoonBit 反向转换骨架 | 库 + CLI |
+| v0.9.0 | 📋 计划 | 自动触发 + 项目同步 + MCP/Skill | CLI + Skill + MCP |
 | v1.0.0 | 📋 计划 | 验证 + 完整发布（mooncakes.io） | 全部 |
 
 ### Sprint 交付计划（v0.1.0 已完成）

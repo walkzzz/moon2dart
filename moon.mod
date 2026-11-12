@@ -16,4 +16,5 @@ supported_targets = "+wasm+wasm-gc+js+native"
 
 import {
   "moonbitlang/async@0.22.5",
+  "colmugx/mcp@0.18.2",
 }

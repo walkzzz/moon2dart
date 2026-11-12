@@ -111,8 +111,14 @@ ast ──> (零依赖)
   - S4 事件处理 ✅（ElevatedButton/GestureDetector/FloatingActionButton/InkWell → onTap/onPressed lambda；TextField/TextFormField → onChanged + InputDecoration；Switch/Checkbox/Radio/Slider/DropdownButton → value + onChanged，10 白盒测试）
   - S5 main 入口 ✅（`fn main() { MaterialApp(...) }` → `void main() { runApp(...); }` + `import 'package:flutter/material.dart'`）
   - S6 版本号+门禁+文档 ✅（版本 0.7.0，316 测试 native，零警告，roadmap/changelog/README 更新）
-- **v0.8.0** 📋 计划 — 自动触发 + 项目同步（核心功能）
-- **v0.9.0** 📋 计划 — MCP 服务器 + Skill（大模型消费）
+- **v0.8.0** ✅ 已完成 — Dart → MoonBit 反向转换骨架（364 测试 native）
+  - S1 dart_ast 包 ✅（DartType/DartExpr/DartPattern/DartDecl/DartMethod/DartVariant，14 白盒测试）
+  - S2 dart_parser 包 ✅（DartLexer DartTokenKind 67 变体 + DartParser fn/class/sealed/abstract/expr）
+  - S3 reverse_codegen 包 ✅（dart_type_to_moon/emit_moon_expr/emit_moon_decl/emit_moon_program）
+  - S4 根包 reverse_transpile/reverse_transpile_source API ✅
+  - S5 CLI --reverse 选项 ✅（convert <file.dart> --reverse）
+  - S6 测试+文档 ✅（364 测试 native，mooncakes.io v0.8.0 已发布）
+- **v0.9.0** 📋 计划 — 自动触发 + 项目同步 + MCP/Skill
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
@@ -132,7 +138,7 @@ ast ──> (零依赖)
 
 ### 测试
 
-316 个测试，native 后端全通过：
+364 个测试，native 后端全通过：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -141,6 +147,7 @@ ast ──> (零依赖)
 | codegen | 121 | 0 |
 | parser | 38 | 0 |
 | project | 17 | 0 |
+| dart_ast | 14 | 0 |
 | moon2dart (根) | 32 | 5 |
 
 ### 文档

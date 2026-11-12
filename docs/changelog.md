@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.8.0 (2026-11-11) — Dart → MoonBit 反向转换骨架
+
+### 新增
+- **dart_ast 包**：Dart AST 节点定义（零依赖）
+  - DartType（14 变体）：DVoid/DInt/DDouble/DString/DBool/DList/DMap/DSet/DNullable/DFunction/DClass/DEnum/DSealedClass/DDynamic
+  - DartExpr：DIntLit/DStringLit/DBoolLit/DVar/DCall/DBinOp/DIf/DLambda/DMatch/DCtor/DMethodCall/DListLit/DMapLit
+  - DartPattern：DPVar/DPInt/DPString/DPWild/DPCtor
+  - DartDecl：DFn/DClass/DEnum/DSealedClass/DAbstractClass/DField/DMethod/DVariant
+- **dart_parser 包**：Dart 词法+语法分析
+  - DartLexer（DartTokenKind 67 变体）
+  - DartParser：fn/class/sealed/abstract/expr/type 解析
+- **reverse_codegen 包**：Dart AST → MoonBit 代码发射
+  - dart_type_to_moon：Dart 类型 → MoonBit 类型
+  - emit_moon_expr/emit_moon_decl/emit_moon_program
+- **根包反向转换 API**：
+  - `reverse_transpile(decls)` — Dart AST → MoonBit 源码
+  - `reverse_transpile_source(src)` — Dart 源码 → MoonBit 源码
+  - `reverse_transpile_type(t)` — Dart 类型 → MoonBit 类型字符串
+  - `reverse_transpile_expr(e)` — Dart 表达式 → MoonBit 表达式字符串
+  - `reverse_transpile_decl(d)` — Dart 声明 → MoonBit 声明字符串
+- **CLI `--reverse` 选项**：`moon2dart convert <file.dart> --reverse`
+- 48 新测试（316 → 364 native）
+
+### 改进
+- 版本号 v0.7.0 → v0.8.0
+- 双向转换能力：MoonBit → Dart + Dart → MoonBit
+- mooncakes.io v0.8.0 已发布
+
 ## v0.7.0 (2026-11-07) — Flutter widget 转换
 
 ### 新增

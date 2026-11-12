@@ -15,9 +15,9 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
-      - name: Check (all targets)
-        run: moon check --target all
-      - name: Test
-        run: moon test
+      - name: Check (all targets, deny warnings)
+        run: moon check --target all --deny-warn
+      - name: Test (all targets)
+        run: moon test --target all
       - name: Format check
         run: moon fmt --check
