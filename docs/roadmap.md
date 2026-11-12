@@ -206,22 +206,124 @@ Option     混合      widget      反向骨架    大模型消费   发布
 
 ---
 
-## v0.9.0 — 自动触发 + 项目同步 + MCP/Skill
+## v0.9.0 — MCP 服务器 + 项目同步 + Skill
 
-**目标**：引入库后自动触发项目转换，支持增量同步；MCP 服务器和 Skill 让大模型 Agent 能调用 moon2dart。
+**目标**：基于 colmugx/mcp 构建 MCP 服务器，让大模型 Agent 能调用 moon2dart；支持增量同步和文件监听；发布 Skill 描述符。
 
-| Sprint | 内容 |
-|--------|------|
-| S1 | 引入库自动触发机制（moon.pkg hook / build script） |
-| S2 | 文件变更检测（增量更新，只转换变更文件） |
-| S3 | 项目同步（MoonBit ↔ Dart 保持双向同步） |
-| S4 | CLI `moon2dart sync` / `moon2dart watch` 子命令 |
-| S5 | MCP 服务器骨架（JSON-RPC + stdio） |
-| S6 | MCP 工具定义（convert/project/sync/analyze/reverse） |
-| S7 | Skill 描述符（mooncakes.io/skills 发布格式） |
-| S8 | 测试 + 文档 |
+**关键依赖**：`colmugx/mcp@0.18.2`（类型安全 MCP SDK，服务端+客户端，STDIO+HTTP）
 
-**交付线**：库 API（auto_transpile）、CLI（`sync`/`watch`/`serve` 子命令）、Skill、MCP 服务器
+**Sprint 顺序调整说明**：原 S1（自动触发）风险最高（MoonBit build hook 机制不成熟），降级为可选；原 S5+S6（MCP 服务器）因 colmugx/mcp 可用而合并简化，提升为 S1。
+
+| Sprint | 内容 | 风险 | 交付物 |
+|--------|------|------|--------|
+| S1 | MCP 服务器骨架 + 6 工具注册（`cmd/mcp/main.mbt`，基于 colmugx/mcp） | 🟢 低 | MCPServer + STDIO 传输 |
+| S2 | CLI `serve` 子命令（启动 MCP 服务器） | 🟢 低 | `moon2dart serve` 命令 |
+| S3 | 文件变更检测 + 增量更新（hash 对比，只转换变更文件） | 🟡 中 | FileWatcher + incremental transpile |
+| S4 | CLI `sync` / `watch` 子命令 | 🟡 中 | `moon2dart sync` / `moon2dart watch` |
+| S5 | 项目双向同步（MoonBit ↔ Dart 保持同步） | 🟡 中 | bidirectional sync |
+| S6 | Skill 描述符（mooncakes.io/skills 发布格式） | 🟡 中 | SKILL.md + references |
+| S7 | 自动触发机制（moon.pkg hook，可选） | 🔴 高 | build script hook |
+| S8 | 测试 + 文档 + 版本号 + 门禁 | 🟢 低 | 全量测试 + docs 更新 |
+
+### S1: MCP 服务器骨架 + 6 工具注册
+
+**依赖**：`colmugx/mcp@0.18.2`（已安装）
+
+**实现**：`cmd/mcp/main.mbt`
+
+```
+MCPServer("moon2dart", "0.9.0")
+  .with_description("MoonBit ↔ Dart/Flutter transpiler")
+  .with_instructions("...")
+  .tool("moon2dart_convert", ..., convert_handler)
+  .tool("moon2dart_project", ..., project_handler)
+  .tool("moon2dart_reverse", ..., reverse_handler)
+  .tool("moon2dart_analyze", ..., analyze_handler)
+  .tool("moon2dart_flutter", ..., flutter_handler)
+  .tool("moon2dart_list_tools", ..., list_tools_handler)
+  .run_stdio()
+```
+
+**6 个 MCP 工具定义**：
+
+| 工具 | 参数 (JSON Schema) | 功能 | 复用 API |
+|------|-------------------|------|----------|
+| `moon2dart_convert` | `{file: string, output?: string}` | 单文件 MoonBit→Dart 转换 | `transpile_source(src)` |
+| `moon2dart_project` | `{dir: string, output: string}` | 项目级转换 | `transpile_project(dir)` |
+| `moon2dart_reverse` | `{file: string, output?: string}` | Dart→MoonBit 反向转换 | `reverse_transpile_source(src)` |
+| `moon2dart_analyze` | `{file: string}` | 分析 MoonBit 代码结构 | `parse_source(src)` + AST 输出 |
+| `moon2dart_flutter` | `{file: string, output?: string}` | MoonBit→Flutter widget 转换 | `transpile_source_with_flutter(src)` |
+| `moon2dart_list_tools` | `{}` | 列出所有可用工具 | 静态 JSON 响应 |
+
+**测试**：8-10 白盒测试（工具注册、请求处理、错误响应）
+
+### S2: CLI `serve` 子命令
+
+**实现**：扩展 `cmd/main/main.mbt`
+
+```
+moon2dart serve              # 启动 MCP 服务器（STDIO）
+moon2dart serve --http 8080   # 启动 MCP 服务器（HTTP）
+```
+
+**测试**：3-5 白盒测试（子命令解析、服务器启动）
+
+### S3: 文件变更检测 + 增量更新
+
+**实现**：`project/watcher.mbt`
+
+- 文件 hash 对比（SHA-256 或简化 hash）
+- `.moon2dart_cache/` 目录存储上次转换的 hash
+- 只重新转换变更文件
+
+**测试**：5-8 白盒测试
+
+### S4: CLI `sync` / `watch` 子命令
+
+**实现**：扩展 `cmd/main/main.mbt`
+
+```
+moon2dart sync <dir> -o <output>    # 一次性同步
+moon2dart watch <dir> -o <output>   # 持续监听变更
+```
+
+**测试**：3-5 白盒测试
+
+### S5: 项目双向同步
+
+**实现**：`project/sync.mbt`
+
+- MoonBit → Dart 正向同步
+- Dart → MoonBit 反向同步（基于 v0.8.0 reverse_codegen）
+- 冲突检测和提示
+
+**测试**：5-8 白盒测试
+
+### S6: Skill 描述符
+
+**实现**：`skill/` 目录
+
+- `SKILL.md` — 入口与硬规则
+- `references/` — 参考文档
+- 遵循 moonbit-stack-selection 的 Skill 格式
+
+**测试**：格式验证
+
+### S7: 自动触发机制（可选）
+
+**风险**：🔴 高 — MoonBit build hook 机制不成熟
+
+**降级方案**：如无法实现 build hook，改为提供 `moon2dart init` 命令生成 `.moon2dart.json` 配置文件，配合 CI/CD 使用
+
+### S8: 测试 + 文档 + 版本号 + 门禁
+
+- 版本号 v0.8.0 → v0.9.0
+- `moon check --target all --deny-warn`
+- `moon test --target all`
+- roadmap / changelog / README / AGENTS.md 更新
+- mooncakes.io 发布
+
+**交付线**：库 API（incremental transpile）、CLI（`serve`/`sync`/`watch` 子命令）、Skill、MCP 服务器
 
 ---
 
@@ -254,7 +356,7 @@ Option     混合      widget      反向骨架    大模型消费   发布
 | v0.6.0 | 🔴 高 | FFI 桥接复杂，类型安全难保证 |
 | v0.7.0 | 🟡 中 | widget 映射主观，需定义 UI 抽象层 |
 | v0.8.0 ✅ | � 中 | Dart 语法复杂，parser 工作量大 |
-| v0.9.0 | �🔴 高 | 自动触发依赖 MoonBit build hook（机制不成熟）+ MCP/Skill 规范待确认 |
+| v0.9.0 | 🟡 中 | MCP 服务器依赖 colmugx/mcp（已验证可用）；自动触发降级为可选 |
 | v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
 
 ## 技术参考
