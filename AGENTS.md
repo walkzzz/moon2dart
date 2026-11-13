@@ -44,8 +44,29 @@ moon2dart/            # 根包 — transpile 编排入口
 ├── codegen/              # Dart 代码发射
 │   ├── emitter.mbt       # emit_dart_expr / emit_dart_pattern / emit_dart_decl / emit_dart_program
 │   └── flutter_emitter.mbt # emit_flutter_expr / emit_flutter_program / emit_flutter_widget_struct
-└── cmd/main/             # CLI 入口
-    └── main.mbt          # 演示模式
+├── mcp_server/           # MCP 服务器核心逻辑（native only）
+│   └── server.mbt        # serve_mcp / 6 工具 handler / run_tool_mode / run_agent_mode
+├── project/              # 项目级扫描与转换（native only）
+│   ├── project_info.mbt  # ProjectInfo / PackageInfo / DependencyGraph
+│   ├── scanner.mbt       # scan_project / parse_moon_mod / parse_moon_pkg
+│   ├── structure.mbt     # emit_pubspec_yaml / map_package_to_dart_path / emit_dart_imports
+│   ├── transpile.mbt     # transpile_project / sync_project / write_dart_project
+│   └── incremental.mbt   # IncrementalCache（hash 对比增量检测）
+├── cmd/main/             # CLI 入口
+│   └── main.mbt          # convert / project / sync / watch / serve / demo / help
+└── cmd/mcp/              # MCP 服务器独立入口
+    └── main.mbt          # 委托 mcp_server.serve_mcp
+```
+
+### 依赖关系
+
+```
+cmd/main ──> 根包 + mcp_server + ast + project
+cmd/mcp  ──> mcp_server
+mcp_server ──> 根包 + ast + parser + project + colmugx/mcp
+codegen ──> ast + typesys
+typesys ──> ast
+ast ──> (零依赖)
 ```
 
 ### 依赖关系
@@ -118,14 +139,23 @@ ast ──> (零依赖)
   - S4 根包 reverse_transpile/reverse_transpile_source API ✅
   - S5 CLI --reverse 选项 ✅（convert <file.dart> --reverse）
   - S6 测试+文档 ✅（364 测试 native，mooncakes.io v0.8.0 已发布）
-- **v0.9.0** 📋 计划 — 自动触发 + 项目同步 + MCP/Skill
+- **v0.9.0** ✅ 已完成 — MCP 服务器 + Agent 模式 + CLI serve/sync/watch 子命令
+  - S1 MCP 服务器骨架 ✅（mcp_server 包 + 6 工具注册 + MCPServer + STDIO/HTTP 传输）
+  - S2 CLI serve 子命令 ✅（`moon2dart serve [--http <port>] [--agent "<request>"]`）
+  - S3 文件变更检测 + 增量更新 ✅（IncrementalCache + sync_project，9 白盒测试）
+  - S4 CLI sync/watch 子命令 ✅（`moon2dart sync` 增量同步 + `moon2dart watch` 文件系统 Watcher）
+  - S5 项目双向同步 ✅（v0.9.1 — `project/sync.mbt` + reverse_sync_project + sync_project_bidirectional + 冲突检测 + CLI --reverse/--bidirectional，10 白盒测试）
+  - S6 Skill 描述符 ✅（SKILL.md + references/）
+  - S7 测试+文档+门禁 ✅（版本号 0.9.0，373 测试 native，roadmap/changelog 更新）
+  - Agent posoco Agent 模式集成 ✅（`mcp_server/agent.mbt` — RuleBasedModel + InMemorySessionPort + Moon2DartExtension + 6 工具注册 + `run_agent_mode_with_input` + `--agent <text>` CLI 参数）
+- **v0.9.1** ✅ 已完成 — 项目双向同步 + 冲突检测（383 测试 native）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
 
 | 交付线 | 发布渠道 | 消费者 | 覆盖版本 |
 |--------|----------|--------|----------|
-| 库 API | `moon add walkzzz/moon2dart` | MoonBit 开发者 | v0.1.0-v0.8.0 |
+| 库 API | `moon add walkzzz/moon2dart` | MoonBit 开发者 | v0.1.0-v0.9.0 |
 | CLI 工具 | `mooncakes.io/cli` | 命令行用户 | v0.2.0-v0.9.0 |
 | Skill | `mooncakes.io/skills` | 大模型 Agent | v0.9.0 |
 | MCP 服务器 | 随 CLI 分发 | AI 工具链 | v0.9.0 |

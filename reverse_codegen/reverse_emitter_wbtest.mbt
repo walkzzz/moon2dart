@@ -1,27 +1,24 @@
 ///|
 test "reverse_codegen: dart_type_to_moon basic" {
-  assert_eq(dart_type_to_moon(@dart_ast.DInt), "Int")
-  assert_eq(dart_type_to_moon(@dart_ast.DDouble), "Double")
-  assert_eq(dart_type_to_moon(@dart_ast.DBool), "Bool")
-  assert_eq(dart_type_to_moon(@dart_ast.DString), "String")
-  assert_eq(dart_type_to_moon(@dart_ast.DRune), "Char")
-  assert_eq(dart_type_to_moon(@dart_ast.DVoid), "Unit")
+  assert_eq(@dart_ast.DInt.to_moon_string(), "Int")
+  assert_eq(@dart_ast.DDouble.to_moon_string(), "Double")
+  assert_eq(@dart_ast.DBool.to_moon_string(), "Bool")
+  assert_eq(@dart_ast.DString.to_moon_string(), "String")
+  assert_eq(@dart_ast.DRune.to_moon_string(), "Char")
+  assert_eq(@dart_ast.DVoid.to_moon_string(), "Unit")
 }
 
 ///|
 test "reverse_codegen: dart_type_to_moon composite" {
-  assert_eq(dart_type_to_moon(@dart_ast.DList(@dart_ast.DInt)), "Array[Int]")
+  assert_eq(@dart_ast.DList(@dart_ast.DInt).to_moon_string(), "Array[Int]")
   assert_eq(
-    dart_type_to_moon(@dart_ast.DMap(@dart_ast.DString, @dart_ast.DInt)),
+    @dart_ast.DMap(@dart_ast.DString, @dart_ast.DInt).to_moon_string(),
     "Map[String, Int]",
   )
-  assert_eq(dart_type_to_moon(@dart_ast.DSet(@dart_ast.DDouble)), "Set[Double]")
-  assert_eq(
-    dart_type_to_moon(@dart_ast.DNullable(@dart_ast.DInt)),
-    "Option[Int]",
-  )
-  assert_eq(dart_type_to_moon(@dart_ast.DFuture(@dart_ast.DInt)), "Future[Int]")
-  assert_eq(dart_type_to_moon(@dart_ast.DCustom("MyType")), "MyType")
+  assert_eq(@dart_ast.DSet(@dart_ast.DDouble).to_moon_string(), "Set[Double]")
+  assert_eq(@dart_ast.DNullable(@dart_ast.DInt).to_moon_string(), "Option[Int]")
+  assert_eq(@dart_ast.DFuture(@dart_ast.DInt).to_moon_string(), "Future[Int]")
+  assert_eq(@dart_ast.DCustom("MyType").to_moon_string(), "MyType")
 }
 
 ///|

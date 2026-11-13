@@ -1,0 +1,13 @@
+import {
+  "walkzzz/moon2dart/mcp_server",
+  "moonbitlang/core/env",
+  "moonbitlang/async",
+}
+
+pkgtype(kind: "executable")
+
+supported_targets = "-all+native"
+
+options(
+  "allow-experimental-packages": [ "moonbitlang/core/async" ],
+)

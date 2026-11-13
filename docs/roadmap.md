@@ -1,6 +1,6 @@
 # moon2dart 迭代路线图
 
-> 已实现 v0.1.0-v0.8.0 · 2026-11-11 | 更新 v0.9.0-v1.0.0 规划
+> 已实现 v0.1.0-v0.9.1 · 2026-11-12 | 更新 v0.9.1-v1.0.0 规划
 
 ## 最终目标
 
@@ -26,7 +26,7 @@ transpiler   parser     trait      项目级     async
 v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v1.0.0
 async      FFI       Flutter     Dart→MB    MCP+Skill   完整
 Option     混合      widget      反向骨架    大模型消费   发布
-  ✅           ✅          ✅         ✅
+  ✅           ✅          ✅         ✅         ✅(S1-S4,S6-S8+Agent+S5)
 ```
 
 ---
@@ -206,24 +206,25 @@ Option     混合      widget      反向骨架    大模型消费   发布
 
 ---
 
-## v0.9.0 — MCP 服务器 + 项目同步 + Skill
+## v0.9.0 ✅(S1-S4,S6-S8+Agent) — MCP 服务器 + Agent 模式 + 项目同步 + Skill
 
-**目标**：基于 colmugx/mcp 构建 MCP 服务器，让大模型 Agent 能调用 moon2dart；支持增量同步和文件监听；发布 Skill 描述符。
+**目标**：基于 colmugx/mcp 构建 MCP 服务器，让大模型 Agent 能调用 moon2dart；集成 colmugx/posoco Agent 框架实现 LLM 驱动的工具选择；支持增量同步和文件监听；发布 Skill 描述符。
 
-**关键依赖**：`colmugx/mcp@0.18.2`（类型安全 MCP SDK，服务端+客户端，STDIO+HTTP）
+**关键依赖**：`colmugx/mcp@0.18.2`（类型安全 MCP SDK）+ `colmugx/posoco@0.24.2`（Agent 框架）
 
 **Sprint 顺序调整说明**：原 S1（自动触发）风险最高（MoonBit build hook 机制不成熟），降级为可选；原 S5+S6（MCP 服务器）因 colmugx/mcp 可用而合并简化，提升为 S1。
 
 | Sprint | 内容 | 风险 | 交付物 |
 |--------|------|------|--------|
-| S1 | MCP 服务器骨架 + 6 工具注册（`cmd/mcp/main.mbt`，基于 colmugx/mcp） | 🟢 低 | MCPServer + STDIO 传输 |
-| S2 | CLI `serve` 子命令（启动 MCP 服务器） | 🟢 低 | `moon2dart serve` 命令 |
-| S3 | 文件变更检测 + 增量更新（hash 对比，只转换变更文件） | 🟡 中 | FileWatcher + incremental transpile |
-| S4 | CLI `sync` / `watch` 子命令 | 🟡 中 | `moon2dart sync` / `moon2dart watch` |
-| S5 | 项目双向同步（MoonBit ↔ Dart 保持同步） | 🟡 中 | bidirectional sync |
-| S6 | Skill 描述符（mooncakes.io/skills 发布格式） | 🟡 中 | SKILL.md + references |
+| S1 | MCP 服务器骨架 + 6 工具注册（`mcp_server/server.mbt`，基于 colmugx/mcp） | 🟢 低 | ✅ MCPServer + STDIO/HTTP 传输 |
+| S2 | CLI `serve` 子命令（启动 MCP 服务器） | 🟢 低 | ✅ `moon2dart serve` 命令 |
+| S3 | 文件变更检测 + 增量更新（IncrementalCache hash 对比，只转换变更文件） | 🟡 中 | ✅ IncrementalCache + sync_project |
+| S4 | CLI `sync` / `watch` 子命令（增量同步 + 文件系统 Watcher） | 🟡 中 | ✅ `moon2dart sync` / `moon2dart watch` |
+| S5 | 项目双向同步（MoonBit ↔ Dart 保持同步） | 🟡 中 | ✅ v0.9.1 reverse_sync_project + sync_project_bidirectional |
+| S6 | Skill 描述符（mooncakes.io/skills 发布格式） | 🟡 中 | ✅ SKILL.md + references |
 | S7 | 自动触发机制（moon.pkg hook，可选） | 🔴 高 | build script hook |
-| S8 | 测试 + 文档 + 版本号 + 门禁 | 🟢 低 | 全量测试 + docs 更新 |
+| S8 | 测试 + 文档 + 版本号 + 门禁 | 🟢 低 | ✅ 全量测试 + docs 更新 |
+| Agent | posoco Agent 模式集成（RuleBasedModel + ToolRegistry + SessionPort） | 🟡 中 | ✅ `mcp_server/agent.mbt` + `--agent <text>` |
 
 ### S1: MCP 服务器骨架 + 6 工具注册
 

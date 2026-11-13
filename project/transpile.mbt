@@ -57,6 +57,50 @@ async fn transpile_package_async(pkg : PackageInfo) -> String {
 }
 
 ///|
+/// sync_project — 增量同步项目，只转换有变更的包。
+///
+/// 使用 IncrementalCache 检测文件变更，只重新转换有变更的包。
+/// 首次运行时缓存为空，所有包都会被转换。
+/// 返回需要写入的文件列表（路径 + 内容），总是包含 pubspec.yaml。
+pub async fn sync_project(
+  project : ProjectInfo,
+  cache : IncrementalCache,
+) -> Array[(String, String)] {
+  let graph = build_dependency_graph(project.packages)
+  let sorted_names = graph.topo_sort()
+  let changed_files : Array[(String, String)] = []
+  changed_files.push(("pubspec.yaml", emit_pubspec_yaml(project)))
+  for pkg_name in sorted_names {
+    let pkg_opt = find_package_by_name(project.packages, pkg_name)
+    match pkg_opt {
+      Some(p) => {
+        let mut has_change = false
+        let file_contents : Array[(String, String)] = []
+        for src_file in p.source_files {
+          let src_path = p.path + "/" + src_file
+          let src_content = @fs.read_file(src_path).text()
+          file_contents.push((src_path, src_content))
+          if cache.should_transpile(src_path, src_content) {
+            has_change = true
+          }
+        }
+        if has_change {
+          let dart_path = map_package_to_dart_path(p.name)
+          let dart_content = transpile_package_async(p)
+          changed_files.push((dart_path, dart_content))
+          for pair in file_contents {
+            let (path, content) = pair
+            cache.update(path, content)
+          }
+        }
+      }
+      None => ()
+    }
+  }
+  changed_files
+}
+
+///|
 /// 将 Dart 项目文件列表写入输出目录（async）。
 pub async fn write_dart_project(
   files : Array[(String, String)],

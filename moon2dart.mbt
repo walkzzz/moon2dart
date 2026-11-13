@@ -90,7 +90,7 @@ pub fn reverse_transpile_source(src : String) -> String {
 ///|
 /// 便捷：Dart 类型 → MoonBit 类型字符串。
 pub fn reverse_transpile_type(t : @dart_ast.DartType) -> String {
-  @reverse_codegen.dart_type_to_moon(t)
+  t.to_moon_string()
 }
 
 ///|

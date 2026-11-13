@@ -1,5 +1,6 @@
 ///|
 /// Dart 类型节点 — 表示 Dart 目标代码中的类型。
+#derive(Eq, Compare, Debug)
 pub(all) enum DartType {
   DInt
   DInt64
@@ -14,7 +15,7 @@ pub(all) enum DartType {
   DNullable(DartType)
   DFuture(DartType)
   DCustom(String)
-} derive(Eq, Compare, Debug)
+}
 
 ///|
 pub extend DartType with Eq::{equal, not_equal}
@@ -46,15 +47,18 @@ pub fn map_type(t : @ast.MoonType) -> DartType {
     @ast.MFuture(inner) => DFuture(map_type(inner))
     @ast.MTypeVar(name) => DCustom(name)
     @ast.MResult(ok, err) =>
-      DCustom("Result<\{emit_dart(map_type(ok))}, \{emit_dart(map_type(err))}>")
+      DCustom(
+        "Result<\{map_type(ok).to_dart_string()}, \{map_type(err).to_dart_string()}>",
+      )
     @ast.MCustom(name) => DCustom(name)
   }
 }
 
 ///|
-/// Dart 类型 → Dart 代码字符串发射。
-pub fn emit_dart(t : DartType) -> String {
-  match t {
+/// Dart 类型 → Dart 代码字符串发射（方法形式）。
+#as_free_fn(emit_dart)
+pub fn DartType::to_dart_string(self : DartType) -> String {
+  match self {
     DInt => "int"
     DInt64 => "int"
     DDouble => "double"
@@ -62,47 +66,30 @@ pub fn emit_dart(t : DartType) -> String {
     DString => "String"
     DRune => "int"
     DVoid => "void"
-    DList(inner) => "List<\{emit_dart(inner)}>"
-    DMap(k, v) => "Map<\{emit_dart(k)}, \{emit_dart(v)}>"
-    DSet(inner) => "Set<\{emit_dart(inner)}>"
-    DNullable(inner) => "\{emit_dart(inner)}?"
-    DFuture(inner) => "Future<\{emit_dart(inner)}>"
+    DList(inner) => "List<\{inner.to_dart_string()}>"
+    DMap(k, v) => "Map<\{k.to_dart_string()}, \{v.to_dart_string()}>"
+    DSet(inner) => "Set<\{inner.to_dart_string()}>"
+    DNullable(inner) => "\{inner.to_dart_string()}?"
+    DFuture(inner) => "Future<\{inner.to_dart_string()}>"
     DCustom(name) => name
   }
 }
 
 ///|
+pub impl @ast.TypeDisplay for DartType with fn to_display_string(self) {
+  self.to_dart_string()
+}
+
+///|
+pub extend DartType with @ast.TypeDisplay::{to_display_string}
+
+///|
 /// 便捷：MoonBit 类型 → Dart 类型字符串。
 pub fn moon_to_dart_type(t : @ast.MoonType) -> String {
-  emit_dart(map_type(t))
+  map_type(t).to_dart_string()
 }
 
 ///|
-/// 判断 MoonBit 类型是否可纯转换（无需混合模式）。
-pub fn is_pure(t : @ast.MoonType) -> Bool {
-  match t {
-    @ast.MResult(_, _) => false
-    @ast.MCustom(_) => false
-    @ast.MArray(inner) => is_pure(inner)
-    @ast.MMap(k, v) => is_pure(k) && is_pure(v)
-    @ast.MSet(inner) => is_pure(inner)
-    @ast.MOption(inner) => is_pure(inner)
-    _ => true
-  }
-}
-
-///|
-/// 判断 MoonBit 类型是否需要自定义 Result 类型。
-pub fn needs_result_type(t : @ast.MoonType) -> Bool {
-  match t {
-    @ast.MResult(_, _) => true
-    @ast.MArray(inner) => needs_result_type(inner)
-    @ast.MMap(k, v) => needs_result_type(k) || needs_result_type(v)
-    @ast.MSet(inner) => needs_result_type(inner)
-    @ast.MOption(inner) => needs_result_type(inner)
-    _ => false
-  }
-}
 
 ///|
 /// MoonBit 类型 → Dart ffi Native 类型字符串（用于 typedef Native）。

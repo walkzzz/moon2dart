@@ -2,6 +2,7 @@ import {
   "walkzzz/moon2dart/ast",
   "walkzzz/moon2dart/codegen",
   "walkzzz/moon2dart/parser",
+  "walkzzz/moon2dart/reverse_codegen",
   "moonbitlang/core/encoding/utf8",
   "moonbitlang/async/fs",
 }

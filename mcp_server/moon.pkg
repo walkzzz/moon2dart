@@ -1,0 +1,19 @@
+import {
+  "colmugx/mcp" @mcpsdk,
+  "colmugx/mcp/protocol/core",
+  "colmugx/mcp/protocol/tool",
+  "colmugx/posoco",
+  "walkzzz/moon2dart" @lib,
+  "walkzzz/moon2dart/parser",
+  "walkzzz/moon2dart/ast",
+}
+
+supported_targets = "-all+native"
+
+options(
+  "allow-experimental-packages": [
+    "moonbitlang/core/async",
+    "moonbitlang/core/async/aqueue",
+    "moonbitlang/core/async/cond_var",
+  ],
+)

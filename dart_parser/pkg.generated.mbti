@@ -29,16 +29,18 @@ pub fn DartParser::make(Array[DartToken]) -> Self
 pub fn DartParser::parse_expr(Self) -> (@dart_ast.DartExpr, Self)
 pub fn DartParser::parse_program(Self) -> Array[@dart_ast.DartDecl]
 
+#derive(Eq, @debug.Debug)
 pub(all) struct DartToken {
   kind : DartTokenKind
   text : String
   line : Int32
   col : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn DartToken::equal(Self, Self) -> Bool
 pub fn DartToken::not_equal(Self, Self) -> Bool
 pub fn DartToken::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum DartTokenKind {
   DtInt
   DtDouble
@@ -138,7 +140,7 @@ pub(all) enum DartTokenKind {
   DtAt
   DtEof
   DtError
-} derive(Eq, @debug.Debug)
+}
 pub fn DartTokenKind::equal(Self, Self) -> Bool
 pub fn DartTokenKind::not_equal(Self, Self) -> Bool
 pub fn DartTokenKind::to_repr(Self) -> @debug.Repr

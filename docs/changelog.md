@@ -1,5 +1,82 @@
 # Changelog
 
+## v0.9.1 (2026-11-12) — 项目双向同步 + 冲突检测
+
+### 新增
+- **project/sync.mbt**：项目双向同步核心逻辑
+  - `SyncDirection` 枚举：Forward / Reverse / Bidirectional
+  - `SyncConflict` 结构：同步冲突信息（moonbit_path + dart_path + message）
+  - `SyncResult` 结构：同步操作结果（direction + transpiled_files + conflicts）
+  - `SyncResult::has_conflicts()` / `SyncResult::summary()` 方法
+  - `reverse_sync_project(dart_dir, moonbit_output_dir, cache)` — Dart → MoonBit 反向同步
+  - `sync_project_bidirectional(project, dart_dir, cache)` — 双向同步 + 冲突检测
+  - `find_last_slash()` 辅助函数
+- **CLI `sync --reverse`**：反向同步模式（Dart → MoonBit）
+- **CLI `sync --bidirectional`**：双向同步模式（MoonBit ↔ Dart + 冲突检测）
+- 10 白盒测试（SyncDirection / SyncConflict / SyncResult / summary / find_last_slash）
+- project 包添加 reverse_codegen 依赖
+
+### 改进
+- 版本号 v0.9.0 → v0.9.1
+- CLI sync 子命令帮助文本更新（添加 --reverse / --bidirectional 说明）
+- 测试 373 → 383（native）
+
+### 已知限制
+- 反向同步使用 reverse_transpile_source，生成的 MoonBit 代码可能不完全等价于原始代码
+- 冲突检测基于文件 hash 比较，无法检测语义级冲突
+
+## v0.9.0 (2026-11-12) — MCP 服务器 + Agent 模式 + CLI serve/sync/watch 子命令
+
+### 新增
+- **mcp_server 包**：MCP 服务器核心逻辑（native target only）
+  - 6 个 MCP 工具注册：moon2dart_convert / moon2dart_reverse / moon2dart_flutter / moon2dart_analyze / moon2dart_project / moon2dart_list_tools
+  - 双模式架构：工具模式（MCPServer + STDIO/HTTP 传输）+ Agent 模式（posoco Agent 循环）
+  - `serve_mcp(args)` 公共入口函数
+  - JSON Schema 辅助函数（parse_json 构造只读 Json 值）
+  - parse_port 端口解析、type_to_str 类型格式化
+- **mcp_server/agent.mbt**：posoco Agent 模式集成
+  - `RuleBasedModel` — 基于关键词的 ModelPort 实现（自动选择工具，不依赖 LLM API）
+  - `InMemorySessionPort` — 内存会话存储（SessionPort 实现）
+  - `Moon2DartExtension` — 组合 Model + Tools + Sessions 的 Extension
+  - `register_moon2dart_tools` — 6 个工具注册到 ToolRegistry
+  - `run_agent_mode_with_input(user_input)` — Agent 模式入口
+  - 辅助函数：escape_json_string / make_json_args / json_get_string / select_tool / find_keyword_pos / make_tool_call / make_model_call_result / format_tool_outcome
+- **cmd/mcp**：MCP 服务器独立入口（`moon run cmd/mcp --target native`）
+  - 支持 `--http <port>` HTTP 模式
+  - 支持 `--agent <text>` Agent 模式（posoco 驱动）
+- **CLI `serve` 子命令**：`moon2dart serve [--http <port>] [--agent "<request>"]`
+  - 集成 MCP 服务器到主 CLI，无需单独运行 cmd/mcp
+  - `--agent` 参数接受用户自然语言请求，Agent 自动选择工具执行
+- **IncrementalCache**：文件内容 hash 缓存，用于增量转换
+  - `should_transpile` / `update` / `get_changed_files` / `mark_all_transpiled` / `cache_size` / `is_cached`
+  - 9 白盒测试
+- **sync_project API**：增量同步项目，只转换有变更的包
+  - 基于 IncrementalCache 检测文件变更，避免重复转换
+  - 首次运行时缓存为空，所有包都会被转换
+- **CLI `sync` 子命令**：`moon2dart sync <dir> -o <output>`
+  - 一次性增量同步，只转换变更的包
+  - 无变更时输出 "No changes detected"
+- **CLI `watch` 子命令**：`moon2dart watch <dir> -o <output> [--max-iterations <n>]`
+  - 持续监听文件变更，自动增量同步
+  - 使用 `@fs.Watcher` 文件系统监听器（非轮询，实时 FsEvent）
+  - 支持 `--max-iterations` 参数限制迭代次数（默认 1000）
+  - 首次运行执行完整 sync，后续仅转换变更包
+- **Skill 描述符**：`skill/SKILL.md` + `skill/references/` 参考文档
+  - 6 工具详细描述 + 参数定义 + 使用示例
+  - 类型映射参考 + 7 个转换示例
+- 依赖：colmugx/mcp@0.18.2（MCP SDK）+ colmugx/posoco@0.24.2（Agent 框架）
+
+### 改进
+- 版本号 v0.8.0 → v0.9.0
+- CLI usage 更新：添加 serve/sync/watch 子命令说明 + --agent 参数示例
+- MoonBit 工具链升级 0.1.20261020 → 0.1.20261111（支持 moonbitlang/core/async）
+- moon.pkg 添加 allow-experimental-packages 选项
+- 测试 364 → 373（native）
+
+### 已知限制
+- S5（项目双向同步）待后续迭代
+- RuleBasedModel 为关键词匹配，后续可替换为真正的 LLM provider
+
 ## v0.8.0 (2026-11-11) — Dart → MoonBit 反向转换骨架
 
 ### 新增

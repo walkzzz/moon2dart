@@ -29,16 +29,18 @@ pub fn Parser::make(Array[Token]) -> Self
 pub fn Parser::parse_expr(Self) -> (@ast.MoonExpr, Self)
 pub fn Parser::parse_program(Self) -> Array[@ast.MoonDecl]
 
+#derive(Eq, @debug.Debug)
 pub(all) struct Token {
   kind : TokenKind
   text : String
   line : Int32
   col : Int32
-} derive(Eq, @debug.Debug)
+}
 pub fn Token::equal(Self, Self) -> Bool
 pub fn Token::not_equal(Self, Self) -> Bool
 pub fn Token::to_repr(Self) -> @debug.Repr
 
+#derive(Eq, @debug.Debug)
 pub(all) enum TokenKind {
   TkInt
   TkDouble
@@ -112,7 +114,7 @@ pub(all) enum TokenKind {
   TkAt
   TkEof
   TkError
-} derive(Eq, @debug.Debug)
+}
 pub fn TokenKind::equal(Self, Self) -> Bool
 pub fn TokenKind::not_equal(Self, Self) -> Bool
 pub fn TokenKind::to_repr(Self) -> @debug.Repr

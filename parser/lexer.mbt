@@ -6,6 +6,7 @@
 
 ///|
 /// Token 种类枚举。
+#derive(Eq, Debug)
 pub(all) enum TokenKind {
   // 字面量
   TkInt
@@ -85,7 +86,7 @@ pub(all) enum TokenKind {
   // 特殊
   TkEof
   TkError
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend TokenKind with Eq::{not_equal, equal}
@@ -95,12 +96,13 @@ pub extend TokenKind with Debug::{to_repr}
 
 ///|
 /// Token 结构 — 包含种类、文本、位置信息。
+#derive(Eq, Debug)
 pub(all) struct Token {
   kind : TokenKind
   text : String
   line : Int32
   col : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend Token with Eq::{not_equal, equal}

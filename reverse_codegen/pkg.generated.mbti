@@ -7,8 +7,6 @@ import {
 }
 
 // Values
-pub fn dart_type_to_moon(@dart_ast.DartType) -> String
-
 pub fn dart_type_to_moon_ast(@dart_ast.DartType) -> @ast.MoonType
 
 pub fn emit_moon_decl(@dart_ast.DartDecl) -> String

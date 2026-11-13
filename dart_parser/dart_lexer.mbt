@@ -6,6 +6,7 @@
 
 ///|
 /// Dart Token 种类枚举。
+#derive(Eq, Debug)
 pub(all) enum DartTokenKind {
   // 字面量
   DtInt
@@ -112,7 +113,7 @@ pub(all) enum DartTokenKind {
   // 特殊
   DtEof
   DtError
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend DartTokenKind with Eq::{not_equal, equal}
@@ -122,12 +123,13 @@ pub extend DartTokenKind with Debug::{to_repr}
 
 ///|
 /// Dart Token 结构。
+#derive(Eq, Debug)
 pub(all) struct DartToken {
   kind : DartTokenKind
   text : String
   line : Int32
   col : Int32
-} derive(Eq, Debug)
+}
 
 ///|
 pub extend DartToken with Eq::{not_equal, equal}

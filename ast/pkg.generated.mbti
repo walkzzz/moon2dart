@@ -10,12 +10,13 @@ import {
 // Errors
 
 // Types and methods
+#derive(Compare, Eq, @debug.Debug)
 pub(all) struct ImplMethod {
   name : String
   params : Array[(String, MoonType)]
   ret_type : MoonType
   body : MoonExpr
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn ImplMethod::compare(Self, Self) -> Int32
 pub fn ImplMethod::equal(Self, Self) -> Bool
 pub fn ImplMethod::not_equal(Self, Self) -> Bool
@@ -25,6 +26,7 @@ pub fn ImplMethod::op_le(Self, Self) -> Bool
 pub fn ImplMethod::op_lt(Self, Self) -> Bool
 pub fn ImplMethod::to_repr(Self) -> @debug.Repr
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum MoonDecl {
   DFn(String, Array[String], Array[(String, MoonType)], MoonType, MoonExpr)
   DAsyncFn(String, Array[String], Array[(String, MoonType)], MoonType, MoonExpr)
@@ -33,7 +35,7 @@ pub(all) enum MoonDecl {
   DTrait(String, Array[TraitMethod])
   DImpl(String, String, Array[ImplMethod])
   DExternFn(String, Array[(String, MoonType)], MoonType, String)
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn MoonDecl::compare(Self, Self) -> Int32
 pub fn MoonDecl::equal(Self, Self) -> Bool
 pub fn MoonDecl::not_equal(Self, Self) -> Bool
@@ -43,6 +45,7 @@ pub fn MoonDecl::op_le(Self, Self) -> Bool
 pub fn MoonDecl::op_lt(Self, Self) -> Bool
 pub fn MoonDecl::to_repr(Self) -> @debug.Repr
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum MoonExpr {
   EInt(Int32)
   EDouble(Double)
@@ -55,7 +58,7 @@ pub(all) enum MoonExpr {
   EMatch(MoonExpr, Array[(MoonPattern, MoonExpr)])
   EAwait(MoonExpr)
   ELambda(Array[(String, MoonType)], MoonExpr)
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn MoonExpr::compare(Self, Self) -> Int32
 pub fn MoonExpr::equal(Self, Self) -> Bool
 pub fn MoonExpr::not_equal(Self, Self) -> Bool
@@ -65,13 +68,14 @@ pub fn MoonExpr::op_le(Self, Self) -> Bool
 pub fn MoonExpr::op_lt(Self, Self) -> Bool
 pub fn MoonExpr::to_repr(Self) -> @debug.Repr
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum MoonPattern {
   PVar(String)
   PInt(Int32)
   PString(String)
   PWild
   PCtor(String, Array[MoonPattern])
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn MoonPattern::compare(Self, Self) -> Int32
 pub fn MoonPattern::equal(Self, Self) -> Bool
 pub fn MoonPattern::not_equal(Self, Self) -> Bool
@@ -81,6 +85,7 @@ pub fn MoonPattern::op_le(Self, Self) -> Bool
 pub fn MoonPattern::op_lt(Self, Self) -> Bool
 pub fn MoonPattern::to_repr(Self) -> @debug.Repr
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) enum MoonType {
   MInt
   MUInt
@@ -100,21 +105,28 @@ pub(all) enum MoonType {
   MFuture(MoonType)
   MTypeVar(String)
   MCustom(String)
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn MoonType::compare(Self, Self) -> Int32
+pub fn MoonType::contains_result(Self) -> Bool
 pub fn MoonType::equal(Self, Self) -> Bool
+pub fn MoonType::is_pure(Self) -> Bool
+pub fn MoonType::needs_result_type(Self) -> Bool
 pub fn MoonType::not_equal(Self, Self) -> Bool
 pub fn MoonType::op_ge(Self, Self) -> Bool
 pub fn MoonType::op_gt(Self, Self) -> Bool
 pub fn MoonType::op_le(Self, Self) -> Bool
 pub fn MoonType::op_lt(Self, Self) -> Bool
+pub fn MoonType::to_display_string(Self) -> String
+pub fn MoonType::to_moon_string(Self) -> String
 pub fn MoonType::to_repr(Self) -> @debug.Repr
+pub impl TypeDisplay for MoonType
 
+#derive(Compare, Eq, @debug.Debug)
 pub(all) struct TraitMethod {
   name : String
   params : Array[(String, MoonType)]
   ret_type : MoonType
-} derive(Compare, Eq, @debug.Debug)
+}
 pub fn TraitMethod::compare(Self, Self) -> Int32
 pub fn TraitMethod::equal(Self, Self) -> Bool
 pub fn TraitMethod::not_equal(Self, Self) -> Bool
@@ -127,3 +139,6 @@ pub fn TraitMethod::to_repr(Self) -> @debug.Repr
 // Type aliases
 
 // Traits
+pub(open) trait TypeDisplay {
+  fn to_display_string(Self) -> String
+}

@@ -50,18 +50,18 @@ test "moon_to_dart_type convenience" {
 
 ///|
 test "is_pure" {
-  assert_true(is_pure(@ast.MInt))
-  assert_true(is_pure(@ast.MArray(@ast.MInt)))
-  assert_true(is_pure(@ast.MOption(@ast.MString)))
-  assert_true(!is_pure(@ast.MResult(@ast.MInt, @ast.MString)))
-  assert_true(!is_pure(@ast.MCustom("MyType")))
+  assert_true(@ast.MInt.is_pure())
+  assert_true(@ast.MArray(@ast.MInt).is_pure())
+  assert_true(@ast.MOption(@ast.MString).is_pure())
+  assert_true(!@ast.MResult(@ast.MInt, @ast.MString).is_pure())
+  assert_true(!@ast.MCustom("MyType").is_pure())
 }
 
 ///|
 test "needs_result_type" {
-  assert_true(needs_result_type(@ast.MResult(@ast.MInt, @ast.MString)))
-  assert_true(!needs_result_type(@ast.MInt))
-  assert_true(!needs_result_type(@ast.MArray(@ast.MInt)))
+  assert_true(@ast.MResult(@ast.MInt, @ast.MString).needs_result_type())
+  assert_true(!@ast.MInt.needs_result_type())
+  assert_true(!@ast.MArray(@ast.MInt).needs_result_type())
 }
 
 ///|

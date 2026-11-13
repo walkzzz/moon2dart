@@ -1,6 +1,6 @@
 name = "walkzzz/moon2dart"
 
-version = "0.8.0"
+version = "0.9.1"
 
 readme = "README.mbt.md"
 
@@ -17,4 +17,5 @@ supported_targets = "+wasm+wasm-gc+js+native"
 import {
   "moonbitlang/async@0.22.5",
   "colmugx/mcp@0.18.2",
+  "colmugx/posoco@0.24.2",
 }

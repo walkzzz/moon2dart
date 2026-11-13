@@ -4,39 +4,6 @@
 /// 这是 moon2dart 的反向管线核心：Dart 源码 → Dart AST → MoonBit 源码。
 
 ///|
-/// DartType → MoonBit 类型字符串。
-pub fn dart_type_to_moon(t : @dart_ast.DartType) -> String {
-  match t {
-    @dart_ast.DInt => "Int"
-    @dart_ast.DDouble => "Double"
-    @dart_ast.DBool => "Bool"
-    @dart_ast.DString => "String"
-    @dart_ast.DRune => "Char"
-    @dart_ast.DVoid => "Unit"
-    @dart_ast.DList(inner) => {
-      let s = dart_type_to_moon(inner)
-      "Array[\{s}]"
-    }
-    @dart_ast.DMap(k, v) => {
-      let ks = dart_type_to_moon(k)
-      let vs = dart_type_to_moon(v)
-      "Map[\{ks}, \{vs}]"
-    }
-    @dart_ast.DSet(inner) => {
-      let s = dart_type_to_moon(inner)
-      "Set[\{s}]"
-    }
-    @dart_ast.DNullable(inner) => {
-      let s = dart_type_to_moon(inner)
-      "Option[\{s}]"
-    }
-    @dart_ast.DFuture(inner) => {
-      let s = dart_type_to_moon(inner)
-      "Future[\{s}]"
-    }
-    @dart_ast.DCustom(name) => name
-  }
-}
 
 ///|
 /// DartType → MoonType（AST 节点）。
@@ -140,7 +107,7 @@ fn format_params(params : Array[(String, @dart_ast.DartType)]) -> String {
   params
   .map(fn(pair) {
     let (pname, ty) = pair
-    let ty_str = dart_type_to_moon(ty)
+    let ty_str = ty.to_moon_string()
     "\{pname} : \{ty_str}"
   })
   .join(", ")
@@ -152,7 +119,7 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
   match d {
     @dart_ast.DTopFn(name, type_params, params, ret, body) => {
       let param_str = format_params(params)
-      let ret_str = dart_type_to_moon(ret)
+      let ret_str = ret.to_moon_string()
       let generic = if type_params.length() > 0 {
         "[\{type_params.join(", ")}]"
       } else {
@@ -164,8 +131,8 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
     @dart_ast.DAsyncTopFn(name, type_params, params, ret, body) => {
       let param_str = format_params(params)
       let inner_ret = match ret {
-        @dart_ast.DFuture(inner) => dart_type_to_moon(inner)
-        _ => dart_type_to_moon(ret)
+        @dart_ast.DFuture(inner) => inner.to_moon_string()
+        _ => ret.to_moon_string()
       }
       let generic = if type_params.length() > 0 {
         "[\{type_params.join(", ")}]"
@@ -179,7 +146,7 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
       let field_str = fields
         .map(fn(pair) {
           let (fname, ftype) = pair
-          let ty_str = dart_type_to_moon(ftype)
+          let ty_str = ftype.to_moon_string()
           "  \{fname} : \{ty_str}"
         })
         .join("\n")
@@ -208,7 +175,7 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
             let field_str = v.fields
               .map(fn(pair) {
                 let (fname, ftype) = pair
-                let ty_str = dart_type_to_moon(ftype)
+                let ty_str = ftype.to_moon_string()
                 "\{fname} : \{ty_str}"
               })
               .join(", ")
@@ -222,7 +189,7 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
       let method_str = methods
         .map(fn(m) {
           let param_str = format_params(m.params)
-          let ret_str = dart_type_to_moon(m.ret_type)
+          let ret_str = m.ret_type.to_moon_string()
           "  fn \{m.name}(\{param_str}) -> \{ret_str}"
         })
         .join("\n")
@@ -235,7 +202,7 @@ pub fn emit_moon_decl(d : @dart_ast.DartDecl) -> String {
 /// 发射 MoonBit 方法（impl 块中的方法或独立方法）。
 fn emit_moon_method(class_name : String, m : @dart_ast.DartMethod) -> String {
   let param_str = format_params(m.params)
-  let ret_str = dart_type_to_moon(m.ret_type)
+  let ret_str = m.ret_type.to_moon_string()
   let body_str = emit_moon_expr(m.body)
   "fn \{class_name}::\{m.name}(\{param_str}) -> \{ret_str} {\n  \{body_str}\n}"
 }

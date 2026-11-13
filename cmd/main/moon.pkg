@@ -2,6 +2,7 @@ import {
   "walkzzz/moon2dart" @lib,
   "walkzzz/moon2dart/ast",
   "walkzzz/moon2dart/project",
+  "walkzzz/moon2dart/mcp_server",
   "moonbitlang/core/env",
   "moonbitlang/async",
   "moonbitlang/async/fs",
@@ -10,3 +11,7 @@ import {
 pkgtype(kind: "executable")
 
 supported_targets = "-all+native"
+
+options(
+  "allow-experimental-packages": [ "moonbitlang/core/async" ],
+)

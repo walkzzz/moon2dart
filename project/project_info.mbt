@@ -1,32 +1,35 @@
 ///|
 /// 项目信息 — 从 moon.mod 文件读取的模块元数据 + 包列表。
+#derive(Debug)
 pub(all) struct ProjectInfo {
   module_name : String
   version : String
   packages : Array[PackageInfo]
-} derive(Debug)
+}
 
 ///|
 pub extend ProjectInfo with Debug::{to_repr}
 
 ///|
 /// 包信息 — 从 moon.pkg 文件和目录结构推断的单个包信息。
+#derive(Debug)
 pub(all) struct PackageInfo {
   name : String
   path : String
   dependencies : Array[String]
   source_files : Array[String]
-} derive(Debug)
+}
 
 ///|
 pub extend PackageInfo with Debug::{to_repr}
 
 ///|
 /// 依赖图 — 包之间的依赖关系，用于拓扑排序。
+#derive(Debug)
 pub(all) struct DependencyGraph {
   nodes : Array[String]
   edges : Array[(String, String)]
-} derive(Debug)
+}
 
 ///|
 pub extend DependencyGraph with Debug::{to_repr}
