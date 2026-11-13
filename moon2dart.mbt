@@ -17,27 +17,72 @@ pub fn transpile_with_lib(
 /// 单文件转换管线 — MoonBit 源码字符串 → Dart 代码字符串。
 ///
 /// 管线：source → Lexer::tokenize → Parser::parse_program → emit_dart_program
-pub fn transpile_source(src : String) -> String {
+pub fn transpile_source(src : String) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
   let tokens = @parser.Lexer::make(src).tokenize()
+  if tokens.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
+  }
   let decls = @parser.Parser::make(tokens).parse_program()
-  @codegen.emit_dart_program(decls)
+  if decls.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("parser produced no declarations")
+  }
+  let result = @codegen.emit_dart_program(decls)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
 }
 
 ///|
 /// 单文件转换管线（可指定 FFI 库名）。
-pub fn transpile_source_with_lib(src : String, lib_name : String) -> String {
+pub fn transpile_source_with_lib(
+  src : String,
+  lib_name : String,
+) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
   let tokens = @parser.Lexer::make(src).tokenize()
+  if tokens.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
+  }
   let decls = @parser.Parser::make(tokens).parse_program()
-  @codegen.emit_dart_program_with_lib(decls, lib_name)
+  if decls.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("parser produced no declarations")
+  }
+  let result = @codegen.emit_dart_program_with_lib(decls, lib_name)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
 }
 
 ///|
 /// 单文件转换管线（纯子集模式，跳过 FFI 声明）。
-pub fn transpile_source_pure(src : String) -> String {
+pub fn transpile_source_pure(src : String) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
   let tokens = @parser.Lexer::make(src).tokenize()
+  if tokens.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
+  }
   let decls = @parser.Parser::make(tokens).parse_program()
+  if decls.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("parser produced no declarations")
+  }
   let pure_decls = @codegen.filter_pure(decls)
-  @codegen.emit_dart_program(pure_decls)
+  if pure_decls.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("no pure declarations after filtering")
+  }
+  let result = @codegen.emit_dart_program(pure_decls)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
 }
 
 ///|
@@ -66,10 +111,23 @@ pub fn transpile_flutter(decls : Array[@ast.MoonDecl]) -> String {
 
 ///|
 /// 单文件 Flutter 转换管线 — MoonBit 源码字符串 → Flutter 应用代码字符串。
-pub fn transpile_source_flutter(src : String) -> String {
+pub fn transpile_source_flutter(src : String) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
   let tokens = @parser.Lexer::make(src).tokenize()
+  if tokens.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
+  }
   let decls = @parser.Parser::make(tokens).parse_program()
-  @codegen.emit_flutter_program(decls)
+  if decls.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("parser produced no declarations")
+  }
+  let result = @codegen.emit_flutter_program(decls)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("flutter codegen produced empty output")
+  }
+  result
 }
 
 ///|
@@ -83,8 +141,15 @@ pub fn reverse_transpile(decls : Array[@dart_ast.DartDecl]) -> String {
 
 ///|
 /// 反向转换管线 — Dart 源码字符串 → MoonBit 源码字符串。
-pub fn reverse_transpile_source(src : String) -> String {
-  @reverse_codegen.reverse_transpile_source(src)
+pub fn reverse_transpile_source(src : String) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ReverseTranspileError("empty Dart source code")
+  }
+  let result = @reverse_codegen.reverse_transpile_source(src)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::ReverseTranspileError("reverse transpile produced empty output")
+  }
+  result
 }
 
 ///|

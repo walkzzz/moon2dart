@@ -201,7 +201,7 @@ test "bench: codegen emit large" {
 test "bench: transpile_source small" {
   let src = small_source()
   let summary = @moonbench.benchmark(1000, fn() {
-    ignore(@lib.transpile_source(src))
+    ignore(try @lib.transpile_source(src) catch { _ => "" })
   })
   println("transpile small: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -211,7 +211,7 @@ test "bench: transpile_source small" {
 test "bench: transpile_source medium" {
   let src = medium_source()
   let summary = @moonbench.benchmark(1000, fn() {
-    ignore(@lib.transpile_source(src))
+    ignore(try @lib.transpile_source(src) catch { _ => "" })
   })
   println("transpile medium: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -221,7 +221,7 @@ test "bench: transpile_source medium" {
 test "bench: transpile_source large" {
   let src = large_source()
   let summary = @moonbench.benchmark(500, fn() {
-    ignore(@lib.transpile_source(src))
+    ignore(try @lib.transpile_source(src) catch { _ => "" })
   })
   println("transpile large: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -246,7 +246,7 @@ test "bench: flutter codegen" {
 test "bench: transpile_source_flutter" {
   let src = flutter_source()
   let summary = @moonbench.benchmark(500, fn() {
-    ignore(@lib.transpile_source_flutter(src))
+    ignore(try @lib.transpile_source_flutter(src) catch { _ => "" })
   })
   println("flutter pipeline: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -296,7 +296,7 @@ test "bench: reverse transpile_source" {
 test "bench: budget check transpile large" {
   let src = large_source()
   let summary = @moonbench.benchmark(200, fn() {
-    ignore(@lib.transpile_source(src))
+    ignore(try @lib.transpile_source(src) catch { _ => "" })
   })
   let budget : @moonbench.Budget = { max_mean_ns: 5_000_000, max_spread_ppm: 500_000 }
   let report = @moonbench.budget_report(summary, budget)

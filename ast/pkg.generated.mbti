@@ -8,6 +8,16 @@ import {
 // Values
 
 // Errors
+pub(all) suberror Moon2DartError {
+  ParseError(String)
+  TranspileError(String)
+  ReverseTranspileError(String)
+  JsonParseError(String)
+  SchemaError(String)
+  FileIOError(String)
+  ProjectError(String)
+  TypeError(String)
+}
 
 // Types and methods
 #derive(Compare, Eq, @debug.Debug)

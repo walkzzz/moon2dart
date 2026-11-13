@@ -53,13 +53,25 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
   }
   if reverse {
-    let moon_code = @lib.reverse_transpile_source(content)
+    let moon_code = try @lib.reverse_transpile_source(content) catch {
+      @ast.Moon2DartError::ReverseTranspileError(msg) => { println("Error: " + msg); return }
+      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
+      _ => { println("Error: unexpected error during reverse conversion"); return }
+    }
     println(moon_code)
   } else if pure_only {
-    let dart_code = @lib.transpile_source_pure(content)
+    let dart_code = try @lib.transpile_source_pure(content) catch {
+      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
+      @ast.Moon2DartError::TranspileError(msg) => { println("Error: " + msg); return }
+      _ => { println("Error: unexpected error during conversion"); return }
+    }
     println(dart_code)
   } else {
-    let dart_code = @lib.transpile_source_with_lib(content, lib_name)
+    let dart_code = try @lib.transpile_source_with_lib(content, lib_name) catch {
+      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
+      @ast.Moon2DartError::TranspileError(msg) => { println("Error: " + msg); return }
+      _ => { println("Error: unexpected error during conversion"); return }
+    }
     println(dart_code)
   }
 }

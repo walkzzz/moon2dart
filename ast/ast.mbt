@@ -218,3 +218,18 @@ pub fn MoonType::needs_result_type(self : MoonType) -> Bool {
     _ => false
   }
 }
+///|
+/// moon2dart 统一错误类型 — 覆盖所有阶段的错误场景。
+///
+/// 各包通过 `raise Moon2DartError::XXX(...)` 抛出错误，
+/// 调用方通过 `try ... catch { Moon2DartError::XXX(msg) => ... }` 捕获处理。
+pub(all) suberror Moon2DartError {
+  ParseError(String)
+  TranspileError(String)
+  ReverseTranspileError(String)
+  JsonParseError(String)
+  SchemaError(String)
+  FileIOError(String)
+  ProjectError(String)
+  TypeError(String)
+}

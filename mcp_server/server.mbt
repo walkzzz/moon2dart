@@ -24,7 +24,11 @@ fn handle_convert(
     Ok(Some(name)) => name
     _ => "libnative.so"
   }
-  let dart_code = @lib.transpile_source_with_lib(source, lib_name)
+  let dart_code = try @lib.transpile_source_with_lib(source, lib_name) catch {
+    @ast.Moon2DartError::ParseError(msg) => return @mcpsdk.ToolResult::error("Parse error: " + msg)
+    @ast.Moon2DartError::TranspileError(msg) => return @mcpsdk.ToolResult::error("Transpile error: " + msg)
+    _ => return @mcpsdk.ToolResult::error("Unexpected error during conversion")
+  }
   @mcpsdk.ToolResult::text(dart_code)
 }
 
@@ -39,7 +43,10 @@ fn handle_reverse(
     Ok(s) => s
     Err(_) => return @mcpsdk.ToolResult::error("missing 'source' parameter")
   }
-  let moon_code = @lib.reverse_transpile_source(source)
+  let moon_code = try @lib.reverse_transpile_source(source) catch {
+    @ast.Moon2DartError::ReverseTranspileError(msg) => return @mcpsdk.ToolResult::error("Reverse transpile error: " + msg)
+    _ => return @mcpsdk.ToolResult::error("Unexpected error during reverse conversion")
+  }
   @mcpsdk.ToolResult::text(moon_code)
 }
 
@@ -54,7 +61,11 @@ fn handle_flutter(
     Ok(s) => s
     Err(_) => return @mcpsdk.ToolResult::error("missing 'source' parameter")
   }
-  let flutter_code = @lib.transpile_source_flutter(source)
+  let flutter_code = try @lib.transpile_source_flutter(source) catch {
+    @ast.Moon2DartError::ParseError(msg) => return @mcpsdk.ToolResult::error("Parse error: " + msg)
+    @ast.Moon2DartError::TranspileError(msg) => return @mcpsdk.ToolResult::error("Transpile error: " + msg)
+    _ => return @mcpsdk.ToolResult::error("Unexpected error during Flutter conversion")
+  }
   @mcpsdk.ToolResult::text(flutter_code)
 }
 
