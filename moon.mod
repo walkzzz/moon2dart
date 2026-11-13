@@ -18,4 +18,5 @@ import {
   "moonbitlang/async@0.22.5",
   "colmugx/mcp@0.18.2",
   "colmugx/posoco@0.24.2",
+  "sa2360/moonbench@0.3.0",
 }
