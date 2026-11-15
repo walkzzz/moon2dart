@@ -1,0 +1,103 @@
+# 陷阱目录（pitfall-catalog）
+
+> 准入标准（借鉴 flutter-ohos-expert-agent）：**只收"复现过并修好"的条目**，来源标【实测】并附编译器错误码 / 复现命令；报告不许写「预计可行」「理论上支持」。
+> 编号分段：`M*` = MoonBit 语法演进（moon 0.1.20261104 实测，与 astrolabe/image 同源）· `T*` = moon2dart transpiler 特有（待积累）。
+
+---
+
+## M 系列 · MoonBit 语法演进（moon 0.1.20261104 实测）
+
+### M1 `try?` 语法已移除
+
+- **现象**：`match try? f() { ... }` 编译失败。
+- **判别**：编译器直接提示 `try? has been removed. Replace 'try? expr' with 'try Ok(expr) catch { e => Err(e) }'`。
+- **修法**：`let r : Result[T, E] = try { Ok(f()) } catch { e => Err(e) }`。
+- **来源**：【实测】moon check 编译错误。
+- **可自动化**：✅。
+
+### M2 `inspect!` 宏已移除，且 `inspect` 的 Show 版本已弃用
+
+- **现象**：`inspect!(expr, content=)` 解析错 `unexpected f!(..)`；`inspect` 对 `Result` 类型触发 `[0020] deprecated: Use Debug instead of Show for debugging purposes`（note 指向 `moonbitlang/core/builtin/show.mbt:357`）。
+- **修法**：断言改 `to_string()` / 插值；或实现 `Debug` 后用 `debug_inspect`；README 展示性代码改 `match + println` 风格。
+- **来源**：【实测】astrolabe/image 同源对照实验（3002 + 4018 双实锤）。
+- **可自动化**：✅（CI --deny-warn 即红）。
+
+### M3 命名参数传值语法是 `label=`，不是 `label~=`
+
+- **现象**：`[3016] The syntax 'label~=..' is invalid, the correct syntax is 'label=..'`。
+- **修法**：`label="value"`。
+- **来源**：【实测】moon check 编译错误。
+- **可自动化**：✅。
+
+### M4 `not(expr)` 已弃用
+
+- **现象**：`[0020] deprecated: Use !expr instead`（--deny-warn 下为错误）。
+- **修法**：`!expr`。
+- **来源**：【实测】moon check 警告。
+- **可自动化**：✅。
+
+### M5 `StringBuilder::new()` 已弃用
+
+- **现象**：`[0020] deprecated: Use 'StringBuilder()' instead`。
+- **修法**：`let buf : StringBuilder = StringBuilder()`。
+- **来源**：【实测】moon check 警告。
+- **可自动化**：✅。
+
+### M6 MoonBit trait 不支持类型参数
+
+- **现象**：`pub trait Name[A] { ... }` 编译错 `[3002] unexpected '['`；impl 处 `Name[T] for Type[T]` 同样拒绝。
+- **根因**：MoonBit trait 无类型参数化能力。
+- **修法**：函数式扩展点（裸函数作参数）或 Self 绑定。
+- **来源**：【实测】astrolabe v0.5.0 ParserLike 类型类方案被编译器推翻（walkzzz/astrolabe 同作者）。
+- **可自动化**：❌ 设计约束。
+
+### M7 `Char` 的 Show 输出无引号
+
+- **现象**：inspect 快照 `content="Ok('a')"` 失败，实际 `Ok(a)`。
+- **修法**：快照断言以实测为准（`moon test --update` 自动对齐）。
+- **来源**：【实测】astrolabe 侧快照 diff。
+- **可自动化**：✅。
+
+### M8 `impl Show` 的隐式方法提升已弃用（implicit promotion）
+
+- **现象**：`[0079] implicit_impl_as_method`（--deny-warn 下为错误）。
+- **修法**：显式 `pub extend X with Show::{output, to_string}`。
+- **来源**：【实测】image core/types LoadError 实现 Show 时触发（0079）。
+- **可自动化**：✅。
+
+### M9 `Result` 的 Show 已弃用——failable API 推荐 `T raise E`
+
+- **现象**：`[0078] result_error_return: Prefer 'T raise E' for failable APIs`；inspect（Show 版）同源弃用。
+- **修法**：API 签名改 `-> T raise E`；测试断言改 `to_string()` / 插值。
+- **来源**：【实测】CI --deny-warn 门禁（0078）。
+- **可自动化**：✅。
+
+### M10 `many` 零消耗死循环防护：mut 引用比较必须用运行前快照
+
+- **现象**：`many(p)` 中 `p` 零消耗成功 → 尾递归同位置无限循环挂起；防护比较 `st.offset == state.offset` 因 `State` 为 mut 引用（run 原地推进）恒为 true，反而误伤全部正常匹配。
+- **修法**：`p.run` 前取 `let before = state.offset` 快照，运行后比较 `st.offset == before`。
+- **来源**：【实测】astrolabe 侧同类实现（walkzzz/astrolabe v0.5.2，M 系列同源）。
+- **可自动化**：✅ 正反向测试。
+
+---
+
+## T 系列 · moon2dart transpiler 特有（待积累）
+
+> 准入规则同上；本段随项目演进积累（transpiler 管线 / 双向同步 / MCP 工具链特有陷阱）。
+
+### T1 `MCustom`/`MTypeVar` 的 name 未校验直接插入 Dart 代码（注入向量）
+
+- **现象**：`transpile_type(@ast.MCustom("a; class Injected"))` 返回 `"a; class Injected"`——name 原样插入生成的 Dart 代码，恶意 name 可注入任意 Dart 声明。
+- **复现**：moon2dart_test.mbt 的 `transpile_type records DCustom name passthrough boundary` 测试（实测 name 原样通过）。
+- **根因**：`map_type` 的 `MCustom(name) => DCustom(name)` 与 `to_dart_string` 的 `DCustom(name) => name` 均未校验 name 是否为合法 Dart identifier。
+- **修法（roadmap 0.1.x 迭代）**：parser 解析 TypeVar/Custom name 时加 identifier 校验（字母/数字/下划线白名单），非法即报 `Moon2DartError`。
+- **来源**：【实测】moon2dart_test.mbt 注入边界测试（2026-11-13）。
+- **可自动化**：✅（注入测试已入册，校验后断言反转）。
+
+---
+
+## 维护规则（照 flutter-ohos-expert 准入流程）
+
+1. 新条目只收"复现过并修好"的，附编译器错误码或测试红绿证据，标【实测】。
+2. 编号从各段最大号往后接（M* / T*），不跨段复用。
+3. M 系列与 astrolabe / image 的 docs/pitfall-catalog.md 同源（两项目各自收录，条目同步）。

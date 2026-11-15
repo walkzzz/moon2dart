@@ -1,4 +1,5 @@
 import {
+  "moonbitlang/core/bench",
   "walkzzz/moon2dart/ast",
   "walkzzz/moon2dart/typesys",
   "walkzzz/moon2dart/codegen",

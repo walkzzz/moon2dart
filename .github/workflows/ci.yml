@@ -15,9 +15,19 @@ jobs:
         run: |
           curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
+      - name: Update registry index
+        run: moon update
       - name: Check (all targets, deny warnings)
         run: moon check --target all --deny-warn
       - name: Test (all targets)
         run: moon test --target all
       - name: Format check
         run: moon fmt --check
+      - name: Verify API interface
+        run: |
+          moon info
+          git diff --exit-code -- '*.mbti' || echo "Warning: .mbti files changed, please commit them"
+      - name: Code coverage report
+        run: |
+          moon test --enable-coverage --target native
+          moon coverage analyze | tee coverage.txt

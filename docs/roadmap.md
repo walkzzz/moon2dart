@@ -1,6 +1,10 @@
 # moon2dart 迭代路线图
 
 > 已实现 v0.1.0-v0.9.1 · 2026-11-12 | 更新 v0.9.1-v1.0.0 规划
+>
+> 📌 **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量。
+>
+> 🧰 **工程方法论三件套**：[陷阱目录](pitfall-catalog.md)（M 系列 MoonBit 语法演进 + T 系列 transpiler 特有）· [验收记分卡](assessment.md)（三口径 + evidence）· [check_docs 自检](../scripts/check_docs.mjs)（数字一致性断言，CI 集成）
 
 ## 最终目标
 
@@ -161,35 +165,6 @@ Option     混合      widget      反向骨架    大模型消费   发布
 | S5 | CLI `--reverse` 选项（convert <file.dart> --reverse） | ✅ |
 | S6 | 测试 + 文档 | ✅ |
 
-**交付**：347 测试（native），Dart→MoonBit 反向转换管线，CLI `--reverse` 选项。
-
-**新增 API**：
-- `reverse_transpile(decls)` — Dart AST → MoonBit 源码
-- `reverse_transpile_source(src)` — Dart 源码 → MoonBit 源码
-- `reverse_transpile_type(t)` — Dart 类型 → MoonBit 类型字符串
-- `reverse_transpile_expr(e)` — Dart 表达式 → MoonBit 表达式字符串
-- `reverse_transpile_decl(d)` — Dart 声明 → MoonBit 声明字符串
-
-**新增包**：
-- `dart_ast/` — Dart AST 节点定义（零依赖）
-- `dart_parser/` — Dart 词法+语法分析（依赖 dart_ast）
-- `reverse_codegen/` — Dart AST → MoonBit 代码发射（依赖 dart_ast + ast + dart_parser）
-
----
-
-## v0.8.0 ✅ — Dart → MoonBit 反向转换骨架（已完成）
-
-**目标**：建立反向转换管线，支持 Dart 源码 → MoonBit 源码。
-
-| Sprint | 内容 | 状态 |
-|--------|------|------|
-| S1 | dart_ast 包：DartType/DartExpr/DartPattern/DartDecl/DartMethod/DartVariant（14 白盒测试） | ✅ |
-| S2 | dart_parser 包：DartLexer（DartTokenKind 67 变体）+ DartParser（fn/class/sealed/abstract/expr） | ✅ |
-| S3 | reverse_codegen 包：dart_type_to_moon/emit_moon_expr/emit_moon_decl/emit_moon_program | ✅ |
-| S4 | 根包 reverse_transpile/reverse_transpile_source API | ✅ |
-| S5 | CLI `--reverse` 选项（convert <file.dart> --reverse） | ✅ |
-| S6 | 测试 + 文档 | ✅ |
-
 **交付**：364 测试（native），Dart→MoonBit 反向转换管线，CLI `--reverse` 选项。
 
 **新增 API**：
@@ -331,6 +306,8 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 ## v1.0.0 — 验证 + 完整发布
 
 **目标**：生产可用，完整发布到 mooncakes.io。
+
+> **0.1.x 版本线说明**：mooncakes 包版本已重置为 0.1.0（0.1.x 线推进）——v1.0.0 为 0.1.x 线的稳定化终点（API 冻结 + 全量验证 + 三渠道正式发布）。
 
 | Sprint | 内容 |
 |--------|------|

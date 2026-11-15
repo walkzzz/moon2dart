@@ -51,3 +51,15 @@ test "blackbox: transpile_expr binop" {
   let expr = @ast.EBinOp("+", @ast.EInt(1), @ast.EInt(2))
   assert_eq(@moon2dart.transpile_expr(expr), "1 + 2")
 }
+
+///|
+/// 注入风险实测（T1）：MCustom/TypeVar 的 name 未校验直接插入 Dart 代码——
+/// 恶意 name 可注入任意 Dart 代码（记录边界，identifier 校验列入 roadmap 0.1.x 迭代）。
+/// Injection risk demo (T1): MCustom/TypeVar name is passed through unvalidated —
+/// recorded as a known boundary, identifier validation is on the roadmap.
+test "blackbox: transpile_type records DCustom name passthrough boundary" {
+  let t : @ast.MoonType = @ast.MCustom("a; class Injected")
+  let dart = @moon2dart.transpile_type(t)
+  // 实测：name 原样通过（现状行为记录）——校验列入 roadmap（0.1.x 迭代）
+  assert_eq(dart, "a; class Injected")
+}

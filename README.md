@@ -95,7 +95,7 @@ moon info                              # 更新接口
 
 ## 测试
 
-364 个测试，native 后端全通过：
+383 个测试，native 后端全通过（v0.9.1 口径；CI 四目标实跑后按实际数更新）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -108,6 +108,13 @@ moon info                              # 更新接口
 | dart_parser | 0 | 0 |
 | reverse_codegen | 0 | 0 |
 | moon2dart (根) | 32 | 5 |
+
+## 🌱 同作者生态
+
+- [walkzzz/astrolabe](https://mooncakes.io/docs/walkzzz/astrolabe) — MoonBit 解析器组合子库（位置感知 + 显式回溯 + **形式化验证 8 goals**）
+- [walkzzz/image](https://mooncakes.io/docs/walkzzz/image) — 纯 MoonBit 图像处理库（18 格式 + OCR 全链路 + 90+ 算法 + 七模块 workspace）
+
+> 三库组成 **walkzzz MoonBit 工具集**：组合子建文法（astrolabe）→ transpiler 桥接 Flutter（moon2dart）→ 视觉处理（image）。
 
 ## 路线图
 
@@ -125,8 +132,11 @@ moon info                              # 更新接口
 | v0.6.0 | ✅ 已实现 | FFI 混合模式（extern c to dart:ffi + String bridge + --pure-only） |
 | v0.7.0 | ✅ 已实现 | Flutter widget 转换（50+ widget + StatelessWidget/StatefulWidget + 事件处理） |
 | v0.8.0 | ✅ 已实现 | Dart → MoonBit 反向转换骨架（dart_ast + dart_parser + reverse_codegen） |
-| v0.9.0 | 📋 计划 | 自动触发 + 项目同步 + MCP/Skill |
+| v0.9.0 | ✅ 已实现 | 自动触发 + 项目同步 + MCP 服务器 + Agent 模式 + Skill |
+| v0.9.1 | ✅ 已实现 | 项目双向同步 + 冲突检测 |
 | v1.0.0 | 📋 计划 | 验证 + 完整发布（mooncakes.io） |
+
+> 📌 **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量。
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
@@ -143,6 +153,12 @@ moon info                              # 更新接口
 | [testing_strategy.md](docs/testing_strategy.md) | 测试策略 |
 | [v0.1.0_plan.md](docs/v0.1.0_plan.md) | v0.1.0 实施计划 |
 | [changelog.md](docs/changelog.md) | 变更日志 |
+| [申报书](hackathon2026_moon2dart_proposal.md) | 季度评选申报书（353 行，含生态空白论证与量化验收） |
+| [验收记分卡](docs/assessment.md) | 逐检查点 + evidence（三口径：没跑过≠通过/分母不猜/第三方可复算） |
+| [陷阱目录](docs/pitfall-catalog.md) | MoonBit 语法演进实测陷阱（10 条，与 astrolabe/image 同源） |
+| [申报书](hackathon2026_moon2dart_proposal.md) | 季度评选申报书（353 行，含生态空白论证与量化验收） |
+| [验收记分卡](docs/assessment.md) | 逐检查点 + evidence（三口径：没跑过≠通过/分母不猜/第三方可复算） |
+| [陷阱目录](docs/pitfall-catalog.md) | MoonBit 语法演进实测陷阱（10 条，与 astrolabe/image 同源） |
 
 ## 许可证
 

@@ -1,8 +1,8 @@
 name = "walkzzz/moon2dart"
 
-version = "0.9.1"
+version = "0.1.0"
 
-readme = "README.mbt.md"
+readme = "README.md"
 
 repository = "https://github.com/walkzzz/moon2dart.git"
 
