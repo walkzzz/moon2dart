@@ -45,9 +45,9 @@ class Option<T> {
 }
 ```
 
-三分态往返验证：`None`→`Option.none()`→`None` ✅ · `Some(None)`→`Option.some(null)`→`Some(None)` ✅ · `Some(Some(42))`→`Option.some(42)`→`Some(Some(42))` ✅
+三分态往返：`None`↔`Option.none()` ✅ · `Some(None)`↔`Option.some(null)` ✅ · `Some(Some(42))`↔`Option.some(42)` ✅
 
-单层 Option 保持 `T?` 零开销；仅嵌套场景生成辅助类。8 个专项测试全绿。
+单层保持 `T?` 零开销；仅嵌套场景生成辅助类。8 个专项测试全绿。
 
 ---
 
@@ -64,11 +64,19 @@ class Option<T> {
 
 ---
 
-## 核心方案
+## 预期使用场景
 
-**四包线性架构**：ast（零依赖）← typesys（类型映射）← codegen（代码发射）← 根包（编排），线性无环。
+1. **MoonBit 后端逻辑 → Flutter 前端复用**：`moon add walkzzz/moon2dart` 引入后，`transpile_source(src)` 自动将 MoonBit 业务逻辑转为等价 Dart，避免双语言维护逻辑漂移
+2. **MoonBit 项目 → 完整 Flutter 应用一键生成**：`moon2dart project <dir> -o <out>` 扫描整个项目，自动生成 pubspec.yaml + lib/*.dart + widget 树 + runApp() 入口
+3. **AI Agent 通过 MCP 自动跨语言转换**：Claude Desktop / VS Code Copilot 通过 MCP 服务器调用 6 个转换工具，MoonBit→Dart 成为 AI 工具链原生能力
 
-**转换管线**：MoonBit 源码 → Lexer → Parser → AST → type_map（16 MoonType → 13 DartType，28 条目四级分类）→ emit → Dart + pubspec.yaml。
+---
+
+## 核心功能与技术方案
+
+**四包线性架构**：ast（零依赖）← typesys（类型映射）← codegen（代码发射）← 根包（编排），线性无环，ast 可独立复用。
+
+**转换管线**：MoonBit 源码 → Lexer（TokenKind 57 变体）→ Parser → AST → type_map（16 MoonType → 13 DartType，28 条目四级分类）→ emit → Dart + pubspec.yaml。
 
 **四条交付线**：库 API（`moon add` 自动触发）· CLI（convert/project/sync/watch/serve）· Skill（大模型 Agent）· MCP 服务器（JSON-RPC 6 工具）。
 
@@ -76,22 +84,29 @@ class Option<T> {
 
 ---
 
-## 质量与生态
+## 质量实测
 
 | 指标 | 值 |
 |------|-----|
 | 包数 | 12 |
 | 测试 | **500**（native）· 464（wasm/js/wasm-gc） |
 | 门禁 | `moon check --target all --deny-warn` 零警告 |
-| Sprint | 55+ 轮（v0.1.0 → v0.10.0，10 版本全交付） |
+| Sprint | 55+ 轮（v0.1.0→v0.10.0，10 版本全交付） |
 | mooncakes | ✅ 0.8.0 已发布 |
 | 语义等价 | L1 往返恢复 100% · strict 拒绝 100% · 变异测试全红→绿 |
 | CI | GitHub Actions 五步（check+test+fmt+moon update+coverage） |
-| 生态定位 | mooncakes 3566+ 包中**唯一** MoonBit→Dart transpiler |
 
 ---
 
-## 验收对齐
+## 生态定位与差异化
+
+mooncakes.io 全量 3566+ 包检索确认：**无任何同类 MoonBit→Dart transpiler**，本项目为唯一。
+
+差异化：①唯一生态空白填补 ②四条交付线全覆盖 ③项目级自动转换 ④双向同步+冲突检测 ⑤MCP+Skill AI原生 ⑥**L1-L4四级语义等价+strict模式+变异测试** ⑦四后端全绿+零警告
+
+---
+
+## 验收标准对齐
 
 | 大赛要求 | 满足方式 |
 |---------|---------|
@@ -105,6 +120,34 @@ class Option<T> {
 
 ---
 
-## AI 声明
+## 技术风险与缓解
 
-AI 辅助开发，关键决策人工把控：**AST 架构边界** · **类型映射规范** · **语义等价分级（L1-L4 标准 + 辅助类设计 + strict 边界）** · **MCP/Skill 形态** · **Sprint 顺序调整**。提交历史 + changelog + CI 门禁保证可追踪性。
+| 风险 | 缓解 | 验证 |
+|------|------|------|
+| 嵌套 Option 语义丢失 | 辅助类+三分态往返+变异测试 | round-trip 100%+变异红→绿 |
+| Result 结构丢失 | DResult 结构化节点 | DResult 往返测试+变异红→绿 |
+| FFI 桥接安全 | `--pure-only`+L4分类+strict拒绝 | strict L4 拒绝测试 |
+| UInt/Float 值域丢失 | L3分类+诊断注释+strict可选拒绝 | L3 标注+strict 测试 |
+| build hook 不成熟 | CLI `sync` 备选触发 | v0.9.0 已交付 |
+
+---
+
+## 参考与设计说明
+
+[chrono_tz-mbt](https://github.com/walkzzz/chrono_tz-mbt)（MCP 架构参考）· [MoonBit 官方文档](https://docs.moonbitlang.com/) · [Dart 规范](https://dart.dev/guides/language) · [Flutter](https://flutter.dev/)。设计原则：**原创设计**·**线性无环**·**零警告门禁**·**渐进式版本**·**语义等价分级**（L1-L4+strict+变异测试）。Apache-2.0。
+
+---
+
+## AI 声明与人工把控
+
+AI 辅助开发，关键决策人工把控：**AST 架构边界** · **类型映射规范** · **语义等价分级（L1-L4 标准+辅助类设计+strict 边界）** · **MCP/Skill 形态** · **Sprint 顺序调整**。提交历史+changelog+CI 门禁保证可追踪性。
+
+---
+
+## 选型自检
+
+| 章程审核原则 | 本项目对照 |
+|:---|:---|
+| 题目真实反映客观需求 | MoonBit 无 Dart/Flutter 桥是真实空白——Flutter 生态庞大，MoonBit 需要"跑在 Flutter 上"的入口 |
+| 技术方案最优或最合适 | 四包线性架构+AST 中间表示是 transpiler 标准形态；L1-L4 四级分类+strict 模式提供语义等价分级保障 |
+| mooncakes.io 无同质项目 | 3566+ 包检索确认无同类；唯一 MoonBit→Dart transpiler 且具备往返语义等价验证能力 |
