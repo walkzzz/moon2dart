@@ -1,16 +1,16 @@
-# moon2dart 迭代路线图
+# moon2dart 迭代路线图 | Roadmap
 
-> 已实现 v0.1.0-v0.9.1 · 2026-11-12 | 更新 v0.9.1-v1.0.0 规划
+> 已实现 v0.1.0-v0.10.0 · 2026-11-16 | 更新 v0.10.0-v1.0.0 规划
 >
 > 📌 **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量。
 >
 > 🧰 **工程方法论三件套**：[陷阱目录](pitfall-catalog.md)（M 系列 MoonBit 语法演进 + T 系列 transpiler 特有）· [验收记分卡](assessment.md)（三口径 + evidence）· [check_docs 自检](../scripts/check_docs.mjs)（数字一致性断言，CI 集成）
 
-## 最终目标
+## 最终目标 | Final Goal
 
 开发者引入 moon2dart 后，**双向转换 MoonBit ↔ Dart/Flutter 项目**。
 
-### 四条交付线
+### 四条交付线 | Four Delivery Lines
 
 | 交付线 | 发布渠道 | 消费者 | 覆盖版本 |
 |--------|----------|--------|----------|
@@ -19,7 +19,7 @@
 | Skill | `mooncakes.io/skills` | 大模型 Agent | v0.9.0 |
 | MCP 服务器 | 随 CLI 分发 | AI 工具链 | v0.9.0 |
 
-## 路线总览
+## 路线总览 | Roadmap Overview
 
 ```
 v0.1.0 ──► v0.2.0 ──► v0.3.0 ──► v0.4.0 ──► v0.5.0
@@ -27,10 +27,10 @@ transpiler   parser     trait      项目级     async
 骨架         源码→AST   模式匹配    扫描       Option
   ✅           ✅          ✅         ✅         ✅
 
-v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v1.0.0
-async      FFI       Flutter     Dart→MB    MCP+Skill   完整
-Option     混合      widget      反向骨架    大模型消费   发布
-  ✅           ✅          ✅         ✅         ✅(S1-S4,S6-S8+Agent+S5)
+v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v0.10.0 ──► v1.0.0
+async      FFI       Flutter     Dart→MB    MCP+Skill   语义等价    完整
+Option     混合      widget      反向骨架    大模型消费   往返验证    发布
+  ✅           ✅          ✅         ✅         ✅           ✅
 ```
 
 ---
@@ -303,6 +303,28 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 
 ---
 
+## v0.10.0 ✅ — 往返语义等价性验证体系
+
+**目标**：建立四级语义等价分类（L1-L4），实现嵌套 Option 辅助类和 DResult 结构化节点，确保 MoonBit ↔ Dart 类型映射的往返一致性。
+
+**关键交付**：
+
+| 类别 | 内容 |
+|------|------|
+| 嵌套 Option | `Option[Option[T]]` → `Option<T>` 辅助类 + `DNullable(DNullable(inner))` 映射 |
+| DResult 节点 | `MResult(ok, err)` → `DResult(DartType, DartType)` 替代 DCustom 退化 |
+| 语义等价分级 | L1（全等价 18 项）/ L2（结构等价 2 项）/ L3（受限 3 项）/ L4（不等价 5 项） |
+| strict 模式 | `--strict` CLI 选项 + `map_type_strict` + `transpile_source_strict` |
+| 诊断标注 | L3 → `// [L3-CONSTRAINED]` + L4 → `// [L4-INEQUIVALENT]` 自动注释 |
+| 断言函数 | `assert_round_trip` + `assert_value_domain` + 变异测试 |
+| 验收记分卡 | 往返恢复率 100% + strict 拒绝率 100% + 测试通过率 100% |
+
+**测试**：500 个测试（native 后端全通过），含 117+ 新增语义等价测试
+
+**交付线**：库 API + CLI（`--strict` 选项）
+
+---
+
 ## v1.0.0 — 验证 + 完整发布
 
 **目标**：生产可用，完整发布到 mooncakes.io。
@@ -322,7 +344,7 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 
 ---
 
-## 里程碑与风险
+## 里程碑与风险 | Milestones & Risks
 
 | 版本 | 风险 | 缓解 |
 |------|------|------|
@@ -335,9 +357,10 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 | v0.7.0 | 🟡 中 | widget 映射主观，需定义 UI 抽象层 |
 | v0.8.0 ✅ | � 中 | Dart 语法复杂，parser 工作量大 |
 | v0.9.0 | 🟡 中 | MCP 服务器依赖 colmugx/mcp（已验证可用）；自动触发降级为可选 |
+| v0.10.0 ✅ | 🟡 中 | 嵌套 Option 三分态 + DResult 往返 + strict 模式（已验证） |
 | v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
 
-## 技术参考
+## 技术参考 | Technical References
 
 | 参考 | 用途 |
 |------|------|

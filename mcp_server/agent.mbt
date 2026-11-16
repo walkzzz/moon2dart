@@ -24,12 +24,19 @@ fn escape_json_string(s : String) -> String {
 
 ///|
 /// make_json_args — 构造包含单个字符串参数的 JSON 对象。
-fn make_json_args(key : String, value : String) -> Json raise @ast.Moon2DartError {
+fn make_json_args(
+  key : String,
+  value : String,
+) -> Json raise @ast.Moon2DartError {
   let escaped = escape_json_string(value)
   @mcpsdk.parse_json("{\"" + key + "\":\"" + escaped + "\"}") catch {
-    _ => @mcpsdk.parse_json("{}") catch {
-      _ => raise @ast.Moon2DartError::JsonParseError("invalid JSON args for key: " + key)
-    }
+    _ =>
+      @mcpsdk.parse_json("{}") catch {
+        _ =>
+          raise @ast.Moon2DartError::JsonParseError(
+            "invalid JSON args for key: " + key,
+          )
+      }
   }
 }
 
@@ -165,16 +172,19 @@ pub impl @posoco.ModelPort for RuleBasedModel with fn chat(
         Some(name) => {
           let args = if name == "moon2dart_list_tools" {
             @mcpsdk.parse_json("{}") catch {
-              _ => raise @posoco.ModelError::ResponseParse("invalid JSON for list_tools")
+              _ =>
+                raise @posoco.ModelError::ResponseParse(
+                  "invalid JSON for list_tools",
+                )
             }
           } else if name == "moon2dart_project" {
-            try make_json_args("dir", param) catch {
+            make_json_args("dir", param) catch {
               @ast.Moon2DartError::JsonParseError(msg) =>
                 raise @posoco.ModelError::ResponseParse(msg)
               _ => raise @posoco.ModelError::ResponseParse("unexpected error")
             }
           } else {
-            try make_json_args("source", param) catch {
+            make_json_args("source", param) catch {
               @ast.Moon2DartError::JsonParseError(msg) =>
                 raise @posoco.ModelError::ResponseParse(msg)
               _ => raise @posoco.ModelError::ResponseParse("unexpected error")
@@ -364,7 +374,9 @@ pub impl @posoco.Extension for Moon2DartExtension with fn manifest(self) -> @pos
 
 ///|
 /// register_moon2dart_tools — 将 moon2dart 的 6 个工具注册到 ToolRegistry。
-fn register_moon2dart_tools(registry : @posoco.ToolRegistry) -> Unit raise @ast.Moon2DartError {
+fn register_moon2dart_tools(
+  registry : @posoco.ToolRegistry,
+) -> Unit raise @ast.Moon2DartError {
   registry.register(
     @posoco.ToolDef(
       name=@posoco.ToolName::unchecked("moon2dart_convert"),
@@ -386,13 +398,22 @@ fn register_moon2dart_tools(registry : @posoco.ToolRegistry) -> Unit raise @ast.
           structured=None,
         )
       }
-      let dart_code = try @lib.transpile_source_with_lib(source, "libnative.so") catch {
+      let dart_code = @lib.transpile_source_with_lib(source, "libnative.so") catch {
         @ast.Moon2DartError::ParseError(msg) =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Parse error: " + msg, structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parse error: " + msg,
+            structured=None,
+          )
         @ast.Moon2DartError::TranspileError(msg) =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Transpile error: " + msg, structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Transpile error: " + msg,
+            structured=None,
+          )
         _ =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Unexpected error", structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Unexpected error",
+            structured=None,
+          )
       }
       @posoco.ToolOutcome::Success(content=dart_code, structured=None)
     },
@@ -418,11 +439,17 @@ fn register_moon2dart_tools(registry : @posoco.ToolRegistry) -> Unit raise @ast.
           structured=None,
         )
       }
-      let moon_code = try @lib.reverse_transpile_source(source) catch {
+      let moon_code = @lib.reverse_transpile_source(source) catch {
         @ast.Moon2DartError::ReverseTranspileError(msg) =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Reverse transpile error: " + msg, structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Reverse transpile error: " + msg,
+            structured=None,
+          )
         _ =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Unexpected error", structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Unexpected error",
+            structured=None,
+          )
       }
       @posoco.ToolOutcome::Success(content=moon_code, structured=None)
     },
@@ -448,13 +475,22 @@ fn register_moon2dart_tools(registry : @posoco.ToolRegistry) -> Unit raise @ast.
           structured=None,
         )
       }
-      let flutter_code = try @lib.transpile_source_flutter(source) catch {
+      let flutter_code = @lib.transpile_source_flutter(source) catch {
         @ast.Moon2DartError::ParseError(msg) =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Parse error: " + msg, structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parse error: " + msg,
+            structured=None,
+          )
         @ast.Moon2DartError::TranspileError(msg) =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Transpile error: " + msg, structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Transpile error: " + msg,
+            structured=None,
+          )
         _ =>
-          return @posoco.ToolOutcome::ToolReportedError(content="Unexpected error", structured=None)
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Unexpected error",
+            structured=None,
+          )
       }
       @posoco.ToolOutcome::Success(content=flutter_code, structured=None)
     },
@@ -576,7 +612,7 @@ pub async fn run_agent_mode_with_input(user_input : String?) -> Unit {
     }
   }
   let system = @posoco.EventSystem()
-  let extension = try Moon2DartExtension() catch {
+  let extension = Moon2DartExtension() catch {
     @ast.Moon2DartError::SchemaError(msg) => {
       println("Error: tool schema registration failed: " + msg)
       return

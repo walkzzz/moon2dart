@@ -1,7 +1,7 @@
 # moon2dart 项目申报书
 
 > 2026 MoonBit 国产基础软件开源大赛参赛申报 | 方向：开发者工具 | 申报日期：2026-11-07
-> **季度优秀社区项目评选适配**（2026-11-13）：按**方向 1（新项目）**申报——mooncakes 包版本重置为 **0.1.0**（0.1.x 线），本期赛期内从零开发至 v0.9.1（**383 测试 native**），CI 修复后四目标回归即将闭环
+> **季度优秀社区项目评选适配**（2026-11-13）：按**方向 1（新项目）**申报——mooncakes 包版本重置为 **0.1.0**（0.1.x 线），本期赛期内从零开发至 v0.10.0（**500 测试 native**），CI 修复后四目标回归即将闭环
 
 ---
 
@@ -25,7 +25,7 @@ moon2dart 是 MoonBit → Dart/Flutter 代码生成器（transpiler），将 Moo
 
 mooncakes 生态调研确认（2026-11-07）：**无任何 MoonBit → Dart/Flutter 代码生成器**在 mooncakes 上发布，本项目填补该空白。
 
-**本期新增贡献**（赛期内，0.1.x 版本线）：v0.1.0 骨架 → v0.2.0 解析器 → v0.3.0 trait/match/derive → v0.4.0 项目级扫描 → v0.5.0 async/Option/Result/泛型/闭包 → v0.6.0 FFI（dart:ffi）→ v0.7.0 Flutter widget（50+ widget/状态管理/事件）→ v0.8.0 Dart→MoonBit 反向转换 → v0.9.0 MCP 服务器 + Agent 模式 + 增量同步 + Skill → v0.9.1 双向同步 + 冲突检测——**9 个版本、48+ 轮 Sprint 全部交付**，mooncakes 0.8.0 已发布。
+**本期新增贡献**（赛期内，0.1.x 版本线）：v0.1.0 骨架 → v0.2.0 解析器 → v0.3.0 trait/match/derive → v0.4.0 项目级扫描 → v0.5.0 async/Option/Result/泛型/闭包 → v0.6.0 FFI（dart:ffi）→ v0.7.0 Flutter widget（50+ widget/状态管理/事件）→ v0.8.0 Dart→MoonBit 反向转换 → v0.9.0 MCP 服务器 + Agent 模式 + 增量同步 + Skill → v0.9.1 双向同步 + 冲突检测 → v0.10.0 往返语义等价性验证体系（嵌套Option辅助类+DResult结构化节点+四级分类+strict模式）——**10 个版本、55+ 轮 Sprint 全部交付**，mooncakes 0.8.0 已发布。
 
 ---
 
@@ -43,7 +43,9 @@ mooncakes 生态调研确认（2026-11-07）：**无任何 MoonBit → Dart/Flut
 
 **转换管线**：MoonBit 源码 → Lexer（TokenKind 57 变体）→ Parser → AST → type_map（MoonType 16 变体 → DartType 12 变体）→ emit → Dart 代码 + pubspec.yaml。
 
-**类型映射**（12 种核心映射）：MInt→int、MDouble→double、MString→String、MBool→bool、MArray→List、MMap→Map、MSet→Set、MOption→T?、MResult→sealed Result、MChar→int(rune)、MFuture→Future、MTuple→Record——覆盖基础/复合/高阶类型。
+**类型映射**（12 种核心映射 + DResult 结构化节点，28 条目四级分类全覆盖）：MInt→int、MDouble→double、MString→String、MBool→bool、MArray→List、MMap→Map、MSet→Set、MOption→T?、MResult→sealed Result、MChar→int(rune)、MFuture→Future、MTuple→Record——覆盖基础/复合/高阶类型。
+
+**语义等价分级**（v0.10.0）：L1 全等价（18 项）/ L2 结构等价（2 项）/ L3 受限（3 项）/ L4 不等价（5 项），28 映射条目全覆盖；嵌套 Option 辅助类（`Option[Option[T]]` → `Option<T>` 辅助类保留三分态）；DResult 结构化节点（`MResult(ok, err)` → `DResult(DartType, DartType)` 替代 DCustom 退化）；strict 模式（`--strict` CLI 选项拒绝 L4 映射，L3/L4 生成诊断注释 `[L3-CONSTRAINED]`/`[L4-INEQUIVALENT]`）。
 
 **AST 节点**：MoonType(16)/MoonExpr(9)/MoonPattern(5)/MoonDecl(3)/DartType(12)/DartExpr/DartDecl/DartMethod/DartVariant，全部 `derive(Eq, Compare, Debug)` + 显式 `pub extend`。
 
@@ -56,12 +58,13 @@ mooncakes 生态调研确认（2026-11-07）：**无任何 MoonBit → Dart/Flut
 | 指标 | 数值 |
 |---|---|
 | 包数 | **12**（根 + ast + typesys + codegen + parser + project + dart_ast + dart_parser + reverse_codegen + mcp_server + cmd/main + cmd/mcp） |
-| 测试数 | **383**（native，v0.9.1 口径）——四目标回归即将闭环（CI 修复后） |
+| 测试数 | **500**（native，v0.10.0 口径）——四目标回归即将闭环（CI 修复后） |
 | 工程严格度 | `moon check --deny-warn` 零警告 |
-| Sprint 迭代 | **48+ 轮**（v0.1.0-v0.9.1） |
+| Sprint 迭代 | **55+ 轮**（v0.1.0-v0.10.0） |
 | 交付线 | **4** 条（库 / CLI / Skill / MCP） |
 | mooncakes | ✅ 0.8.0 已发布（0.1.0 重置版发布流程就绪） |
 | 双向转换 | ✅ MoonBit→Dart + Dart→MoonBit（反向转换 + 双向同步 + 冲突检测） |
+| 语义等价 | **L1 恢复率 100%** + **strict 拒绝率 100%** + **500 测试全绿** |
 | CI | GitHub Actions（check --target all + test + fmt + **moon update + mbti + coverage** 五步增强） |
 
 ---
@@ -70,7 +73,7 @@ mooncakes 生态调研确认（2026-11-07）：**无任何 MoonBit → Dart/Flut
 
 mooncakes.io 全量 3566+ 包中检索 Dart/Flutter/transpiler/codegen——**无任何同类 MoonBit → Dart/Flutter 代码生成器**，本项目为唯一。
 
-**差异化定位**：① 唯一 MoonBit → Dart transpiler（生态空白）；② 四条交付线覆盖全部用户入口；③ 自动项目级转换（库引入即触发）；④ 四后端全绿；⑤ **MCP + Skill**（AI 原生工具链）；⑥ 双向转换（MoonBit ↔ Dart）；⑦ 反向同步 + 冲突检测（v0.9.1）。
+**差异化定位**：① 唯一 MoonBit → Dart transpiler（生态空白）；② 四条交付线覆盖全部用户入口；③ 自动项目级转换（库引入即触发）；④ 四后端全绿；⑤ **MCP + Skill**（AI 原生工具链）；⑥ 双向转换（MoonBit ↔ Dart）；⑦ 反向同步 + 冲突检测（v0.9.1）；⑧ 往返语义等价验证（嵌套Option+DResult+四级分类+strict模式+变异测试）。
 
 ---
 
@@ -79,9 +82,9 @@ mooncakes.io 全量 3566+ 包中检索 Dart/Flutter/transpiler/codegen——**�
 | 大赛验收项 | 本项目满足方式 |
 |-----------|-------------|
 | MoonBit 为主 | 库自身 100% MoonBit 实现（AST + 类型映射 + 代码发射 + CLI + MCP） |
-| 仓库公开 | GitHub 公开仓库，持续提交（v0.1.0-v0.9.1，9 轮 Sprint，48+ 轮迭代） |
-| 能够运行 | README + 可运行示例 + **383 测试** + 0 warnings |
-| 工作有效 | 原创设计，**v0.1.0-v0.9.1 九个版本全部交付**，v1.0.0 验证发布规划中 |
+| 仓库公开 | GitHub 公开仓库，持续提交（v0.1.0-v0.10.0，10 轮 Sprint，55+ 轮迭代） |
+| 能够运行 | README + 可运行示例 + **500 测试** + 0 warnings |
+| 工作有效 | 原创设计，**v0.1.0-v0.10.0 十个版本全部交付**，v1.0.0 验证发布规划中 |
 | 开源合规 | Apache-2.0 License，参考来源已标注（chrono_tz-mbt / MoonBit 官方文档 / Dart 规范 / Flutter） |
 | AI 可解释 | AI 辅助开发，所有算法经人工审查 |
 | **持续集成** | GitHub Actions 五步增强（check 四目标 --deny-warn + test + fmt + **moon update + mbti + coverage**） |
@@ -95,7 +98,8 @@ mooncakes.io 全量 3566+ 包中检索 Dart/Flutter/transpiler/codegen——**�
 3. **自动项目级转换 + 双向同步** — v0.8.0/v0.9.1 核心能力
 4. **完整类型映射** — 16 种 MoonType → 12 种 DartType
 5. **MCP 服务器 + Agent 模式** — AI 工具链原生集成（colmugx/mcp + posoco）
-6. **零 warnings + 383 测试** — `moon check --deny-warn` 门禁
+6. **零 warnings + 500 测试** — `moon check --deny-warn` 门禁
+7. **往返语义等价验证** — 嵌套 Option 三分态保留 + DResult 往返 + 四级分类 + strict 模式 + 3 变异测试
 
 ---
 
@@ -107,6 +111,7 @@ mooncakes.io 全量 3566+ 包中检索 Dart/Flutter/transpiler/codegen——**�
 | FFI 桥接类型安全 | `--pure-only` 跳过 FFI 纯子集 |
 | build hook 机制不成熟 | CLI `sync` 备选触发 |
 | MoonBit 语言 beta-preview | 已可用于生产，不兼容变更严格评估 |
+| 嵌套 Option 语义丢失 | 辅助类 Option<T> + 三分态往返测试 + 变异测试验证 |
 
 ---
 
@@ -128,4 +133,4 @@ mooncakes.io 全量 3566+ 包中检索 Dart/Flutter/transpiler/codegen——**�
 |:---|:---|
 | 题目真实反映客观需求 | MoonBit 无 Dart/Flutter 桥是真实空白——Flutter 生态庞大，MoonBit 需要"跑在 Flutter 上"的入口 |
 | 技术方案最优或最合适 | 四包线性架构 + AST 中间表示是 transpiler 的标准形态；`--pure-only` 提供渐进式采用路径 |
-| mooncakes.io 无同质项目 | 2026-11-07 全量 3566+ 包检索确认无同类；本项目为唯一 MoonBit → Dart transpiler |
+| mooncakes.io 无同质项目 | 2026-11-07 全量 3566+ 包检索确认无同类；本项目为唯一 MoonBit → Dart transpiler，且具备往返语义等价验证能力 |

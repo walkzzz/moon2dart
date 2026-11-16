@@ -10,6 +10,8 @@ pub fn emit_dart_decl(@ast.MoonDecl) -> String
 
 pub fn emit_dart_expr(@ast.MoonExpr) -> String
 
+pub fn emit_dart_expr_nested(@ast.MoonExpr) -> String
+
 pub fn emit_dart_pattern(@ast.MoonPattern) -> String
 
 pub fn emit_dart_program(Array[@ast.MoonDecl]) -> String
@@ -19,6 +21,8 @@ pub fn emit_dart_program_with_lib(Array[@ast.MoonDecl], String) -> String
 pub fn emit_flutter_expr(@ast.MoonExpr) -> String
 
 pub fn emit_flutter_program(Array[@ast.MoonDecl]) -> String
+
+pub fn emit_option_class() -> String
 
 pub fn filter_pure(Array[@ast.MoonDecl]) -> Array[@ast.MoonDecl]
 

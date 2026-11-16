@@ -151,6 +151,14 @@ ast ──> (零依赖)
   - S7 测试+文档+门禁 ✅（版本号 0.9.0，373 测试 native，roadmap/changelog 更新）
   - Agent posoco Agent 模式集成 ✅（`mcp_server/agent.mbt` — RuleBasedModel + InMemorySessionPort + Moon2DartExtension + 6 工具注册 + `run_agent_mode_with_input` + `--agent <text>` CLI 参数）
 - **v0.9.1** ✅ 已完成 — 项目双向同步 + 冲突检测（383 测试 native）
+- **v0.10.0** ✅ 已完成 — 往返语义等价性验证体系（500 测试 native）
+  - S1 嵌套 Option 辅助类 ✅（is_nested_option + emit_option_class + emit_dart_expr_nested）
+  - S2 DResult 结构化节点 ✅（DResult(DartType, DartType) 替代 DCustom 退化）
+  - S3 语义等价四级分类 ✅（SemanticLevel 枚举 + semantic_level + map_type_strict）
+  - S4 诊断标注 ✅（emit_semantic_diagnostic + [L3-CONSTRAINED]/[L4-INEQUIVALENT]）
+  - S5 strict 模式 ✅（--strict CLI + transpile_source_strict + L4 拒绝）
+  - S6 断言+变异+记分卡 ✅（assert_round_trip + assert_value_domain + 验收三口径）
+  - S7 文档更新 ✅（semantic_equivalence + type_mapping + assessment + pitfall + architecture + roadmap）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
@@ -170,13 +178,13 @@ ast ──> (零依赖)
 
 ### 测试
 
-364 个测试，native 后端全通过：
+500 个测试，native 后端全通过：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
-| ast | 9 | 0 |
-| typesys | 11 | 0 |
-| codegen | 121 | 0 |
+| ast | 11 | 0 |
+| typesys | 50 | 0 |
+| codegen | 140 | 0 |
 | parser | 38 | 0 |
 | project | 17 | 0 |
 | dart_ast | 14 | 0 |
@@ -184,4 +192,4 @@ ast ──> (零依赖)
 
 ### 文档
 
-开发文档在 `docs/`（7 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / changelog。
+开发文档在 `docs/`（11 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / semantic_equivalence / assessment / pitfall-catalog / changelog / README。

@@ -1,11 +1,13 @@
-# 陷阱目录（pitfall-catalog）
+# 陷阱目录 | Pitfall Catalog
 
 > 准入标准（借鉴 flutter-ohos-expert-agent）：**只收"复现过并修好"的条目**，来源标【实测】并附编译器错误码 / 复现命令；报告不许写「预计可行」「理论上支持」。
 > 编号分段：`M*` = MoonBit 语法演进（moon 0.1.20261104 实测，与 astrolabe/image 同源）· `T*` = moon2dart transpiler 特有（待积累）。
+>
+> 交叉参考：语义等价分级详见 [semantic_equivalence.md](semantic_equivalence.md)
 
 ---
 
-## M 系列 · MoonBit 语法演进（moon 0.1.20261104 实测）
+## M 系列 · MoonBit 语法演进 | MoonBit Language Evolution（moon 0.1.20261104 实测）
 
 ### M1 `try?` 语法已移除
 
@@ -81,7 +83,7 @@
 
 ---
 
-## T 系列 · moon2dart transpiler 特有（待积累）
+## T 系列 · moon2dart transpiler 特有 | Transpiler-Specific
 
 > 准入规则同上；本段随项目演进积累（transpiler 管线 / 双向同步 / MCP 工具链特有陷阱）。
 
@@ -94,9 +96,49 @@
 - **来源**：【实测】moon2dart_test.mbt 注入边界测试（2026-11-13）。
 - **可自动化**：✅（注入测试已入册，校验后断言反转）。
 
+### T2 嵌套 Option 塌缩——`Option[Option[T]]` 三分态丢失
+
+- **现象**：`Option[Option[Int]]` 直接映射为 `int??`（Dart 不支持嵌套可空），导致 `Some(None)` 和 `None` 不可区分。
+- **根因**：Dart `T?` 的 `?` 后缀不可嵌套——`T??` 等价于 `T?`，丢失了三分态（Some(Some(v)) / Some(None) / None）。
+- **修法**：检测嵌套 Option → 自动生成 `Option<T>` 辅助类（含 `some`/`none` 工厂 + `isSome`/`isNone` 属性），`DNullable(DNullable(inner))` 表示嵌套。
+- **来源**：【实测】v0.10.0 嵌套 Option 往返测试（assert_round_trip + 变异测试证明塌缩可检出）。
+- **可自动化**：✅（变异测试：临时塌缩 → round-trip 变红；撤回 → 变绿）。
+
+### T3 Result 退化为 DCustom——结构信息丢失
+
+- **现象**：`Result[Int, String]` 映射为 `DCustom("Result<int, String>")`，反向恢复为 `MCustom` 而非 `MResult`，类型结构完全丢失。
+- **根因**：旧版 `map_type` 将 `MResult` 拼接为字符串存入 `DCustom`，无结构化节点。
+- **修法**：新增 `DResult(DartType, DartType)` 结构化节点，替代 `DCustom` 退化映射；反向 `dart_type_to_moon_ast` 精确恢复 `MResult`。
+- **来源**：【实测】v0.10.0 DResult 往返测试 + 变异测试（退化为 DCustom → round-trip 变红）。
+- **可自动化**：✅（变异测试：临时改回 DCustom → round-trip 变红；撤回 → 变绿）。
+
+### T4 UInt/Float 值域丢失——语义等价不可达
+
+- **现象**：MoonBit `UInt` 映射为 Dart `int`（丢失 unsigned 语义）；`Float` 映射为 `double`（精度提升）。正向映射可用但反向恢复时值域不保证一致。
+- **根因**：Dart 无 `unsigned int` 和 `float` 类型，无法精确表达。
+- **修法**：语义等价分级为 L3（受限），代码生成时添加 `// [L3-CONSTRAINED]` 诊断注释；strict 模式下允许但标注。
+- **来源**：【实测】v0.10.0 L3 诊断标注测试 + semantic_level 分类测试。
+- **可自动化**：✅（L3 标注测试 + strict 模式测试）。
+
+### T5 FFI 语义不可验证——`extern "c"` 跨越语言边界
+
+- **现象**：`extern "c"` 声明生成的 `dart:ffi` 代码无法在编译时验证语义等价——C 侧函数签名可能与 Dart typedef 不匹配。
+- **根因**：FFI 跨语言调用，编译器无法在 Dart 侧验证 C 函数的实际行为。
+- **修法**：L4 分类（语义不等价），strict 模式下拒绝（除非在已知安全白名单中）；非 strict 模式下添加 `// [L4-INEQUIVALENT]` 诊断注释。
+- **来源**：【实测】v0.10.0 L4 拒绝测试 + 诊断标注测试。
+- **可自动化**：✅（strict 模式 L4 全拒绝测试）。
+
+### T6 spawn/Channel 无 Dart 对应——并发原语不可映射
+
+- **现象**：MoonBit 的 `spawn` 和 `Channel` 并发原语在 Dart 中无直接对应（Dart 使用 `Isolate` + `SendPort`/`ReceivePort` 模型，语义完全不同）。
+- **根因**：两语言并发模型根本不同，无法建立语义等价映射。
+- **修法**：L4 分类，strict 模式下拒绝；映射为 `DCustom` 并添加 `[L4-INEQUIVALENT]` 诊断注释。用户需手动实现 Dart 侧并发逻辑。
+- **来源**：【实测】v0.10.0 L4 拒绝测试（Channel/Spawn strict raise）。
+- **可自动化**：✅（strict 模式 L4 全拒绝测试）。
+
 ---
 
-## 维护规则（照 flutter-ohos-expert 准入流程）
+## 维护规则 | Maintenance Rules（照 flutter-ohos-expert 准入流程）
 
 1. 新条目只收"复现过并修好"的，附编译器错误码或测试红绿证据，标【实测】。
 2. 编号从各段最大号往后接（M* / T*），不跨段复用。

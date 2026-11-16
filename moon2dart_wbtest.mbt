@@ -61,7 +61,7 @@ test "transpile_type convenience" {
 
 ///|
 test "transpile_source empty" {
-  let result = try transpile_source("") catch {
+  let result = transpile_source("") catch {
     @ast.Moon2DartError::ParseError(_) => "parse error"
     _ => "other error"
   }

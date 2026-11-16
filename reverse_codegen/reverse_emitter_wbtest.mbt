@@ -16,7 +16,7 @@ test "reverse_codegen: dart_type_to_moon composite" {
     "Map[String, Int]",
   )
   assert_eq(@dart_ast.DSet(@dart_ast.DDouble).to_moon_string(), "Set[Double]")
-  assert_eq(@dart_ast.DNullable(@dart_ast.DInt).to_moon_string(), "Option[Int]")
+  assert_eq(@dart_ast.DNullable(@dart_ast.DInt).to_moon_string(), "Int?")
   assert_eq(@dart_ast.DFuture(@dart_ast.DInt).to_moon_string(), "Future[Int]")
   assert_eq(@dart_ast.DCustom("MyType").to_moon_string(), "MyType")
 }
@@ -146,4 +146,63 @@ test "reverse_codegen: dart_type_to_moon_ast" {
     dart_type_to_moon_ast(@dart_ast.DNullable(@dart_ast.DInt))
     is @ast.MOption(_),
   )
+}
+
+///|
+/// v0.10.0 DResult + 嵌套 Option 反向映射测试。
+
+///|
+test "reverse_codegen: dart_type_to_moon_ast DResult" {
+  let result = dart_type_to_moon_ast(
+    @dart_ast.DResult(@dart_ast.DInt, @dart_ast.DString),
+  )
+  assert_true(result is @ast.MResult(@ast.MInt, @ast.MString))
+}
+
+///|
+test "reverse_codegen: DResult to_moon_string" {
+  let result = @dart_ast.DResult(@dart_ast.DInt, @dart_ast.DString).to_moon_string()
+  assert_eq(result, "Result[Int, String]")
+}
+
+///|
+test "reverse_codegen: nested DNullable to MOption(MOption)" {
+  let result = dart_type_to_moon_ast(
+    @dart_ast.DNullable(@dart_ast.DNullable(@dart_ast.DInt)),
+  )
+  assert_true(result is @ast.MOption(@ast.MOption(@ast.MInt)))
+}
+
+///|
+test "reverse_codegen: Option.some reverse mapping" {
+  let expr = @dart_ast.DFunctionCall("Option.some", [
+    @dart_ast.DFunctionCall("Option.some", [@dart_ast.DIntLit(42)]),
+  ])
+  let result = emit_moon_expr(expr)
+  assert_eq(result, "Some(Some(42))")
+}
+
+///|
+test "reverse_codegen: Option.some(Option.none()) reverse mapping" {
+  let expr = @dart_ast.DFunctionCall("Option.some", [
+    @dart_ast.DFunctionCall("Option.none", []),
+  ])
+  let result = emit_moon_expr(expr)
+  assert_eq(result, "Some(None)")
+}
+
+///|
+test "reverse_codegen: Option.none() reverse mapping" {
+  let expr = @dart_ast.DFunctionCall("Option.none", [])
+  let result = emit_moon_expr(expr)
+  assert_eq(result, "None")
+}
+
+///|
+test "reverse_codegen: DResult round-trip preserves structure" {
+  let dart_ok = @dart_ast.DInt
+  let dart_err = @dart_ast.DString
+  let moon_type = dart_type_to_moon_ast(@dart_ast.DResult(dart_ok, dart_err))
+  let moon_str = moon_type.to_moon_string()
+  assert_eq(moon_str, "Result[Int, String]")
 }

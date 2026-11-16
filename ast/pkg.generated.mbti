@@ -6,6 +6,11 @@ import {
 }
 
 // Values
+pub fn collect_types_from_decl(MoonDecl) -> Array[MoonType]
+
+pub fn has_nested_option_in_decls(Array[MoonDecl]) -> Bool
+
+pub fn is_nested_option(MoonType) -> Bool
 
 // Errors
 pub(all) suberror Moon2DartError {

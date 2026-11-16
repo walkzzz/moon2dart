@@ -105,7 +105,7 @@ fn is_flutter_helper(name : String) -> Bool {
 }
 
 ///|
-/// 发射 Flutter widget 表达式 — 将 widget 函数调用转为 Flutter widget 代码。
+/// 发射 Flutter widget 表达式 — 将 widget 函数调用转为 Flutter widget 代码 | Emit Flutter widget expression — convert widget function calls to Flutter widget code
 pub fn emit_flutter_expr(e : @ast.MoonExpr) -> String {
   match e {
     @ast.EString(s) => "'\{s}'"
@@ -619,7 +619,7 @@ fn is_widget_expr(e : @ast.MoonExpr) -> Bool {
 ///|
 
 ///|
-/// 完整 Flutter 程序发射 — 生成含 import、main、runApp 的完整 Flutter 应用。
+/// 完整 Flutter 程序发射 — 生成含 import、main、runApp 的完整 Flutter 应用 | Full Flutter program emission — generate complete Flutter app with import, main, runApp
 pub fn emit_flutter_program(decls : Array[@ast.MoonDecl]) -> String {
   let header = generate_header()
   let imports = "import 'package:flutter/material.dart';\n\n"
@@ -724,7 +724,7 @@ fn emit_flutter_decls(decls : Array[@ast.MoonDecl]) -> String {
 }
 
 ///|
-/// 检测声明数组中是否包含 widget 函数（需要 Flutter import）。
+/// 检测声明数组中是否包含 widget 函数（需要 Flutter import） | Check if declarations contain widget functions (requiring Flutter import)
 pub fn needs_flutter(decls : Array[@ast.MoonDecl]) -> Bool {
   for d in decls {
     match d {

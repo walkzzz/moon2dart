@@ -31,6 +31,8 @@ pub fn transpile_source_flutter(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_pure(String) -> String raise @ast.Moon2DartError
 
+pub fn transpile_source_strict(String) -> String raise @ast.Moon2DartError
+
 pub fn transpile_source_with_lib(String, String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_type(@ast.MoonType) -> String

@@ -23,13 +23,14 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
     println(
-      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--lib <name>]",
+      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>]",
     )
     return
   }
   let path = args[0]
   let mut reverse = false
   let mut pure_only = false
+  let mut strict = false
   let mut lib_name = "libnative.so"
   let mut i = 1
   while i < args.length() {
@@ -38,6 +39,9 @@ async fn cmd_convert(args : Array[String]) -> Unit {
       i = i + 1
     } else if args[i] == "--pure-only" {
       pure_only = true
+      i = i + 1
+    } else if args[i] == "--strict" {
+      strict = true
       i = i + 1
     } else if args[i] == "--lib" && i + 1 < args.length() {
       lib_name = args[i + 1]
@@ -53,24 +57,71 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
   }
   if reverse {
-    let moon_code = try @lib.reverse_transpile_source(content) catch {
-      @ast.Moon2DartError::ReverseTranspileError(msg) => { println("Error: " + msg); return }
-      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
-      _ => { println("Error: unexpected error during reverse conversion"); return }
+    let moon_code = @lib.reverse_transpile_source(content) catch {
+      @ast.Moon2DartError::ReverseTranspileError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      @ast.Moon2DartError::ParseError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      _ => {
+        println("Error: unexpected error during reverse conversion")
+        return
+      }
     }
     println(moon_code)
+  } else if strict {
+    let dart_code = @lib.transpile_source_strict(content) catch {
+      @ast.Moon2DartError::ParseError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      @ast.Moon2DartError::TranspileError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      @ast.Moon2DartError::TypeError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      _ => {
+        println("Error: unexpected error during strict conversion")
+        return
+      }
+    }
+    println(dart_code)
   } else if pure_only {
-    let dart_code = try @lib.transpile_source_pure(content) catch {
-      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
-      @ast.Moon2DartError::TranspileError(msg) => { println("Error: " + msg); return }
-      _ => { println("Error: unexpected error during conversion"); return }
+    let dart_code = @lib.transpile_source_pure(content) catch {
+      @ast.Moon2DartError::ParseError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      @ast.Moon2DartError::TranspileError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      _ => {
+        println("Error: unexpected error during conversion")
+        return
+      }
     }
     println(dart_code)
   } else {
-    let dart_code = try @lib.transpile_source_with_lib(content, lib_name) catch {
-      @ast.Moon2DartError::ParseError(msg) => { println("Error: " + msg); return }
-      @ast.Moon2DartError::TranspileError(msg) => { println("Error: " + msg); return }
-      _ => { println("Error: unexpected error during conversion"); return }
+    let dart_code = @lib.transpile_source_with_lib(content, lib_name) catch {
+      @ast.Moon2DartError::ParseError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      @ast.Moon2DartError::TranspileError(msg) => {
+        println("Error: " + msg)
+        return
+      }
+      _ => {
+        println("Error: unexpected error during conversion")
+        return
+      }
     }
     println(dart_code)
   }
@@ -374,7 +425,9 @@ fn usage() -> Unit {
   println("moon2dart v0.9.0 — MoonBit <-> Dart transpiler")
   println("")
   println("Usage:")
-  println("  moon2dart convert <file> [--reverse] [--pure-only] [--lib <name>]")
+  println(
+    "  moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>]",
+  )
   println(
     "    Convert file (default: MoonBit to Dart, --reverse: Dart to MoonBit)",
   )
@@ -404,6 +457,7 @@ fn usage() -> Unit {
   println(
     "  --lib <name>   Specify native library name (default: libnative.so)",
   )
+  println("  --strict       Strict mode: reject L4 types (no Dart equivalent)")
   println("  --http <port>  Start MCP server in HTTP mode on given port")
   println("  --agent <text> Start MCP server in agent mode with user request")
   println("  --max-iterations <n>  Max watch iterations (default: 1000)")

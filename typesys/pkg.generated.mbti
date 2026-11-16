@@ -7,13 +7,23 @@ import {
 }
 
 // Values
+pub fn assert_round_trip(@ast.MoonType) -> Bool
+
+pub fn assert_value_domain(@ast.MoonType, SemanticLevel) -> Bool
+
 pub fn ffi_dart_type(@ast.MoonType) -> String
 
 pub fn ffi_native_type(@ast.MoonType) -> String
 
 pub fn map_type(@ast.MoonType) -> DartType
 
+pub fn map_type_strict(@ast.MoonType) -> DartType raise @ast.Moon2DartError
+
 pub fn moon_to_dart_type(@ast.MoonType) -> String
+
+pub fn needs_option_class(Array[@ast.MoonDecl]) -> Bool
+
+pub fn semantic_level(@ast.MoonType) -> SemanticLevel
 
 // Errors
 
@@ -32,6 +42,7 @@ pub(all) enum DartType {
   DSet(DartType)
   DNullable(DartType)
   DFuture(DartType)
+  DResult(DartType, DartType)
   DCustom(String)
 }
 pub fn DartType::compare(Self, Self) -> Int32
@@ -46,6 +57,22 @@ pub fn DartType::to_dart_string(Self) -> String
 pub fn DartType::to_display_string(Self) -> String
 pub fn DartType::to_repr(Self) -> @debug.Repr
 pub impl @ast.TypeDisplay for DartType
+
+#derive(Compare, Eq, @debug.Debug)
+pub(all) enum SemanticLevel {
+  L1
+  L2
+  L3
+  L4
+}
+pub fn SemanticLevel::compare(Self, Self) -> Int32
+pub fn SemanticLevel::equal(Self, Self) -> Bool
+pub fn SemanticLevel::not_equal(Self, Self) -> Bool
+pub fn SemanticLevel::op_ge(Self, Self) -> Bool
+pub fn SemanticLevel::op_gt(Self, Self) -> Bool
+pub fn SemanticLevel::op_le(Self, Self) -> Bool
+pub fn SemanticLevel::op_lt(Self, Self) -> Bool
+pub fn SemanticLevel::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

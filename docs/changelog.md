@@ -1,8 +1,50 @@
-# Changelog
+# Changelog | 变更日志
 
-> **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本，0.1.0 未被占用）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量，后续包版本沿 0.1.x 线推进。
+> **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.10.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本，0.1.0 未被占用）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，后续包版本沿 0.1.x 线推进。
 
-## v0.9.1 (2026-11-12) — 项目双向同步 + 冲突检测
+## v0.10.0 (2026-11-16) — 往返语义等价性验证体系 | Round-Trip Semantic Equivalence
+
+### 新增 | Added：`Option[Option[T]]` → 自动生成 `Option<T>` Dart 辅助类（some/none 工厂 + isSome/isNone 属性）
+  - `ast/ast.mbt`：`is_nested_option()` + `has_nested_option_in_decls()` + `contains_nested_option()` + `collect_types_from_decl()`
+  - `typesys/mapping.mbt`：`needs_option_class()` + 嵌套 Option 检测（`DNullable(DNullable(inner))` 映射）
+  - `codegen/emitter.mbt`：`emit_option_class()` + `emit_dart_expr_nested()` + `emit_dart_expr_inner()`/`emit_dart_pattern_inner()` 重构
+- **DResult 结构化节点**：`MResult(ok, err)` → `DResult(DartType, DartType)` 替代 DCustom 退化映射
+  - `typesys/mapping.mbt`：`DResult` 变体 + `map_type` MResult 分支改用 DResult
+  - `dart_ast/dart_ast.mbt`：`DResult(DartType, DartType)` 变体 + `to_moon_string()` 反向
+  - `reverse_codegen/reverse_emitter.mbt`：DResult → MResult 精确反向映射
+- **语义等价四级分类**：
+  - L1 全等价（18 项）：Int/Bool/String/Double/Array/Map/Set/Option/Result/Future 及其组合
+  - L2 结构等价（2 项）：Char→int, Int64→int（值域约束）
+  - L3 受限（3 项）：UInt→signed, Float→double, Char→int（语义有损）
+  - L4 不等价（5 项）：ForeignFunction/Channel/Spawn 及其容器包装
+  - `typesys/mapping.mbt`：`SemanticLevel` 枚举 + `semantic_level()` + `map_type_strict()` + `has_l3_type()` + `has_l4_type()`
+- **严格模式**：
+  - `transpile_source_strict()` — L4 类型 raise `TypeError`
+  - CLI `--strict` 选项（`moon2dart convert <file> --strict`）
+  - `map_type_strict()` — L4 类型 raise 含 `[L4-INEQUIVALENT]` 前缀的错误
+- **诊断标注**：
+  - L3 映射自动添加 `// [L3-CONSTRAINED] <type>: <restriction>` 注释
+  - L4 映射自动添加 `// [L4-INEQUIVALENT] <type>: <loss>` 注释
+  - `codegen/emitter.mbt`：`emit_semantic_diagnostic()` + `collect_types_from_decl()`
+- **断言函数**：
+  - `assert_round_trip(moon_type)` — 验证类型正向→反向恢复一致
+  - `assert_value_domain(moon_type, level)` — 验证语义等价等级与映射行为一致
+- **变异测试**：嵌套 Option 塌缩检测、Result 退化检测、UInt L3 诊断验证
+- **验收记分卡**：往返恢复率 100% + strict 拒绝率 100% + 测试通过率 100%
+- **文档更新**：
+  - `docs/semantic_equivalence.md`：四级分类表 + 辅助类方案 + DResult 改进
+  - `docs/type_mapping.md`：L1-L4 分类标签
+  - `docs/assessment.md`：三口径验收记分卡
+  - `docs/pitfall-catalog.md`：T2-T6 语义等价陷阱
+  - `docs/architecture.md`：双向转换 + 语义等价分级
+  - `docs/roadmap.md`：v0.10.0 条目
+
+### 变更 | Changed 改用 `?` 后缀（匹配 MoonBit `Option` 表示）
+- `dart_ast/dart_parser.mbt`：DResult 分支添加到 `dart_debug_type()`
+
+### 测试 | Tests（native 后端全通过），含 117+ 新增语义等价测试
+
+## v0.9.1 (2026-11-12) — 项目双向同步 + 冲突检测 | Bidirectional Sync
 
 ### 新增
 - **project/sync.mbt**：项目双向同步核心逻辑
@@ -27,7 +69,7 @@
 - 反向同步使用 reverse_transpile_source，生成的 MoonBit 代码可能不完全等价于原始代码
 - 冲突检测基于文件 hash 比较，无法检测语义级冲突
 
-## v0.9.0 (2026-11-12) — MCP 服务器 + Agent 模式 + CLI serve/sync/watch 子命令
+## v0.9.0 (2026-11-12) — MCP 服务器 + Agent 模式 | MCP Server + Agent
 
 ### 新增
 - **mcp_server 包**：MCP 服务器核心逻辑（native target only）
@@ -79,7 +121,7 @@
 - S5（项目双向同步）待后续迭代
 - RuleBasedModel 为关键词匹配，后续可替换为真正的 LLM provider
 
-## v0.8.0 (2026-11-11) — Dart → MoonBit 反向转换骨架
+## v0.8.0 (2026-11-11) — Dart → MoonBit 反向转换骨架 | Reverse Transpilation
 
 ### 新增
 - **dart_ast 包**：Dart AST 节点定义（零依赖）
@@ -107,7 +149,7 @@
 - 双向转换能力：MoonBit → Dart + Dart → MoonBit
 - mooncakes.io v0.8.0 已发布
 
-## v0.7.0 (2026-11-07) — Flutter widget 转换
+## v0.7.0 (2026-11-07) — Flutter widget 转换 | Flutter Widget Transpilation
 
 ### 新增
 - **Flutter widget 表达式识别**：`codegen/flutter_emitter.mbt` — 50+ Flutter widget 构造器名称识别
@@ -143,7 +185,7 @@
 - emit_dart_program 版本号更新
 - 测试 240 → 316（native）
 
-## v0.6.0 (2026-11-07) — FFI 混合模式（extern "c" → dart:ffi）
+## v0.6.0 (2026-11-07) — FFI 混合模式 | FFI Hybrid Mode
 
 ### 新增
 - **extern "c" → dart:ffi**：DExternFn AST 节点 + TkExtern 关键字 + parse_extern_fn_decl
@@ -170,7 +212,7 @@
 - emit_dart_program 版本号更新
 - 测试 206 → 240（native）
 
-## v0.5.0 (2026-11-07) — async + Option + Result + 泛型 + 闭包
+## v0.5.0 (2026-11-07) — async + Option + Result + 泛型 + 闭包 | Core Type Features
 
 ### 新增
 - **async/await → Future/await**：DAsyncFn 声明 + EAwait 表达式 + MFuture 类型 + DFuture DartType
@@ -197,7 +239,7 @@
 - emit_dart_program 版本号更新
 - 测试 142 → 206（native）
 
-## v0.4.0 (2026-11-07) — 项目级扫描 + 包结构映射
+## v0.4.0 (2026-11-07) — 项目级扫描 + 包结构映射 | Project-Level Scanning
 
 ### 新增
 - `project/` 包：项目级扫描与转换（native target only）
@@ -212,7 +254,7 @@
 - 版本号 v0.3.0 → v0.4.0
 - 测试 125 → 142（× 4 后端）
 
-## v0.3.0 (2026-11-07) — trait + 模式匹配 + derive 生成
+## v0.3.0 (2026-11-07) — trait + 模式匹配 + derive 生成 | Traits & Pattern Matching
 
 ### 新增
 - `ast/ast.mbt`：DTrait 声明节点 + TraitMethod struct（trait → abstract class）
@@ -229,7 +271,7 @@
 - parse_pattern 中 `_` 标识符特殊处理为 PWild
 - PCtor 空参数生成 `Name()`（Dart 3 语法）
 
-## v0.2.0 (2026-11-07) — 解析器 + 单文件转换管线
+## v0.2.0 (2026-11-07) — 解析器 + 单文件转换管线 | Parser & Pipeline
 
 ### 新增
 - `parser/lexer.mbt`：MoonBit 词法分析器（TokenKind 57 变体 + Lexer，15 白盒测试）
@@ -243,22 +285,21 @@
 - 测试 33 → 83（× 4 后端）
 - 添加 `moonbitlang/async` 依赖（CLI 文件读取）
 
-## v0.1.0 (2026-11-06) — transpiler 骨架
+## v0.1.0 (2026-11-06) — transpiler 骨架 | Skeleton
 
-### 新增
-- `typesys/`：MoonBit → Dart 类型映射（16 种 MoonType → 12 种 DartType）
+### 新增 | Added（16 种 MoonType → 12 种 DartType）
 - `ast/`：简化 AST（MoonType/MoonExpr/MoonDecl/MoonPattern）
 - `codegen/`：Dart 代码发射器（类型/表达式/声明/程序）
 - `moon2dart.mbt`：transpile 编排入口
 - CLI：`moon2dart <input> -o <output>`（演示模式）
 
-### 支持
+### 支持 | Supported
 - 基础类型：Int/UInt/Int64/UInt64/Double/Float/Bool/String/Char/Unit
 - 复合类型：Array/Map/Set/Option/Result
 - 声明：fn（无 trait 方法）/ struct / enum
 - 表达式：字面量/变量/调用/二元运算/if/match
 
-### 不支持（后续版本）
+### 不支持 | Not Yet Supported
 - trait → mixin（v0.2.0）
 - 模式匹配 → switch expression（v0.2.0）
 - async/await（v0.3.0）

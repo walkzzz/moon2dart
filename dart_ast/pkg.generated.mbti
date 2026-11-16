@@ -100,6 +100,7 @@ pub(all) enum DartType {
   DSet(DartType)
   DNullable(DartType)
   DFuture(DartType)
+  DResult(DartType, DartType)
   DCustom(String)
 }
 pub fn DartType::compare(Self, Self) -> Int32

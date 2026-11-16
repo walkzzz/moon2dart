@@ -193,6 +193,11 @@ fn dart_debug_type(t : @dart_ast.DartType) -> String {
       let s = dart_debug_type(inner)
       "Future<\{s}>"
     }
+    @dart_ast.DResult(ok, err) => {
+      let os = dart_debug_type(ok)
+      let es = dart_debug_type(err)
+      "Result<\{os}, \{es}>"
+    }
     @dart_ast.DCustom(name) => name
     @dart_ast.DRune => "int"
   }

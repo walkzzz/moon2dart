@@ -1,36 +1,35 @@
-# MoonBit → Dart 类型与构造映射规范
+# MoonBit → Dart 类型与构造映射规范 | Type Mapping Specification
 
-> 已实现 v0.1.0 · 2026-11-06 · 完整映射表
+> v0.10.0 · 2026-11-16 · 完整映射表 + 语义等价分级
 
-## 1. 基础类型映射
+## 1. 基础类型映射 | Basic Type Mapping
 
-| MoonBit | Dart | 可纯转换 | 备注 |
-|---------|------|---------|------|
-| `Int` | `int` | ✅ | 64-bit |
-| `UInt` | `int` | ✅ | Dart 无 unsigned，转换有符号 |
-| `Int64` | `int` | ✅ | |
-| `UInt64` | `int` | ✅ | 同上 |
-| `Double` | `double` | ✅ | |
-| `Float` | `double` | ✅ | Dart 无 float，转换 double |
-| `Bool` | `bool` | ✅ | |
-| `String` | `String` | ✅ | |
-| `Char` | `int` | ✅ | Dart 无 char，转换为 rune (int) |
-| `Unit` | `void` | ✅ | |
+| MoonBit | Dart | 可纯转换 | 语义等级 | 备注 |
+|---------|------|---------|---------|------|
+| `Int` | `int` | ✅ | L1 ✅ | 64-bit |
+| `UInt` | `int` | ✅ | L3 🔶 | Dart 无 unsigned，转换有符号 |
+| `Int64` | `int` | ✅ | L1 ✅ | |
+| `UInt64` | `int` | ✅ | L3 🔶 | 同 UInt |
+| `Double` | `double` | ✅ | L1 ✅ | |
+| `Float` | `double` | ✅ | L3 🔶 | Dart 无 float，转换 double |
+| `Bool` | `bool` | ✅ | L1 ✅ | |
+| `String` | `String` | ✅ | L1 ✅ | |
+| `Char` | `int` | ✅ | L2 ⚠️ | Dart 无 char，转换为 rune (int) |
+| `Unit` | `void` | ✅ | L1 ✅ | |
 
-## 2. 复合类型映射
+## 2. 复合类型映射 | Composite Type Mapping
 
-| MoonBit | Dart | 可纯转换 | 备注 |
-|---------|------|---------|------|
-| `Array[T]` | `List<T>` | ✅ | |
-| `Map[K,V]` | `Map<K,V>` | ✅ | |
-| `Set[T]` | `Set<T>` | ✅ | |
-| `Option[T]` | `T?` | ✅ | Dart null safety |
-| `Result[T,E]` | `Result<T>` | ⚠️ | 需生成自定义 Result class |
-| `T*` (引用) | `T` | ✅ | Dart 默认引用语义 |
-| `(T1, T2)` | `(T1, T2)` | ✅ | Dart 3 record |
-| `Bytes` | `Uint8List` | ⚠️ | 需 dart:typed_data |
+| MoonBit | Dart | 可纯转换 | 语义等级 | 备注 |
+|---------|------|---------|---------|------|
+| `Array[T]` | `List<T>` | ✅ | L1 ✅ | |
+| `Map[K,V]` | `Map<K,V>` | ✅ | L1 ✅ | |
+| `Set[T]` | `Set<T>` | ✅ | L1 ✅ | |
+| `Option[T]` (单层) | `T?` | ✅ | L1 ✅ | Dart null safety |
+| `Option[Option[T]]` (嵌套) | `Option<T>` 辅助类 | ✅ | L1 ✅ | 自动生成辅助类保留三分态 |
+| `Result[T,E]` | `Result<T,E>` sealed class | ⚠️ | L1 ✅ | DResult 结构化节点 |
+| `Future[T]` | `Future<T>` | ✅ | L1 ✅ | |
 
-## 3. 函数映射
+## 3. 函数映射 | Function Mapping
 
 | MoonBit | Dart | 备注 |
 |---------|------|------|
@@ -39,7 +38,7 @@
 | 闭包 `fn(x) { x + 1 }` | `(x) => x + 1` | 箭头函数 |
 | `fn(a, b)` 调用 | `a(b)` 或 `meth(b)` | |
 
-## 4. struct 映射
+## 4. struct 映射 | Struct Mapping
 
 MoonBit:
 ```moonbit
@@ -57,7 +56,7 @@ class Point {
 }
 ```
 
-## 5. enum 映射
+## 5. enum 映射 | Enum Mapping
 
 MoonBit:
 ```moonbit
@@ -89,7 +88,7 @@ class Circle extends Shape { final double radius; Circle(this.radius); }
 class Rect extends Shape { final double w; final double h; Rect(this.w, this.h); }
 ```
 
-## 6. trait 映射
+## 6. trait 映射 | Trait Mapping
 
 | MoonBit | Dart | 可转换 | 备注 |
 |---------|------|--------|------|
@@ -98,7 +97,7 @@ class Rect extends Shape { final double w; final double h; Rect(this.w, this.h);
 | trait 多实现 | `implements` + `mixin` 链 | ⚠️ | 需拆分 |
 | `derive(Debug, Eq)` | 生成 `toString()` + `operator ==` | ⚠️ | 样板代码 |
 
-## 7. 模式匹配映射
+## 7. 模式匹配映射 | Pattern Matching Mapping
 
 MoonBit:
 ```moonbit
@@ -115,7 +114,7 @@ switch (shape) {
 }
 ```
 
-## 8. async 映射
+## 8. async 映射 | Async Mapping
 
 | MoonBit | Dart | 备注 |
 |---------|------|------|
@@ -123,7 +122,7 @@ switch (shape) {
 | `await expr` | `await expr` | |
 | `spawn` | `Future.microtask` / `Isolate.run` | ⚠️ 语义差异 |
 
-## 9. FFI 映射（混合模式）
+## 9. FFI 映射 | FFI Mapping（混合模式）
 
 MoonBit:
 ```moonbit
@@ -136,7 +135,7 @@ final lib = DynamicLibrary.open('libm.so');
 final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double)>('sqrt');
 ```
 
-## 10. 不支持的构造（明确报错）
+## 10. 不支持的构造 | Unsupported Constructs
 
 | MoonBit 构造 | 原因 |
 |-------------|------|
@@ -145,7 +144,31 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 | 编译期常量函数 | 转换为字面量，不执行 |
 | `pub(open) trait` 跨包多继承 | Dart mixin 限制 |
 
-## 11. 映射表维护
+## 11. 语义等级说明 | Semantic Level Explanation
+
+| 等级 | 标记 | 含义 | 条目数 | strict 模式行为 |
+|------|------|------|:------:|----------------|
+| L1 完全等价 | ✅ | 往返转换后语义完全一致 | 18 | 正常生成 |
+| L2 结构等价 | ⚠️ | 数据结构可还原，操作语义有差异 | 2 | 正常生成 |
+| L3 受限等价 | 🔶 | 特定约束下等价，生成 `// [L3-CONSTRAINED]` 注释 | 3 | 允许，标注注释 |
+| L4 不等价 | ❌ | 语义丢失，不可往返 | 5 | raise TypeError |
+
+### 11.1 DResult 到 DartType 映射表（v0.10.0 新增）
+
+| MoonBit AST | DartType | 语义等级 | 说明 |
+|-------------|----------|---------|------|
+| `MResult(ok, err)` | `DResult(map_type(ok), map_type(err))` | L1 ✅ | 结构化节点，反向精确恢复 |
+| 旧版 `MResult` | `DCustom("Result<...>")` | — | 已弃用，反向丢失结构 |
+
+### 11.2 嵌套 Option 映射规则
+
+| 层级 | MoonBit | DartType | 语义等级 | 辅助类 |
+|------|---------|----------|---------|--------|
+| 单层 | `Option[T]` | `DNullable(T')` | L1 ✅ | 不需要 |
+| 嵌套 | `Option[Option[T]]` | `DNullable(DNullable(T'))` | L1 ✅ | 自动生成 `Option<T>` |
+| 三层+ | `Option[Option[Option[T]]]` | 递归嵌套 | L1 ✅ | 递归包装 |
+
+## 12. 映射表维护 | Mapping Table Maintenance
 
 映射表集中在 `typesys/mapping.mbt`，版本跟随：
 - MoonBit 工具链升级 → 更新 MoonType 枚举

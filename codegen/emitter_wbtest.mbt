@@ -868,3 +868,202 @@ test "emit_dart_program pure_no_ffi_imports" {
   assert_true(!result.contains("DynamicLibrary"))
   assert_true(result.contains("int add(int a, int b)"))
 }
+
+///|
+/// v0.10.0 嵌套 Option 语义保留测试。
+
+///|
+test "emit_option_class generates auxiliary class" {
+  let result = emit_option_class()
+  assert_true(result.contains("class Option<T>"))
+  assert_true(result.contains("factory Option.some"))
+  assert_true(result.contains("factory Option.none"))
+  assert_true(result.contains("bool get isSome"))
+  assert_true(result.contains("bool get isNone"))
+  assert_true(result.contains("T get value"))
+}
+
+///|
+test "emit_dart_program nested_option_generates_auxiliary_class" {
+  let prog = [
+    @ast.DFn(
+      "nested_opt",
+      [],
+      [],
+      @ast.MOption(@ast.MOption(@ast.MInt)),
+      @ast.ECall("Some", [@ast.ECall("Some", [@ast.EInt(42)])]),
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(result.contains("class Option<T>"))
+  assert_true(result.contains("factory Option.some"))
+}
+
+///|
+test "emit_dart_program no_nested_option_no_auxiliary_class" {
+  let prog = [
+    @ast.DFn(
+      "simple_opt",
+      [],
+      [],
+      @ast.MOption(@ast.MInt),
+      @ast.ECall("Some", [@ast.EInt(42)]),
+    ),
+  ]
+  let result = emit_dart_program(prog)
+  assert_true(!result.contains("class Option<T>"))
+}
+
+///|
+test "emit_dart_expr_nested some_some" {
+  let expr = @ast.ECall("Some", [@ast.ECall("Some", [@ast.EInt(42)])])
+  let result = emit_dart_expr_nested(expr)
+  assert_eq(result, "Option.some(Option.some(42))")
+}
+
+///|
+test "emit_dart_expr_nested some_none" {
+  let expr = @ast.ECall("Some", [@ast.EVar("None")])
+  let result = emit_dart_expr_nested(expr)
+  assert_eq(result, "Option.some(Option.none())")
+}
+
+///|
+test "emit_dart_expr_nested none" {
+  let result = emit_dart_expr_nested(@ast.EVar("None"))
+  assert_eq(result, "Option.none()")
+}
+
+///|
+test "emit_dart_expr_nested none_call" {
+  let result = emit_dart_expr_nested(@ast.ECall("None", []))
+  assert_eq(result, "Option.none()")
+}
+
+///|
+test "emit_dart_expr_nested non_option_expr_unchanged" {
+  let expr = @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b"))
+  let result = emit_dart_expr_nested(expr)
+  assert_eq(result, "a + b")
+}
+
+///|
+test "map_type nested_option_produces_double_nullable" {
+  let nested = @ast.MOption(@ast.MOption(@ast.MInt))
+  let result = @typesys.map_type(nested)
+  assert_eq(result, DNullable(DNullable(DInt)))
+}
+
+///|
+test "map_type single_option_produces_single_nullable" {
+  let single = @ast.MOption(@ast.MInt)
+  let result = @typesys.map_type(single)
+  assert_eq(result, DNullable(DInt))
+}
+
+///|
+test "is_nested_option detects nested" {
+  assert_true(@ast.is_nested_option(@ast.MOption(@ast.MOption(@ast.MInt))))
+  assert_true(!@ast.is_nested_option(@ast.MOption(@ast.MInt)))
+  assert_true(!@ast.is_nested_option(@ast.MInt))
+}
+
+///|
+test "has_nested_option_in_decls detects in_fn_return" {
+  let decls = [
+    @ast.DFn(
+      "nested_opt",
+      [],
+      [],
+      @ast.MOption(@ast.MOption(@ast.MInt)),
+      @ast.ECall("Some", [@ast.ECall("Some", [@ast.EInt(42)])]),
+    ),
+  ]
+  assert_true(@ast.has_nested_option_in_decls(decls))
+}
+
+///|
+test "has_nested_option_in_decls no_nested" {
+  let decls = [
+    @ast.DFn(
+      "simple_opt",
+      [],
+      [],
+      @ast.MOption(@ast.MInt),
+      @ast.ECall("Some", [@ast.EInt(42)]),
+    ),
+  ]
+  assert_true(!@ast.has_nested_option_in_decls(decls))
+}
+
+///|
+/// v0.10.0 US5 — 诊断标注测试。
+
+///|
+test "diagnostic: L3 type in function produces comment" {
+  let decl = @ast.DFn(
+    "process",
+    [],
+    [("x", @ast.MUInt)],
+    @ast.MUInt,
+    @ast.EVar("x"),
+  )
+  let program = emit_dart_program([decl])
+  assert_true(program.contains("[L3-CONSTRAINED]"))
+  assert_true(program.contains("UInt"))
+}
+
+///|
+test "diagnostic: L4 type in function produces comment" {
+  let decl = @ast.DFn(
+    "use_channel",
+    [],
+    [("ch", @ast.MCustom("Channel"))],
+    @ast.MCustom("Channel"),
+    @ast.EVar("ch"),
+  )
+  let program = emit_dart_program([decl])
+  assert_true(program.contains("[L4-INEQUIVALENT]"))
+  assert_true(program.contains("Channel"))
+}
+
+///|
+test "diagnostic: L1 type produces no comment" {
+  let decl = @ast.DFn(
+    "add",
+    [],
+    [("a", @ast.MInt), ("b", @ast.MInt)],
+    @ast.MInt,
+    @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")),
+  )
+  let program = emit_dart_program([decl])
+  assert_true(!program.contains("[L3-CONSTRAINED]"))
+  assert_true(!program.contains("[L4-INEQUIVALENT]"))
+}
+
+///|
+test "diagnostic: struct with L3 field produces comment" {
+  let decl = @ast.DStruct(
+    "Config",
+    [],
+    [("flags", @ast.MUInt), ("ratio", @ast.MFloat)],
+    [],
+  )
+  let program = emit_dart_program([decl])
+  assert_true(program.contains("[L3-CONSTRAINED]"))
+}
+
+///|
+test "diagnostic: Float precision promotion comment" {
+  let decl = @ast.DFn(
+    "compute",
+    [],
+    [("x", @ast.MFloat)],
+    @ast.MFloat,
+    @ast.EVar("x"),
+  )
+  let program = emit_dart_program([decl])
+  assert_true(program.contains("[L3-CONSTRAINED]"))
+  assert_true(program.contains("Float"))
+  assert_true(program.contains("float precision promoted"))
+}
