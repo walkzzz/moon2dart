@@ -3,6 +3,7 @@ package "walkzzz/moon2dart/codegen"
 
 import {
   "walkzzz/moon2dart/ast",
+  "walkzzz/moon2dart/typesys",
 }
 
 // Values
@@ -16,7 +17,11 @@ pub fn emit_dart_pattern(@ast.MoonPattern) -> String
 
 pub fn emit_dart_program(Array[@ast.MoonDecl]) -> String
 
+pub fn emit_dart_program_full(Array[@ast.MoonDecl], String, @ast.SemanticsMode) -> String
+
 pub fn emit_dart_program_with_lib(Array[@ast.MoonDecl], String) -> String
+
+pub fn emit_dart_program_with_mode(Array[@ast.MoonDecl], @ast.SemanticsMode) -> String
 
 pub fn emit_flutter_expr(@ast.MoonExpr) -> String
 
@@ -31,6 +36,11 @@ pub fn needs_flutter(Array[@ast.MoonDecl]) -> Bool
 // Errors
 
 // Types and methods
+pub(all) struct EmitCtx {
+  env : @typesys.TypeEnv?
+  mode : @ast.SemanticsMode
+  nested_option_context : Bool
+}
 
 // Type aliases
 

@@ -123,7 +123,7 @@ test "topo_sort_no_deps" {
 ///|
 /// 测试 extract_quoted_value 提取引号内的值。
 test "extract_quoted_value" {
-  assert_eq(extract_quoted_value("name = \"hello\""), "hello")
-  assert_eq(extract_quoted_value("\"world\""), "world")
-  assert_eq(extract_quoted_value("no quotes"), "")
+  assert_eq(extract_quoted_value("name = \"hello\""), Some("hello"))
+  assert_eq(extract_quoted_value("\"world\""), Some("world"))
+  assert_eq(extract_quoted_value("no quotes"), None)
 }

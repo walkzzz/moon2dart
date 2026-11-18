@@ -103,7 +103,7 @@ test "bench: parser parse small" {
   let src = small_source()
   let tokens = @parser.Lexer::make(src).tokenize()
   let summary = @moonbench.benchmark(1000, fn() {
-    ignore(@parser.Parser::make(tokens).parse_program())
+    ignore(@parser.Parser::make(tokens).parse_program() catch { _ => [] })
   })
   println("parser small: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -114,7 +114,7 @@ test "bench: parser parse medium" {
   let src = medium_source()
   let tokens = @parser.Lexer::make(src).tokenize()
   let summary = @moonbench.benchmark(1000, fn() {
-    ignore(@parser.Parser::make(tokens).parse_program())
+    ignore(@parser.Parser::make(tokens).parse_program() catch { _ => [] })
   })
   println("parser medium: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -125,7 +125,7 @@ test "bench: parser parse large" {
   let src = large_source()
   let tokens = @parser.Lexer::make(src).tokenize()
   let summary = @moonbench.benchmark(500, fn() {
-    ignore(@parser.Parser::make(tokens).parse_program())
+    ignore(@parser.Parser::make(tokens).parse_program() catch { _ => [] })
   })
   println("parser large: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)
@@ -138,7 +138,7 @@ test "bench: parser parse large" {
 test "bench: codegen emit small" {
   let src = small_source()
   let tokens = @parser.Lexer::make(src).tokenize()
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = @parser.Parser::make(tokens).parse_program() catch { _ => [] }
   let summary = @moonbench.benchmark(1000, fn() {
     ignore(@codegen.emit_dart_program(decls))
   })
@@ -150,7 +150,7 @@ test "bench: codegen emit small" {
 test "bench: codegen emit medium" {
   let src = medium_source()
   let tokens = @parser.Lexer::make(src).tokenize()
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = @parser.Parser::make(tokens).parse_program() catch { _ => [] }
   let summary = @moonbench.benchmark(1000, fn() {
     ignore(@codegen.emit_dart_program(decls))
   })
@@ -162,7 +162,7 @@ test "bench: codegen emit medium" {
 test "bench: codegen emit large" {
   let src = large_source()
   let tokens = @parser.Lexer::make(src).tokenize()
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = @parser.Parser::make(tokens).parse_program() catch { _ => [] }
   let summary = @moonbench.benchmark(500, fn() {
     ignore(@codegen.emit_dart_program(decls))
   })
@@ -210,7 +210,7 @@ test "bench: transpile_source large" {
 test "bench: flutter codegen" {
   let src = flutter_source()
   let tokens = @parser.Lexer::make(src).tokenize()
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = @parser.Parser::make(tokens).parse_program() catch { _ => [] }
   let summary = @moonbench.benchmark(500, fn() {
     ignore(@codegen.emit_flutter_program(decls))
   })
@@ -259,7 +259,7 @@ test "bench: type mapping basic" {
 test "bench: reverse transpile_source" {
   let src = dart_source()
   let summary = @moonbench.benchmark(500, fn() {
-    ignore(@reverse_codegen.reverse_transpile_source(src))
+    ignore(@reverse_codegen.reverse_transpile_source(src) catch { _ => "" })
   })
   println("reverse transpile: " + @moonbench.describe(summary))
   assert_true(summary.count > 0)

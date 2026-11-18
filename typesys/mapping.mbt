@@ -127,7 +127,27 @@ pub extend SemanticLevel with Compare::{op_lt, op_le, op_ge, compare, op_gt}
 pub extend SemanticLevel with Debug::{to_repr}
 
 ///|
-/// 判断 MoonBit 类型的语义等价等级 | Determine the semantic equivalence level of a MoonBit type
+/// 按语义模式定级 — fast 模式下 MInt 降级 L2 | Level under semantics mode — MInt downgrades to L2 in fast mode
+///
+/// Wrapping 模式：MInt 保持 L1 —— 32 位回绕由生成的 mb32* 模拟层保证（运行时 golden 双端验证）。
+/// Fast 模式：MInt 降级 L2 —— Dart int 为 64 位，溢出行为与 MoonBit 不同，仅标注不模拟。
+/// MInt64：两模式均 L1，但适用约束为 Dart VM（编译到 web 时 int 退化为 JS number，值域 2^53）。
+pub fn semantic_level_in_mode(
+  t : @ast.MoonType,
+  mode : @ast.SemanticsMode,
+) -> SemanticLevel {
+  match mode {
+    @ast.Fast =>
+      match t {
+        @ast.MInt => L2
+        _ => semantic_level(t)
+      }
+    @ast.Wrapping => semantic_level(t)
+  }
+}
+
+///|
+/// 判断 MoonBit 类型的语义等价等级（Wrapping 语义） | Determine the semantic equivalence level of a MoonBit type (Wrapping semantics)
 pub fn semantic_level(t : @ast.MoonType) -> SemanticLevel {
   match t {
     @ast.MUInt => L3
@@ -154,10 +174,11 @@ fn has_l4_type(t : @ast.MoonType) -> Bool {
 }
 
 ///|
-/// 递归检查类型中是否包含 L3 类型（UInt/Float/Char 值域有损） | Recursively check if type contains L3 types (UInt/Float/Char with value domain loss)
+/// 递归检查类型中是否包含 L3 类型（UInt/UInt64/Float/Char 值域有损） | Recursively check if type contains L3 types (UInt/UInt64/Float/Char with value domain loss)
 fn has_l3_type(t : @ast.MoonType) -> Bool {
   match t {
     @ast.MUInt => true
+    @ast.MUInt64 => true
     @ast.MFloat => true
     @ast.MChar => true
     @ast.MArray(inner) => has_l3_type(inner)

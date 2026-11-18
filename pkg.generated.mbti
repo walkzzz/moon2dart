@@ -35,6 +35,10 @@ pub fn transpile_source_strict(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_with_lib(String, String) -> String raise @ast.Moon2DartError
 
+pub fn transpile_source_with_mode(String, @ast.SemanticsMode) -> String raise @ast.Moon2DartError
+
+pub fn transpile_source_with_options(String, String, @ast.SemanticsMode) -> String raise @ast.Moon2DartError
+
 pub fn transpile_type(@ast.MoonType) -> String
 
 pub fn transpile_with_lib(Array[@ast.MoonDecl], String) -> String

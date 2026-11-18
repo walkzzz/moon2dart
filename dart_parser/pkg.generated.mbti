@@ -3,6 +3,7 @@ package "walkzzz/moon2dart/dart_parser"
 
 import {
   "moonbitlang/core/debug",
+  "walkzzz/moon2dart/ast",
   "walkzzz/moon2dart/dart_ast",
 }
 
@@ -26,8 +27,8 @@ pub struct DartParser {
   pos : Int32
 }
 pub fn DartParser::make(Array[DartToken]) -> Self
-pub fn DartParser::parse_expr(Self) -> (@dart_ast.DartExpr, Self)
-pub fn DartParser::parse_program(Self) -> Array[@dart_ast.DartDecl]
+pub fn DartParser::parse_expr(Self) -> (@dart_ast.DartExpr, Self) raise @ast.Moon2DartError
+pub fn DartParser::parse_program(Self) -> Array[@dart_ast.DartDecl] raise @ast.Moon2DartError
 
 #derive(Eq, @debug.Debug)
 pub(all) struct DartToken {

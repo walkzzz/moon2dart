@@ -1,0 +1,6 @@
+// golden 包 — 金标准真值端可执行入口（moon run golden --target native）
+// golden package — executable ground-truth entry (moon run golden --target native)
+
+pkgtype(kind: "executable")
+
+supported_targets = "+native"

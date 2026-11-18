@@ -4,13 +4,26 @@
 ///|
 
 ///|
-/// 分析 MoonBit 源码结构 — 解析源码并返回 AST 摘要。
+/// 分析 MoonBit 源码结构 — 解析源码并返回 AST 摘要，解析失败时在摘要中报告错误。
 fn analyze_source(source : String) -> String {
   let lexer = @parser.Lexer::make(source)
   let tokens = lexer.tokenize()
-  let parser = @parser.Parser::make(tokens)
-  let decls = parser.parse_program()
   let lines : Array[String] = []
+  let decls = try {
+    let parser = @parser.Parser::make(tokens)
+    parser.parse_program()
+  } catch {
+    @ast.Moon2DartError::ParseError(msg) => {
+      lines.push("Parse error: " + msg)
+      lines.push("Token count: " + tokens.length().to_string())
+      return lines.join("\n")
+    }
+    _ => {
+      lines.push("Unexpected error during analysis")
+      lines.push("Token count: " + tokens.length().to_string())
+      return lines.join("\n")
+    }
+  }
   lines.push("Found \{decls.length()} declarations:")
   for decl in decls {
     match decl {

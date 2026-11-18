@@ -20,7 +20,7 @@ pub fn DartParser::make(tokens : Array[DartToken]) -> DartParser {
 /// 解析整个 Dart 程序（多个声明）。
 pub fn DartParser::parse_program(
   self : DartParser,
-) -> Array[@dart_ast.DartDecl] {
+) -> Array[@dart_ast.DartDecl] raise @ast.Moon2DartError {
   let mut parser = self
   let decls : Array[@dart_ast.DartDecl] = []
   while !parser.at_eof() {
@@ -40,7 +40,7 @@ pub fn DartParser::parse_program(
 /// 尝试解析一个 Dart 声明。
 fn DartParser::try_parse_decl(
   self : DartParser,
-) -> (@dart_ast.DartDecl?, DartParser) {
+) -> (@dart_ast.DartDecl?, DartParser) raise @ast.Moon2DartError {
   let kind = self.peek().kind
   match kind {
     DtSealed => {
@@ -232,7 +232,7 @@ fn DartParser::parse_params(
 /// 解析顶层函数声明：Type name(params) { return expr; }
 fn DartParser::parse_fn_decl(
   self : DartParser,
-) -> (@dart_ast.DartDecl, DartParser) {
+) -> (@dart_ast.DartDecl, DartParser) raise @ast.Moon2DartError {
   let (ret_type, parser) = self.parse_type()
   let (name, parser) = parser.expect_ident()
   let (params, parser) = parser.parse_params()
@@ -246,7 +246,7 @@ fn DartParser::parse_fn_decl(
 /// 解析 async 函数声明：Future<Type> name(params) async { return expr; }
 fn DartParser::parse_async_fn_decl(
   self : DartParser,
-) -> (@dart_ast.DartDecl, DartParser) {
+) -> (@dart_ast.DartDecl, DartParser) raise @ast.Moon2DartError {
   let (ret_type, parser) = self.parse_type()
   let (name, parser) = parser.expect_ident()
   let (params, parser) = parser.parse_params()
@@ -265,7 +265,7 @@ fn DartParser::parse_async_fn_decl(
 /// 解析 class 声明：class Name { Type field; ... Type method(params) { ... } }
 fn DartParser::parse_class_decl(
   self : DartParser,
-) -> (@dart_ast.DartDecl, DartParser) {
+) -> (@dart_ast.DartDecl, DartParser) raise @ast.Moon2DartError {
   let parser = self.expect(DtClass)
   let (name, parser) = parser.expect_ident()
   let parser = parser.expect(DtLBrace)
@@ -358,7 +358,7 @@ fn DartParser::parse_class_member(
 fn DartParser::parse_method(
   self : DartParser,
   _class_name : String,
-) -> (@dart_ast.DartMethod, DartParser) {
+) -> (@dart_ast.DartMethod, DartParser) raise @ast.Moon2DartError {
   let (ret_type, parser) = self.parse_type()
   let (name, parser) = parser.expect_ident()
   let (params, parser) = parser.parse_params()
@@ -431,7 +431,7 @@ fn DartParser::parse_variant_fields(
 /// 解析函数体中的表达式（支持 return expr; 和直接 expr;）。
 fn DartParser::parse_block_body(
   self : DartParser,
-) -> (@dart_ast.DartExpr, DartParser) {
+) -> (@dart_ast.DartExpr, DartParser) raise @ast.Moon2DartError {
   let p = self
   if p.peek().kind is DtReturn {
     let p1 = p.advance()
@@ -449,7 +449,7 @@ fn DartParser::parse_block_body(
 /// 解析表达式。
 pub fn DartParser::parse_expr(
   self : DartParser,
-) -> (@dart_ast.DartExpr, DartParser) {
+) -> (@dart_ast.DartExpr, DartParser) raise @ast.Moon2DartError {
   self.parse_expr_prec(0)
 }
 
@@ -458,7 +458,7 @@ pub fn DartParser::parse_expr(
 fn DartParser::parse_expr_prec(
   self : DartParser,
   min_prec : Int32,
-) -> (@dart_ast.DartExpr, DartParser) {
+) -> (@dart_ast.DartExpr, DartParser) raise @ast.Moon2DartError {
   let (left0, parser0) = self.parse_primary()
   let mut left = left0
   let mut parser = parser0
@@ -491,7 +491,7 @@ fn DartParser::parse_expr_prec(
 /// 解析基本表达式。
 fn DartParser::parse_primary(
   self : DartParser,
-) -> (@dart_ast.DartExpr, DartParser) {
+) -> (@dart_ast.DartExpr, DartParser) raise @ast.Moon2DartError {
   let token = self.peek()
   match token.kind {
     DtInt => {
@@ -501,7 +501,8 @@ fn DartParser::parse_primary(
     }
     DtDouble => {
       let parser = self.advance()
-      (@dart_ast.DDoubleLit(0.0), parser)
+      let d = parse_dart_double_safe(token.text)
+      (@dart_ast.DDoubleLit(d), parser)
     }
     DtString => {
       let parser = self.advance()
@@ -592,14 +593,16 @@ fn DartParser::parse_primary(
           (e, p_close)
         }
       } else {
-        (@dart_ast.DNullLit, p4)
+        raise @ast.Moon2DartError::ParseError(
+          "Dart if expression requires else branch",
+        )
       }
       (@dart_ast.DIfExpr(cond, then_expr, else_expr), p5)
     }
-    _ => {
-      let parser = self.advance()
-      (@dart_ast.DNullLit, parser)
-    }
+    _ =>
+      raise @ast.Moon2DartError::ParseError(
+        "unexpected Dart token: " + token.text,
+      )
   }
 }
 
@@ -626,7 +629,7 @@ fn dart_op_precedence(kind : DartTokenKind) -> Int32 {
 
 ///|
 /// 运算符转字符串。
-fn dart_op_to_string(kind : DartTokenKind) -> String {
+fn dart_op_to_string(kind : DartTokenKind) -> String raise @ast.Moon2DartError {
   match kind {
     DtPlus => "+"
     DtMinus => "-"
@@ -641,7 +644,7 @@ fn dart_op_to_string(kind : DartTokenKind) -> String {
     DtGrEq => ">="
     DtAndAnd => "&&"
     DtOrOr => "||"
-    _ => "+"
+    _ => raise @ast.Moon2DartError::ParseError("unknown Dart operator token")
   }
 }
 
@@ -677,14 +680,20 @@ fn DartParser::expect_ident(self : DartParser) -> (String, DartParser) {
 }
 
 ///|
-/// 安全解析整数字面量。
-fn parse_dart_int_safe(s : String) -> Int32 {
-  let mut result = 0
+/// 安全解析整数字面量 — 遇到非数字字符时 raise ParseError。
+fn parse_dart_int_safe(s : String) -> Int32 raise @ast.Moon2DartError {
+  let mut result : Int32 = 0
+  let mut has_digit = false
   for ch in s.to_array() {
     if ch >= '0' && ch <= '9' {
       result = result * 10 + (ch.to_int() - '0'.to_int())
-    } else {
+      has_digit = true
+    } else if has_digit {
       break
+    } else {
+      raise @ast.Moon2DartError::ParseError(
+        "invalid Dart integer literal: " + s,
+      )
     }
   }
   result
@@ -699,4 +708,38 @@ fn extract_string_content(text : String) -> String {
   } else {
     ""
   }
+}
+
+///|
+/// 安全解析浮点字面量 — 支持整数部分和小数部分。
+fn parse_dart_double_safe(s : String) -> Double raise @ast.Moon2DartError {
+  let mut int_part : Int32 = 0
+  let mut frac_part : Int32 = 0
+  let mut frac_divisor : Int32 = 1
+  let mut has_digit = false
+  let mut after_dot = false
+  for ch in s.to_array() {
+    if ch >= '0' && ch <= '9' {
+      has_digit = true
+      if after_dot {
+        frac_part = frac_part * 10 + (ch.to_int() - '0'.to_int())
+        frac_divisor = frac_divisor * 10
+      } else {
+        int_part = int_part * 10 + (ch.to_int() - '0'.to_int())
+      }
+    } else if ch == '.' && !after_dot {
+      after_dot = true
+    } else {
+      if !has_digit {
+        raise @ast.Moon2DartError::ParseError(
+          "invalid Dart double literal: " + s,
+        )
+      }
+      break
+    }
+  }
+  if !has_digit {
+    raise @ast.Moon2DartError::ParseError("invalid Dart double literal: " + s)
+  }
+  int_part.to_double() + frac_part.to_double() / frac_divisor.to_double()
 }

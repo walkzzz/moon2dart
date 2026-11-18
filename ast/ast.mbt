@@ -390,3 +390,33 @@ pub(all) suberror Moon2DartError {
   ProjectError(String) // 项目级错误 | Project-level error
   TypeError(String) // 类型错误 | Type error
 }
+
+///|
+/// 语义保持模式 — 决定整数算术的发射方式 | Semantics mode — determines how integer arithmetic is emitted
+///
+/// MoonBit `Int` 是 32 位回绕（wasm i32），Dart `int` 是 64 位（VM），溢出行为不同：
+/// `2147483647 + 1` 在 MoonBit 得 `-2147483648`，在 Dart 得 `2147483648`。
+///
+/// - **Wrapping**（默认）：生成 32 位回绕模拟层（mb32* shim），保证两端结果一致
+/// - **Fast**：发射地道 Dart 裸算术，Int 自动降级 L2 并标注语义差异
+#derive(Eq, Debug)
+pub(all) enum SemanticsMode {
+  Wrapping // 32 位回绕模拟（默认，语义忠实）| 32-bit wrapping emulation (default, semantics-first)
+  Fast // 地道 Dart 裸算术（性能优先，Int 降级 L2 标注）| Idiomatic raw arithmetic (perf-first, Int downgraded to L2)
+}
+
+///|
+pub extend SemanticsMode with Eq::{equal, not_equal}
+
+///|
+pub extend SemanticsMode with Debug::{to_repr}
+
+///|
+/// 解析 --semantics 选项字符串（非法值回退 Wrapping）| Parse --semantics option string (invalid values fall back to Wrapping)
+pub fn SemanticsMode::parse(s : String) -> SemanticsMode {
+  if s == "fast" {
+    Fast
+  } else {
+    Wrapping
+  }
+}

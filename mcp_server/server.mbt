@@ -149,20 +149,20 @@ fn make_tool(
 // ============================================================
 
 ///|
-fn parse_port(s : String) -> Int32 {
+fn parse_port(s : String) -> Int32 raise @ast.Moon2DartError {
   let mut result : Int32 = 0
   for c in s {
     let digit = c.to_int() - 48
     if digit >= 0 && digit <= 9 {
       result = result * 10 + digit
     } else {
-      return 8080
+      raise @ast.Moon2DartError::SchemaError("invalid port: " + s)
     }
   }
   if result > 0 && result < 65536 {
     result
   } else {
-    8080
+    raise @ast.Moon2DartError::SchemaError("port out of range: " + s)
   }
 }
 
@@ -307,7 +307,12 @@ pub async fn serve_mcp(args : Array[String]) -> Unit {
     if args[i] == "--http" {
       use_http = true
       if i + 1 < args.length() {
-        http_port = parse_port(args[i + 1])
+        http_port = parse_port(args[i + 1]) catch {
+          _ => {
+            println("Warning: invalid port, using default 8080")
+            8080
+          }
+        }
         i = i + 2
       } else {
         i = i + 1

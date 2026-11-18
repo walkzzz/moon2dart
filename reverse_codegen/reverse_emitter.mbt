@@ -234,7 +234,9 @@ pub fn emit_moon_program(decls : Array[@dart_ast.DartDecl]) -> String {
 
 ///|
 /// 反向转换管线 — Dart 源码字符串 → MoonBit 源码字符串 | Reverse pipeline — Dart source string to MoonBit source string
-pub fn reverse_transpile_source(src : String) -> String {
+pub fn reverse_transpile_source(
+  src : String,
+) -> String raise @ast.Moon2DartError {
   let tokens = @dart_parser.DartLexer::make(src).tokenize()
   let decls = @dart_parser.DartParser::make(tokens).parse_program()
   emit_moon_program(decls)

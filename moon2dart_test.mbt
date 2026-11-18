@@ -14,7 +14,7 @@ test "blackbox: transpile fn" {
   ]
   let result = @moon2dart.transpile(prog)
   assert_true(result.contains("int square(int x)"))
-  assert_true(result.contains("return x * x;"))
+  assert_true(result.contains("return mb32Mul(x, x);"))
 }
 
 ///|

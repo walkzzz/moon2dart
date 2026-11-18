@@ -107,10 +107,16 @@ test "parse_expr_if" {
 }
 
 ///|
-/// 测试解析 if 表达式无 else。
+/// 测试解析 if 表达式无 else — 应 raise ParseError。
 test "parse_expr_if_no_else" {
-  let (expr, _) = make_parser("if x { 1 }").parse_expr()
-  assert_true(expr is @ast.EIf(@ast.EVar("x"), @ast.EInt(1), @ast.EInt(0)))
+  let result = try {
+    let _ = make_parser("if x { 1 }").parse_expr()
+    false
+  } catch {
+    @ast.Moon2DartError::ParseError(msg) => msg.contains("else")
+    _ => false
+  }
+  assert_true(result)
 }
 
 ///|

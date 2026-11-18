@@ -18,7 +18,9 @@ pub fn Parser::make(tokens : Array[Token]) -> Parser {
 
 ///|
 /// 解析整个程序（多个声明）。
-pub fn Parser::parse_program(self : Parser) -> Array[@ast.MoonDecl] {
+pub fn Parser::parse_program(
+  self : Parser,
+) -> Array[@ast.MoonDecl] raise @ast.Moon2DartError {
   let mut parser = self
   let decls : Array[@ast.MoonDecl] = []
   while !parser.at_eof() {
@@ -36,7 +38,9 @@ pub fn Parser::parse_program(self : Parser) -> Array[@ast.MoonDecl] {
 
 ///|
 /// 尝试解析一个声明，返回声明与新 Parser 状态。
-fn Parser::try_parse_decl(self : Parser) -> (@ast.MoonDecl?, Parser) {
+fn Parser::try_parse_decl(
+  self : Parser,
+) -> (@ast.MoonDecl?, Parser) raise @ast.Moon2DartError {
   let kind = self.peek().kind
   match kind {
     TkAsync => {
@@ -96,7 +100,9 @@ fn Parser::parse_type_params(self : Parser) -> (Array[String], Parser) {
 
 ///|
 /// 解析 fn 声明：fn name[T](params) -> ret_type { body }
-fn Parser::parse_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_fn_decl(
+  self : Parser,
+) -> (@ast.MoonDecl, Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkFn)
   let (name, parser) = parser.expect_ident()
   let (type_params, parser) = parser.parse_type_params()
@@ -108,7 +114,9 @@ fn Parser::parse_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 
 ///|
 /// 解析 async fn 声明：async fn name[T](params) -> ret_type { body }
-fn Parser::parse_async_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_async_fn_decl(
+  self : Parser,
+) -> (@ast.MoonDecl, Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkAsync)
   let parser = parser.expect(TkFn)
   let (name, parser) = parser.expect_ident()
@@ -255,7 +263,9 @@ fn Parser::parse_enum_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 
 ///|
 /// 解析 trait 声明：trait Name { fn method(params) -> ret_type; ... }
-fn Parser::parse_trait_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_trait_decl(
+  self : Parser,
+) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkTrait)
   let (name, parser) = parser.expect_ident()
   let p = parser.expect(TkLBrace)
@@ -282,7 +292,9 @@ fn Parser::parse_trait_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 
 ///|
 /// 解析 impl 声明：impl Trait for Type { fn method(params) -> ret_type { body } ... }
-fn Parser::parse_impl_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_impl_decl(
+  self : Parser,
+) -> (@ast.MoonDecl, Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkImpl)
   let (trait_name, parser) = parser.expect_ident()
   let parser = parser.expect(TkFor)
@@ -309,7 +321,9 @@ fn Parser::parse_impl_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 
 ///|
 /// 解析 extern "c" fn 声明：extern "c" fn name(params) -> ret_type = "c_symbol"
-fn Parser::parse_extern_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_extern_fn_decl(
+  self : Parser,
+) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkExtern)
   let parser = parser.expect(TkString)
   let parser = parser.expect(TkFn)
@@ -336,6 +350,10 @@ fn Parser::parse_type(self : Parser) -> (@ast.MoonType, Parser) {
   let (name, parser) = self.expect_ident()
   let (ty, p) = match name {
     "Int" => (@ast.MInt, parser)
+    "UInt" => (@ast.MUInt, parser)
+    "Int64" => (@ast.MInt64, parser)
+    "UInt64" => (@ast.MUInt64, parser)
+    "Float" => (@ast.MFloat, parser)
     "Double" => (@ast.MDouble, parser)
     "String" => (@ast.MString, parser)
     "Bool" => (@ast.MBool, parser)
@@ -382,7 +400,9 @@ fn Parser::parse_type(self : Parser) -> (@ast.MoonType, Parser) {
 
 ///|
 /// 解析表达式，返回表达式与新 Parser 状态。
-pub fn Parser::parse_expr(self : Parser) -> (@ast.MoonExpr, Parser) {
+pub fn Parser::parse_expr(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
   self.parse_expr_prec(0)
 }
 
@@ -391,7 +411,7 @@ pub fn Parser::parse_expr(self : Parser) -> (@ast.MoonExpr, Parser) {
 fn Parser::parse_expr_prec(
   self : Parser,
   min_prec : Int32,
-) -> (@ast.MoonExpr, Parser) {
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
   let (left0, parser0) = self.parse_primary()
   let mut left = left0
   let mut parser = parser0
@@ -425,13 +445,41 @@ fn Parser::parse_expr_prec(
 
 ///|
 /// 解析基本表达式。
-fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
+fn Parser::parse_primary(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
   let token = self.peek()
   match token.kind {
     TkInt => {
       let parser = self.advance()
       let n = parse_int_safe(token.text)
       (@ast.EInt(n), parser)
+    }
+    TkDouble => {
+      let parser = self.advance()
+      let d = parse_double_safe(token.text)
+      (@ast.EDouble(d), parser)
+    }
+    TkMinus => {
+      // 一元负号 — 仅支持数字字面量（折叠为负值字面量）| Unary minus — folds into negative numeric literals
+      let parser = self.advance()
+      let token2 = parser.peek()
+      match token2.kind {
+        TkInt => {
+          let p2 = parser.advance()
+          let n = parse_int_safe(token2.text)
+          (@ast.EInt(-n), p2)
+        }
+        TkDouble => {
+          let p2 = parser.advance()
+          let d = parse_double_safe(token2.text)
+          (@ast.EDouble(-d), p2)
+        }
+        _ =>
+          raise @ast.Moon2DartError::ParseError(
+            "unary minus only supports numeric literals",
+          )
+      }
     }
     TkString => {
       let parser = self.advance()
@@ -506,7 +554,9 @@ fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
         let p = p2.advance()
         p.parse_block_expr()
       } else {
-        (@ast.EInt(0), p2)
+        raise @ast.Moon2DartError::ParseError(
+          "if expression requires else branch",
+        )
       }
       (@ast.EIf(cond, then_expr, else_expr), p3)
     }
@@ -528,19 +578,19 @@ fn Parser::parse_primary(self : Parser) -> (@ast.MoonExpr, Parser) {
         let (body, p2) = p1.parse_block_expr()
         (@ast.ELambda(params, body), p2)
       } else {
-        (@ast.EInt(0), parser)
+        raise @ast.Moon2DartError::ParseError("expected ( after fn in lambda")
       }
     }
-    _ => {
-      let parser = self.advance()
-      (@ast.EInt(0), parser)
-    }
+    _ =>
+      raise @ast.Moon2DartError::ParseError("unexpected token: " + token.text)
   }
 }
 
 ///|
 /// 解析块表达式 { expr }。
-fn Parser::parse_block_expr(self : Parser) -> (@ast.MoonExpr, Parser) {
+fn Parser::parse_block_expr(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkLBrace)
   let (expr, p) = parser.parse_expr()
   let p_final = p.expect(TkRBrace)
@@ -551,7 +601,7 @@ fn Parser::parse_block_expr(self : Parser) -> (@ast.MoonExpr, Parser) {
 /// 解析 match 分支列表 { Pattern => body, ... }
 fn Parser::parse_match_arms(
   self : Parser,
-) -> (Array[(@ast.MoonPattern, @ast.MoonExpr)], Parser) {
+) -> (Array[(@ast.MoonPattern, @ast.MoonExpr)], Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkLBrace)
   let mut p = parser
   let cases : Array[(@ast.MoonPattern, @ast.MoonExpr)] = []
@@ -571,7 +621,9 @@ fn Parser::parse_match_arms(
 
 ///|
 /// 解析模式匹配节点。
-fn Parser::parse_pattern(self : Parser) -> (@ast.MoonPattern, Parser) {
+fn Parser::parse_pattern(
+  self : Parser,
+) -> (@ast.MoonPattern, Parser) raise @ast.Moon2DartError {
   let token = self.peek()
   match token.kind {
     TkInt => {
@@ -638,10 +690,10 @@ fn Parser::parse_pattern(self : Parser) -> (@ast.MoonPattern, Parser) {
         (@ast.PCtor(name, []), parser)
       }
     }
-    _ => {
-      let parser = self.advance()
-      (@ast.PWild, parser)
-    }
+    _ =>
+      raise @ast.Moon2DartError::ParseError(
+        "unexpected pattern token: " + token.text,
+      )
   }
 }
 
@@ -668,7 +720,7 @@ fn op_precedence(kind : TokenKind) -> Int32 {
 
 ///|
 /// 运算符转字符串。
-fn op_to_string(kind : TokenKind) -> String {
+fn op_to_string(kind : TokenKind) -> String raise @ast.Moon2DartError {
   match kind {
     TkPlus => "+"
     TkMinus => "-"
@@ -683,7 +735,7 @@ fn op_to_string(kind : TokenKind) -> String {
     TkGrEq => ">="
     TkAndAnd => "&&"
     TkOrOr => "||"
-    _ => "+"
+    _ => raise @ast.Moon2DartError::ParseError("unknown operator token")
   }
 }
 
@@ -719,15 +771,51 @@ fn Parser::expect_ident(self : Parser) -> (String, Parser) {
 }
 
 ///|
-/// 安全解析整数字面量。
-fn parse_int_safe(s : String) -> Int32 {
-  let mut result = 0
+/// 安全解析整数字面量 — 遇到非数字字符时 raise ParseError。
+fn parse_int_safe(s : String) -> Int32 raise @ast.Moon2DartError {
+  let mut result : Int32 = 0
+  let mut has_digit = false
   for ch in s.to_array() {
     if ch >= '0' && ch <= '9' {
       result = result * 10 + (ch.to_int() - '0'.to_int())
-    } else {
+      has_digit = true
+    } else if has_digit {
       break
+    } else {
+      raise @ast.Moon2DartError::ParseError("invalid integer literal: " + s)
     }
   }
   result
+}
+
+///|
+/// 安全解析双精度字面量 — 支持小数点；遇到非法字符时 raise ParseError。
+fn parse_double_safe(s : String) -> Double raise @ast.Moon2DartError {
+  let mut result : Double = 0.0
+  let mut fraction : Double = 0.0
+  let mut scale : Double = 1.0
+  let mut seen_dot = false
+  let mut has_digit = false
+  for ch in s.to_array() {
+    if ch >= '0' && ch <= '9' {
+      let d = (ch.to_int() - '0'.to_int()).to_double()
+      if seen_dot {
+        scale = scale / 10.0
+        fraction = fraction + d * scale
+      } else {
+        result = result * 10.0 + d
+      }
+      has_digit = true
+    } else if ch == '.' && !seen_dot {
+      seen_dot = true
+    } else if has_digit {
+      break
+    } else {
+      raise @ast.Moon2DartError::ParseError("invalid double literal: " + s)
+    }
+  }
+  if !has_digit {
+    raise @ast.Moon2DartError::ParseError("invalid double literal: " + s)
+  }
+  result + fraction
 }

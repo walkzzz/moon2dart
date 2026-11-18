@@ -41,11 +41,17 @@ fn make_json_args(
 }
 
 ///|
-/// json_get_string — 从 Json 对象中提取字符串值。
-fn json_get_string(json : Json, key : String) -> String {
+/// json_get_string — 从 Json 对象中提取字符串值，缺失时 raise JsonParseError。
+fn json_get_string(
+  json : Json,
+  key : String,
+) -> String raise @ast.Moon2DartError {
   match @mcpsdk.get_string(json, key) {
     Ok(s) => s
-    Err(_) => ""
+    Err(_) =>
+      raise @ast.Moon2DartError::JsonParseError(
+        "missing or invalid JSON key: " + key,
+      )
   }
 }
 
@@ -391,7 +397,18 @@ fn register_moon2dart_tools(
       provenance=None,
     ),
     fn(ctx) -> @posoco.ToolOutcome {
-      let source = json_get_string(ctx.arguments, "source")
+      let source = json_get_string(ctx.arguments, "source") catch {
+        @ast.Moon2DartError::JsonParseError(msg) =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parameter error: " + msg,
+            structured=None,
+          )
+        _ =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Missing 'source' parameter",
+            structured=None,
+          )
+      }
       if source == "" {
         return @posoco.ToolOutcome::ToolReportedError(
           content="missing 'source' parameter",
@@ -432,7 +449,18 @@ fn register_moon2dart_tools(
       provenance=None,
     ),
     fn(ctx) -> @posoco.ToolOutcome {
-      let source = json_get_string(ctx.arguments, "source")
+      let source = json_get_string(ctx.arguments, "source") catch {
+        @ast.Moon2DartError::JsonParseError(msg) =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parameter error: " + msg,
+            structured=None,
+          )
+        _ =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Missing 'source' parameter",
+            structured=None,
+          )
+      }
       if source == "" {
         return @posoco.ToolOutcome::ToolReportedError(
           content="missing 'source' parameter",
@@ -468,7 +496,18 @@ fn register_moon2dart_tools(
       provenance=None,
     ),
     fn(ctx) -> @posoco.ToolOutcome {
-      let source = json_get_string(ctx.arguments, "source")
+      let source = json_get_string(ctx.arguments, "source") catch {
+        @ast.Moon2DartError::JsonParseError(msg) =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parameter error: " + msg,
+            structured=None,
+          )
+        _ =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Missing 'source' parameter",
+            structured=None,
+          )
+      }
       if source == "" {
         return @posoco.ToolOutcome::ToolReportedError(
           content="missing 'source' parameter",
@@ -509,7 +548,18 @@ fn register_moon2dart_tools(
       provenance=None,
     ),
     fn(ctx) -> @posoco.ToolOutcome {
-      let source = json_get_string(ctx.arguments, "source")
+      let source = json_get_string(ctx.arguments, "source") catch {
+        @ast.Moon2DartError::JsonParseError(msg) =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parameter error: " + msg,
+            structured=None,
+          )
+        _ =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Missing 'source' parameter",
+            structured=None,
+          )
+      }
       if source == "" {
         return @posoco.ToolOutcome::ToolReportedError(
           content="missing 'source' parameter",
@@ -536,7 +586,18 @@ fn register_moon2dart_tools(
       provenance=None,
     ),
     fn(ctx) -> @posoco.ToolOutcome {
-      let dir = json_get_string(ctx.arguments, "dir")
+      let dir = json_get_string(ctx.arguments, "dir") catch {
+        @ast.Moon2DartError::JsonParseError(msg) =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Parameter error: " + msg,
+            structured=None,
+          )
+        _ =>
+          return @posoco.ToolOutcome::ToolReportedError(
+            content="Missing 'dir' parameter",
+            structured=None,
+          )
+      }
       if dir == "" {
         return @posoco.ToolOutcome::ToolReportedError(
           content="missing 'dir' parameter",

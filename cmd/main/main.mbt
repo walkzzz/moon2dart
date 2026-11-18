@@ -23,7 +23,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
     println(
-      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>]",
+      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>] [--semantics wrapping|fast]",
     )
     return
   }
@@ -32,6 +32,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   let mut pure_only = false
   let mut strict = false
   let mut lib_name = "libnative.so"
+  let mut semantics_mode : @ast.SemanticsMode = @ast.Wrapping
   let mut i = 1
   while i < args.length() {
     if args[i] == "--reverse" {
@@ -45,6 +46,9 @@ async fn cmd_convert(args : Array[String]) -> Unit {
       i = i + 1
     } else if args[i] == "--lib" && i + 1 < args.length() {
       lib_name = args[i + 1]
+      i = i + 2
+    } else if args[i] == "--semantics" && i + 1 < args.length() {
+      semantics_mode = @ast.SemanticsMode::parse(args[i + 1])
       i = i + 2
     } else {
       i = i + 1
@@ -109,7 +113,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
     println(dart_code)
   } else {
-    let dart_code = @lib.transpile_source_with_lib(content, lib_name) catch {
+    let dart_code = @lib.transpile_source_with_options(content, lib_name, semantics_mode) catch {
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
         return
@@ -303,9 +307,9 @@ async fn cmd_watch(args : Array[String]) -> Unit {
       output_dir = args[i + 1]
       i = i + 2
     } else if args[i] == "--max-iterations" && i + 1 < args.length() {
-      let parsed = parse_int_arg(args[i + 1])
-      if parsed > 0 {
-        max_iter = parsed
+      match parse_int_arg(args[i + 1]) {
+        Some(n) => if n > 0 { max_iter = n }
+        None => println("Warning: invalid --max-iterations value")
       }
       i = i + 2
     } else {
@@ -378,18 +382,24 @@ fn has_mbt_changes(events : Array[@fs.FsEvent]) -> Bool {
 }
 
 ///|
-/// parse_int_arg — 解析字符串为正整数，失败时返回 0。
-fn parse_int_arg(s : String) -> Int32 {
-  let mut result = 0
+/// parse_int_arg — 解析字符串为正整数，失败时返回 None。
+fn parse_int_arg(s : String) -> Int32? {
+  let mut result : Int32 = 0
+  let mut has_digit = false
   for c in s {
     let digit = c.to_int() - 48
     if digit >= 0 && digit <= 9 {
       result = result * 10 + digit
+      has_digit = true
     } else {
-      return 0
+      return None
     }
   }
-  result
+  if has_digit {
+    Some(result)
+  } else {
+    None
+  }
 }
 
 ///|

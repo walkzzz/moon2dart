@@ -11,9 +11,13 @@ pub fn assert_round_trip(@ast.MoonType) -> Bool
 
 pub fn assert_value_domain(@ast.MoonType, SemanticLevel) -> Bool
 
+pub fn collect_int_arith_ops(Array[@ast.MoonDecl]) -> Array[String]
+
 pub fn ffi_dart_type(@ast.MoonType) -> String
 
 pub fn ffi_native_type(@ast.MoonType) -> String
+
+pub fn infer_expr_type(@ast.MoonExpr, TypeEnv) -> @ast.MoonType?
 
 pub fn map_type(@ast.MoonType) -> DartType
 
@@ -24,6 +28,8 @@ pub fn moon_to_dart_type(@ast.MoonType) -> String
 pub fn needs_option_class(Array[@ast.MoonDecl]) -> Bool
 
 pub fn semantic_level(@ast.MoonType) -> SemanticLevel
+
+pub fn semantic_level_in_mode(@ast.MoonType, @ast.SemanticsMode) -> SemanticLevel
 
 // Errors
 
@@ -73,6 +79,14 @@ pub fn SemanticLevel::op_gt(Self, Self) -> Bool
 pub fn SemanticLevel::op_le(Self, Self) -> Bool
 pub fn SemanticLevel::op_lt(Self, Self) -> Bool
 pub fn SemanticLevel::to_repr(Self) -> @debug.Repr
+
+pub(all) struct TypeEnv {
+  vars : Map[String, @ast.MoonType]
+  fns : Map[String, @ast.MoonType]
+}
+pub fn TypeEnv::for_function(Array[@ast.MoonDecl], Array[(String, @ast.MoonType)]) -> Self
+pub fn TypeEnv::from_decls(Array[@ast.MoonDecl]) -> Self
+pub fn TypeEnv::make() -> Self
 
 // Type aliases
 

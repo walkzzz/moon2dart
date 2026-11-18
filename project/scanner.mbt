@@ -9,9 +9,15 @@ pub fn parse_moon_mod(content : String) -> (String, String) {
   for line in content.split("\n") {
     let trimmed = line.trim().to_owned()
     if trimmed.has_prefix("name") {
-      module_name = extract_quoted_value(trimmed)
+      module_name = match extract_quoted_value(trimmed) {
+        Some(v) => v
+        None => ""
+      }
     } else if trimmed.has_prefix("version") {
-      version = extract_quoted_value(trimmed)
+      version = match extract_quoted_value(trimmed) {
+        Some(v) => v
+        None => ""
+      }
     }
   }
   (module_name, version)
@@ -32,9 +38,9 @@ pub fn parse_moon_pkg(content : String) -> Array[String] {
       if trimmed == "}" {
         break
       }
-      let dep = extract_quoted_value(trimmed)
-      if dep != "" {
-        deps.push(dep)
+      match extract_quoted_value(trimmed) {
+        Some(dep) => deps.push(dep)
+        None => ()
       }
     }
   }
@@ -54,8 +60,8 @@ pub fn infer_package_name(dir : String, root_dir : String) -> String {
 }
 
 ///|
-/// 从字符串中提取引号内的值。
-fn extract_quoted_value(s : String) -> String {
+/// 从字符串中提取引号内的值 — 未找到引号时返回 None。
+fn extract_quoted_value(s : String) -> String? {
   let mut start = -1
   let mut end = -1
   let chars = s.to_array()
@@ -70,9 +76,9 @@ fn extract_quoted_value(s : String) -> String {
     }
   }
   if start != -1 && end != -1 && end > start {
-    s[start + 1:end].to_owned()
+    Some(s[start + 1:end].to_owned())
   } else {
-    ""
+    None
   }
 }
 

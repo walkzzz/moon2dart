@@ -81,7 +81,7 @@ test "transpile_source fn_add" {
   let src = "fn add(a : Int, b : Int) -> Int { a + b }"
   let result = transpile_source(src)
   assert_true(result.contains("int add(int a, int b)"))
-  assert_true(result.contains("return a + b;"))
+  assert_true(result.contains("return mb32Add(a, b);"))
 }
 
 ///|
@@ -251,7 +251,7 @@ test "transpile_source async_fn_with_params" {
   let src = "async fn compute(x : Int) -> Int { x + 1 }"
   let result = transpile_source(src)
   assert_true(result.contains("Future<int> compute(int x) async"))
-  assert_true(result.contains("return x + 1;"))
+  assert_true(result.contains("return mb32Add(x, 1);"))
 }
 
 ///|
@@ -417,7 +417,7 @@ test "transpile_source lambda_two_params" {
 test "transpile_source lambda_with_type" {
   let src = "fn getCallback() -> Int { fn(x : Int) { x + 1 } }"
   let result = transpile_source(src)
-  assert_true(result.contains("(x) => x + 1"))
+  assert_true(result.contains("(x) => mb32Add(x, 1)"))
 }
 
 ///|

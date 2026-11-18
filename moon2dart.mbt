@@ -87,6 +87,43 @@ pub fn transpile_source_pure(src : String) -> String raise @ast.Moon2DartError {
 }
 
 ///|
+/// 单文件转换管线（完整选项：FFI 库名 + 语义模式）| Single-file pipeline (full options: FFI library name + semantics mode)
+///
+/// Wrapping（默认）：Int 算术生成 mb32* 回绕模拟层，两端运行结果一致（32 位 wasm i32 语义）。
+/// Fast：裸发地道 Dart，Int 自动降级 L2 并追加 [L2-SEMANTICS] 诊断注释。
+pub fn transpile_source_with_options(
+  src : String,
+  lib_name : String,
+  mode : @ast.SemanticsMode,
+) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
+  let tokens = @parser.Lexer::make(src).tokenize()
+  if tokens.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
+  }
+  let decls = @parser.Parser::make(tokens).parse_program()
+  if decls.length() == 0 {
+    raise @ast.Moon2DartError::ParseError("parser produced no declarations")
+  }
+  let result = @codegen.emit_dart_program_full(decls, lib_name, mode)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
+}
+
+///|
+/// 单文件转换管线（语义模式感知）| Single-file pipeline (semantics-mode aware)
+pub fn transpile_source_with_mode(
+  src : String,
+  mode : @ast.SemanticsMode,
+) -> String raise @ast.Moon2DartError {
+  transpile_source_with_options(src, "libnative.so", mode)
+}
+
+///|
 /// 严格模式转换管线 — L4 类型 raise 错误，L3 类型保留诊断注释 | Strict mode pipeline — L4 types raise error, L3 types keep diagnostic comments
 pub fn transpile_source_strict(
   src : String,

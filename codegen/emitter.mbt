@@ -1,21 +1,32 @@
 ///|
+/// 发射上下文 — 类型环境 + 语义模式 + 嵌套 Option 标记 | Emission context — type env + semantics mode + nested-Option flag
+pub(all) struct EmitCtx {
+  env : @typesys.TypeEnv? // 程序级发射提供的类型环境；单表达式 API 为 None（保守 fast）| provided at program level; None for single-expression APIs
+  mode : @ast.SemanticsMode // Wrapping 生成回绕模拟层；Fast 裸发 | Wrapping generates wrapping shims; Fast emits raw
+  nested_option_context : Bool // 嵌套 Option 上下文 | nested Option context
+}
+
+///|
+/// 默认单表达式上下文 — 无类型环境 + Fast 模式 | Default single-expression context — no env + Fast mode
+fn default_expr_ctx(nested : Bool) -> EmitCtx {
+  { env: None, mode: @ast.Fast, nested_option_context: nested }
+}
+
+///|
 /// Dart 表达式发射 — 将 MoonBit 表达式节点转为 Dart 代码字符串 | Dart expression emission — convert MoonBit expression nodes to Dart code strings
 pub fn emit_dart_expr(e : @ast.MoonExpr) -> String {
-  emit_dart_expr_inner(e, false)
+  emit_dart_expr_inner(e, default_expr_ctx(false))
 }
 
 ///|
 /// Dart 表达式发射（嵌套 Option 感知）| Dart expression emission (nested Option aware)
 /// 当 nested_option_context 为 true 时 Some/None 使用 Option.some/Option.none 辅助类语法 | When nested_option_context is true, Some/None use Option.some/Option.none auxiliary class syntax
 pub fn emit_dart_expr_nested(e : @ast.MoonExpr) -> String {
-  emit_dart_expr_inner(e, true)
+  emit_dart_expr_inner(e, default_expr_ctx(true))
 }
 
 ///|
-fn emit_dart_expr_inner(
-  e : @ast.MoonExpr,
-  nested_option_context : Bool,
-) -> String {
+fn emit_dart_expr_inner(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
   match e {
     @ast.EInt(n) => n.to_string()
     @ast.EDouble(d) => d.to_string()
@@ -23,7 +34,7 @@ fn emit_dart_expr_inner(
     @ast.EString(s) => "\"\{s}\""
     @ast.EVar(name) =>
       if name == "None" {
-        if nested_option_context {
+        if ctx.nested_option_context {
           "Option.none()"
         } else {
           "null"
@@ -33,41 +44,53 @@ fn emit_dart_expr_inner(
       }
     @ast.ECall(name, args) =>
       if name == "Some" && args.length() == 1 {
-        if nested_option_context {
-          let inner = emit_dart_expr_inner(args[0], nested_option_context)
+        if ctx.nested_option_context {
+          let inner = emit_dart_expr_inner(args[0], ctx)
           "Option.some(\{inner})"
         } else {
-          emit_dart_expr_inner(args[0], nested_option_context)
+          emit_dart_expr_inner(args[0], ctx)
         }
       } else if name == "None" && args.length() == 0 {
-        if nested_option_context {
+        if ctx.nested_option_context {
           "Option.none()"
         } else {
           "null"
         }
       } else {
         let arg_str = args
-          .map(fn(a) { emit_dart_expr_inner(a, nested_option_context) })
+          .map(fn(a) { emit_dart_expr_inner(a, ctx) })
           .join(", ")
-        "\{name}(\{arg_str})"
+        // MoonBit println → Dart print（Dart 无 println，输出语义一致）| MoonBit println maps to Dart print
+        if name == "println" && args.length() == 1 {
+          "print(\{arg_str})"
+        } else {
+          "\{name}(\{arg_str})"
+        }
       }
-    @ast.EBinOp(op, lhs, rhs) =>
-      "\{emit_dart_expr_inner(lhs, nested_option_context)} \{op} \{emit_dart_expr_inner(rhs, nested_option_context)}"
-    @ast.EIf(cond, then_, else_) =>
-      "\{emit_dart_expr_inner(cond, nested_option_context)} ? \{emit_dart_expr_inner(then_, nested_option_context)} : \{emit_dart_expr_inner(else_, nested_option_context)}"
+    @ast.EBinOp(op, lhs, rhs) => {
+      let lhs_s = emit_dart_expr_inner(lhs, ctx)
+      let rhs_s = emit_dart_expr_inner(rhs, ctx)
+      emit_binop(op, lhs_s, rhs_s, e, ctx)
+    }
+    @ast.EIf(cond, then_, else_) => {
+      let c = emit_dart_expr_inner(cond, ctx)
+      let t = emit_dart_expr_inner(then_, ctx)
+      let e_ = emit_dart_expr_inner(else_, ctx)
+      "\{c} ? \{t} : \{e_}"
+    }
     @ast.EMatch(scrutinee, cases) => {
-      let scrut = emit_dart_expr_inner(scrutinee, nested_option_context)
+      let scrut = emit_dart_expr_inner(scrutinee, ctx)
       let sorted = sort_option_cases(cases)
       let arms = sorted
         .map(fn(pair) {
           let (pat, body) = pair
-          "  \{emit_dart_pattern_inner(pat, nested_option_context)} => \{emit_dart_expr_inner(body, nested_option_context)}"
+          "  \{emit_dart_pattern_inner(pat, ctx.nested_option_context)} => \{emit_dart_expr_inner(body, ctx)}"
         })
         .join(",\n")
       "switch (\{scrut}) {\n\{arms}\n}"
     }
     @ast.EAwait(inner) =>
-      "await \{emit_dart_expr_inner(inner, nested_option_context)}"
+      "await \{emit_dart_expr_inner(inner, ctx)}"
     @ast.ELambda(params, body) => {
       let param_str = params
         .map(fn(pair) {
@@ -75,8 +98,69 @@ fn emit_dart_expr_inner(
           pname
         })
         .join(", ")
-      "(\{param_str}) => \{emit_dart_expr_inner(body, nested_option_context)}"
+      "(\{param_str}) => \{emit_dart_expr_inner(body, ctx)}"
     }
+  }
+}
+
+///|
+/// 二元运算分类发射 — 按操作数推断类型与语义模式决定发射形态 | Classified binary-op emission — decided by inferred operand type and semantics mode
+fn emit_binop(
+  op : String,
+  lhs_s : String,
+  rhs_s : String,
+  whole : @ast.MoonExpr,
+  ctx : EmitCtx,
+) -> String {
+  let inferred = match ctx.env {
+    Some(env) => @typesys.infer_expr_type(whole, env)
+    None => None
+  }
+  match inferred {
+    Some(@ast.MInt) => emit_int_binop(op, lhs_s, rhs_s, ctx)
+    Some(@ast.MInt64) => emit_int64_binop(op, lhs_s, rhs_s)
+    // Double/Float/String/Bool/推断失败：裸发（Double 为 IEEE 754 64 位，两端语义一致）
+    _ => "\{lhs_s} \{op} \{rhs_s}"
+  }
+}
+
+///|
+/// MoonBit Int（32 位回绕）算术发射 | MoonBit Int (32-bit wrapping) arithmetic emission
+///
+/// Wrapping 模式：+ - * / % 经 mb32* shim 模拟 wasm i32 回绕，两端结果一致。
+/// Fast 模式：+ - * 裸发（L2：64 位溢出行为差异，程序级诊断标注）；/ % 修正为 Dart 整数语义。
+fn emit_int_binop(
+  op : String,
+  l : String,
+  r : String,
+  ctx : EmitCtx,
+) -> String {
+  if ctx.mode is @ast.Wrapping {
+    match op {
+      "+" => "mb32Add(\{l}, \{r})"
+      "-" => "mb32Sub(\{l}, \{r})"
+      "*" => "mb32Mul(\{l}, \{r})"
+      "/" => "mb32Div(\{l}, \{r})" // 整数除法（~/）+ INT_MIN/-1 回绕保护
+      "%" => "mb32Rem(\{l}, \{r})" // 截断取余（符号跟被除数），非 Dart %（欧几里得）
+      _ => "\{l} \{op} \{r}" // 比较与逻辑运算两端语义一致，裸发
+    }
+  } else {
+    match op {
+      "/" => "\{l} ~/ \{r}" // 修正：整数除法不可发 `/`（Dart `/` 是浮点除法）
+      "%" => "\{l}.remainder(\{r})" // 修正：Dart % 为欧几里得余数，MoonBit 为截断余数
+      _ => "\{l} \{op} \{r}"
+    }
+  }
+}
+
+///|
+/// MoonBit Int64 算术发射 — Dart VM int 亦为 64 位回绕，+ - * 天然一致 | MoonBit Int64 arithmetic — Dart VM int is also 64-bit wrapping
+/// 适用约束：Dart VM；编译到 web 时 int 退化为 JS number（值域 2^53），见语义文档。
+fn emit_int64_binop(op : String, l : String, r : String) -> String {
+  match op {
+    "/" => "\{l} ~/ \{r}" // 整除修正（原发 `/` 是浮点除法 bug）
+    "%" => "\{l}.remainder(\{r})" // 截断余数修正
+    _ => "\{l} \{op} \{r}"
   }
 }
 
@@ -150,18 +234,24 @@ fn emit_dart_pattern_inner(
 ///|
 /// Dart 声明发射 | Dart declaration emission
 pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
+  emit_dart_decl_with_ctx(d, default_expr_ctx(false))
+}
+
+///|
+/// Dart 声明发射（带上下文：类型环境 + 语义模式）| Dart declaration emission with context (type env + semantics mode)
+fn emit_dart_decl_with_ctx(d : @ast.MoonDecl, ctx : EmitCtx) -> String {
   match d {
     @ast.DFn(name, type_params, params, ret, body) => {
       let param_str = format_dart_params(params)
       let ret_str = @typesys.map_type(ret).to_dart_string()
       let generic = format_generics(type_params)
-      "\{ret_str} \{name}\{generic}(\{param_str}) {\n  return \{emit_dart_expr(body)};\n}"
+      "\{ret_str} \{name}\{generic}(\{param_str}) {\n  return \{emit_dart_expr_inner(body, ctx)};\n}"
     }
     @ast.DAsyncFn(name, type_params, params, ret, body) => {
       let param_str = format_dart_params(params)
       let ret_str = @typesys.map_type(ret).to_dart_string()
       let generic = format_generics(type_params)
-      "Future<\{ret_str}> \{name}\{generic}(\{param_str}) async {\n  return \{emit_dart_expr(body)};\n}"
+      "Future<\{ret_str}> \{name}\{generic}(\{param_str}) async {\n  return \{emit_dart_expr_inner(body, ctx)};\n}"
     }
     @ast.DStruct(name, type_params, fields, derives) => {
       let field_str = format_dart_fields(fields)
@@ -191,7 +281,7 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
         .map(fn(m) {
           let param_str = format_dart_params(m.params)
           let ret_str = @typesys.map_type(m.ret_type).to_dart_string()
-          "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr(m.body)};\n  }"
+          "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr_inner(m.body, ctx)};\n  }"
         })
         .join("\n")
       "class \{type_name} implements \{trait_name} {\n\{method_str}\n}"
@@ -325,15 +415,32 @@ fn collect_types_from_decl(d : @ast.MoonDecl) -> Array[@ast.MoonType] {
 }
 
 ///|
-/// 为声明生成语义诊断注释（L3/L4 类型标注） | Generate semantic diagnostic comments for declarations (L3/L4 type annotations)
-fn emit_semantic_diagnostic(d : @ast.MoonDecl) -> String {
+/// 为声明生成语义诊断注释（Fast 模式 L2 标注 + L3/L4 类型标注） | Generate semantic diagnostic comments (Fast-mode L2 annotation + L3/L4 type annotations)
+fn emit_semantic_diagnostic(
+  d : @ast.MoonDecl,
+  mode : @ast.SemanticsMode,
+) -> String {
   let types = collect_types_from_decl(d)
+  let all_comments : Array[String] = []
+  // Fast 模式：签名含 MInt 时追加 L2 标注（64 位算术，溢出行为与 MoonBit 不同）
+  if mode is @ast.Fast {
+    let mut int_found = false
+    for t in types {
+      if (t is @ast.MInt) && !int_found {
+        int_found = true
+        all_comments.push(
+          "// [L2-SEMANTICS] Int: MoonBit 32-bit wrapping arithmetic vs Dart 64-bit int; overflow behavior differs (use --semantics wrapping to emulate)",
+        )
+      }
+    }
+  }
   let l3_comments = types
     .iter()
     .filter(fn(t) { @typesys.semantic_level(t) is L3 })
     .map(fn(t) {
       let restriction = match t {
         @ast.MUInt => "unsigned semantics lost → signed int"
+        @ast.MUInt64 => "unsigned 64-bit semantics lost → signed int"
         @ast.MFloat => "float precision promoted → double"
         @ast.MChar => "char → int (rune representation)"
         _ => "semantic loss in type mapping"
@@ -352,7 +459,12 @@ fn emit_semantic_diagnostic(d : @ast.MoonDecl) -> String {
       "// [L4-INEQUIVALENT] \{t.to_moon_string()}: \{loss}"
     })
     .to_array()
-  let all_comments = l3_comments + l4_comments
+  for c in l3_comments {
+    all_comments.push(c)
+  }
+  for c in l4_comments {
+    all_comments.push(c)
+  }
   if all_comments.length() > 0 {
     all_comments.join("\n") + "\n"
   } else {
@@ -409,7 +521,7 @@ fn emit_derive_methods(
 ///|
 /// 完整程序发射（含文件头，DImpl 合并到 DStruct，Result class 自动生成，FFI import 自动生成）| Full program emission (with header, DImpl merged into DStruct, Result class auto-generated, FFI import auto-generated)
 pub fn emit_dart_program(decls : Array[@ast.MoonDecl]) -> String {
-  emit_dart_program_with_lib(decls, "libnative.so")
+  emit_dart_program_full(decls, "libnative.so", @ast.Wrapping)
 }
 
 ///|
@@ -417,6 +529,25 @@ pub fn emit_dart_program(decls : Array[@ast.MoonDecl]) -> String {
 pub fn emit_dart_program_with_lib(
   decls : Array[@ast.MoonDecl],
   lib_name : String,
+) -> String {
+  emit_dart_program_full(decls, lib_name, @ast.Wrapping)
+}
+
+///|
+/// 完整程序发射（语义模式感知）| Full program emission (semantics-mode aware)
+pub fn emit_dart_program_with_mode(
+  decls : Array[@ast.MoonDecl],
+  mode : @ast.SemanticsMode,
+) -> String {
+  emit_dart_program_full(decls, "libnative.so", mode)
+}
+
+///|
+/// 完整程序发射（FFI 库名 + 语义模式完整控制） | Full program emission (full control of FFI library name + semantics mode)
+pub fn emit_dart_program_full(
+  decls : Array[@ast.MoonDecl],
+  lib_name : String,
+  mode : @ast.SemanticsMode,
 ) -> String {
   let header = generate_header()
   let ffi_imports = if needs_ffi(decls) {
@@ -439,11 +570,45 @@ pub fn emit_dart_program_with_lib(
   } else {
     ""
   }
+  let shim = if mode is @ast.Wrapping {
+    let ops = @typesys.collect_int_arith_ops(decls)
+    if ops.length() > 0 {
+      emit_wrapping_shim(ops) + "\n\n"
+    } else {
+      ""
+    }
+  } else {
+    ""
+  }
   let body = decls
-    .map(fn(d) { emit_dart_decl_in_program(d, decls) })
+    .map(fn(d) { emit_dart_decl_in_program_with_mode(d, decls, mode) })
     .filter(fn(s) { s != "" })
     .join("\n\n")
-  "\{header}\{ffi_imports}\{ffi_init}\{result_class}\{option_class}\{body}\n"
+  "\{header}\{ffi_imports}\{ffi_init}\{result_class}\{option_class}\{shim}\{body}\n"
+}
+
+///|
+/// 生成 32 位回绕运行时 shim（仅包含程序实际用到的操作） | Generate 32-bit wrapping runtime shim (only ops actually used by the program)
+///
+/// MoonBit Int 算术是 wasm i32 语义：加/减/乘回绕，除法向零截断（INT_MIN / -1 回绕为 INT_MIN），
+/// 取余符号跟被除数。Dart int 为 64 位，toSigned(32)/remainder() 逐运算还原语义。
+fn emit_wrapping_shim(ops : Array[String]) -> String {
+  let header = "// === moon2dart Int wrapping shim — emulates MoonBit 32-bit overflow (wasm i32) on Dart 64-bit int ==="
+  let defs : Array[String] = []
+  for op in ops {
+    let def = match op {
+      "+" => "int mb32Add(int a, int b) => (a + b).toSigned(32);"
+      "-" => "int mb32Sub(int a, int b) => (a - b).toSigned(32);"
+      "*" => "int mb32Mul(int a, int b) => (a * b).toSigned(32);"
+      "/" => "int mb32Div(int a, int b) => (a ~/ b).toSigned(32);"
+      "%" => "int mb32Rem(int a, int b) => a.remainder(b).toSigned(32);"
+      _ => ""
+    }
+    if def != "" {
+      defs.push(def)
+    }
+  }
+  header + "\n" + defs.join("\n")
 }
 
 ///|
@@ -547,28 +712,42 @@ pub fn emit_option_class() -> String {
 }
 
 ///|
-/// 在程序上下文中发射声明 — DStruct 合并 DImpl，DImpl 有对应 DStruct 时跳过 | Emit declaration in program context — DStruct merges DImpl; DImpl skipped when corresponding DStruct exists
+/// 在程序上下文中发射声明（默认 Wrapping 语义，flutter_emitter 兼容入口） | Emit declaration in program context (default Wrapping semantics, flutter_emitter compatibility entry)
 fn emit_dart_decl_in_program(
   d : @ast.MoonDecl,
   all_decls : Array[@ast.MoonDecl],
 ) -> String {
-  let diagnostic = emit_semantic_diagnostic(d)
+  emit_dart_decl_in_program_with_mode(d, all_decls, @ast.Wrapping)
+}
+
+///|
+/// 在程序上下文中发射声明（语义模式感知：DFn/DAsyncFn/DImpl 构建类型环境） | Emit declaration in program context (mode-aware: builds type env for DFn/DAsyncFn/DImpl)
+fn emit_dart_decl_in_program_with_mode(
+  d : @ast.MoonDecl,
+  all_decls : Array[@ast.MoonDecl],
+  mode : @ast.SemanticsMode,
+) -> String {
+  let diagnostic = emit_semantic_diagnostic(d, mode)
   match d {
     @ast.DImpl(_, type_name, _) =>
       if has_struct_named(all_decls, type_name) {
         ""
       } else {
-        "\{diagnostic}\{emit_dart_decl(d)}"
+        "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
       }
     @ast.DStruct(name, type_params, fields, derives) => {
       let impls = collect_impls_for(all_decls, name)
       if impls.length() > 0 {
-        "\{diagnostic}\{emit_dart_struct_with_impls(name, type_params, fields, derives, impls)}"
+        "\{diagnostic}\{emit_dart_struct_with_impls(name, type_params, fields, derives, impls, all_decls, mode)}"
       } else {
-        "\{diagnostic}\{emit_dart_decl(d)}"
+        "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
       }
     }
-    _ => "\{diagnostic}\{emit_dart_decl(d)}"
+    @ast.DFn(_, _, params, _, _) =>
+      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
+    @ast.DAsyncFn(_, _, params, _, _) =>
+      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
+    _ => "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
   }
 }
 
@@ -611,6 +790,8 @@ fn emit_dart_struct_with_impls(
   fields : Array[(String, @ast.MoonType)],
   derives : Array[String],
   impls : Array[(String, Array[@ast.ImplMethod])],
+  all_decls : Array[@ast.MoonDecl],
+  mode : @ast.SemanticsMode,
 ) -> String {
   let field_str = format_dart_fields(fields)
   let ctor_params = format_ctor_params(fields)
@@ -629,7 +810,8 @@ fn emit_dart_struct_with_impls(
       .map(fn(m) {
         let param_str = format_dart_params(m.params)
         let ret_str = @typesys.map_type(m.ret_type).to_dart_string()
-        "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr(m.body)};\n  }"
+        let mctx : EmitCtx = { env: Some(@typesys.TypeEnv::for_function(all_decls, m.params)), mode: mode, nested_option_context: false }
+        "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr_inner(m.body, mctx)};\n  }"
       })
       .join("\n")
     })
