@@ -95,7 +95,8 @@ class Option<T> {
 |---|---|
 | 项目 | moon2dart：MoonBit → Dart/Flutter 代码生成器 |
 | 参赛者 | walkzzz（蒋本雄）· 13689047817 · 745244185@qq.com |
-| GitHub | https://github.com/walkzzz/moon2dart |
+| GitHub 主仓 | https://github.com/walkzzz/moon2dart（origin，SSH，CI/CD 全绿） |
+| GitCode 镜像 | https://gitcode.com/LOOYIABC/moon2dart（跟随同步，与主仓 HEAD 一致） |
 | mooncakes | `walkzzz/moon2dart`（旧功能线 0.8.0 已发布；包版本重置 0.1.x：0.1.0 已发布，0.1.1 = 功能 v0.11.0 待发布） |
 | 方向 | 开发者工具 — transpiler（原创，非移植）· Apache-2.0 |
 
@@ -132,12 +133,12 @@ mooncakes 3566+ 包：**唯一 MoonBit→Dart transpiler**。①生态空白填�
 | 大赛要求 | 满足方式 |
 |---------|---------|
 | MoonBit 为主 | 100% MoonBit 实现 |
-| 公开仓库 | GitHub v0.1.0-v0.11.0 |
-| 能够运行 | 541 测试+0 warnings+示例+golden 双端验证脚本 |
+| 公开仓库 | GitHub 主仓 + GitCode 镜像（双仓 HEAD 一致），v0.1.0-v0.11.0 |
+| 能够运行 | 541 测试+0 warnings+示例+golden 双端验证脚本（`node scripts/golden_check.mjs` 一键复现） |
 | 工作有效 | 11 版本全交付，原创 |
 | 开源合规 | Apache-2.0 |
 | AI 可解释 | AI 辅助，决策人工把控 |
-| 持续集成 | GitHub Actions 五步 |
+| 持续集成 | GitHub Actions 九步：deny-warn 全目标 / 四后端测试 / fmt gate / mbti 契约校验 / coverage（最近 run 全绿） |
 
 ---
 

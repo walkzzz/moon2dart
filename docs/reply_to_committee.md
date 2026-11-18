@@ -109,6 +109,24 @@ int mb32Rem(int a, int b) => b == 0
 
 申报书已同步更新（三大关切回应重写），仓库：https://github.com/walkzzz/moon2dart
 
+## 五、仓库与持续集成状态 | Repository & CI Status
+
+| 仓库 | 地址 | 状态 |
+|------|------|------|
+| GitHub 主仓 | https://github.com/walkzzz/moon2dart | HEAD = v0.11.0 整改提交；CI 九步全绿（deny-warn 全目标 / 四后端测试 / fmt gate / mbti 契约校验 / coverage） |
+| GitCode 镜像 | https://gitcode.com/LOOYIABC/moon2dart | 与 GitHub 主仓 HEAD 一致（跟随同步） |
+| mooncakes | `walkzzz/moon2dart` | 旧功能线 0.8.0 已发布；语义保持线 0.1.1 = 功能 v0.11.0，随本轮重提发布 |
+
+本回应的所有实证均可复现：
+
+```bash
+git clone https://github.com/walkzzz/moon2dart && cd moon2dart
+moon check --target all --deny-warn   # 四目标零警告
+moon test                              # 541 测试全绿
+node scripts/golden_check.mjs          # golden 双端 14/14（需 Dart SDK）
+node scripts/check_docs.mjs            # 材料数字自检 4/4
+```
+
 如有进一步问题，我们随时补充说明。感谢组委会的审阅与指导！
 
 此致
