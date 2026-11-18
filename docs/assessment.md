@@ -23,7 +23,7 @@
 
 | 检查点 | 判据 | 权重 | 状态 | evidence |
 |---|---|:---:|:---:|---|
-| mooncakes 0.1.0 发布 | 发布页 latest == 0.1.0 | 10 | ⏳ 待发布 | `moon publish` 命令已备（0.1.0 未占用——发布页版本列表核实）；依赖 async/mcp/posoco/moonbench 在 registry（本地解析成功史） |
+| mooncakes 0.1.1 发布 | 发布页 latest == 0.1.1 | 10 | ✅ | 已发布（API created_at 2026-11-18T08:50Z，checksum ef1e9610，build_status success；0.1.0 亦在版本列表） |
 | proposal 申报书 | hackathon2026_moon2dart_proposal.md（353 行）+ 季度适配 | 8 | ✅ | 文件存在 + 本轮头部适配（方向 1 + 0.1.x 双轨说明） |
 | AGENTS.md | Sprint 史（v0.1.0-v0.9.1）/包结构/依赖关系/四条交付线/版本双轨说明 | 4 | ✅ | 11.8KB（本轮补双轨说明） |
 | docs/ 7 份 | architecture/roadmap/type_mapping/coding_conventions/testing_strategy/v0.1.0_plan/changelog | 2 | ✅ | docs/ 目录 |

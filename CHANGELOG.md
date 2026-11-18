@@ -8,7 +8,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.1.1] - 2026-11-18
 
-对应功能版本 **v0.11.0**（运行时语义保持体系），详情见 [docs/changelog.md](docs/changelog.md)。
+对应功能版本 **v0.11.0**（运行时语义保持体系），详情见 [docs/changelog.md](docs/changelog.md)。已于 2026-11-18 发布 mooncakes.io（registry latest，build_status: success）。
 
 ### Added
 - 语义双模式 `SemanticsMode`（ast 包）：Wrapping（默认）/ Fast；API `transpile_source_with_mode` / `transpile_source_with_options`，CLI `--semantics wrapping|fast`

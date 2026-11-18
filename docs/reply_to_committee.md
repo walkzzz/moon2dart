@@ -115,7 +115,7 @@ int mb32Rem(int a, int b) => b == 0
 |------|------|------|
 | GitHub 主仓 | https://github.com/walkzzz/moon2dart | HEAD = v0.11.0 整改提交；CI 九步全绿（deny-warn 全目标 / 四后端测试 / fmt gate / mbti 契约校验 / coverage） |
 | GitCode 镜像 | https://gitcode.com/LOOYIABC/moon2dart | 与 GitHub 主仓 HEAD 一致（跟随同步） |
-| mooncakes | `walkzzz/moon2dart` | 旧功能线 0.8.0 已发布；语义保持线 0.1.1 = 功能 v0.11.0，随本轮重提发布 |
+| mooncakes | `walkzzz/moon2dart` | 旧功能线 0.8.0 已发布；语义保持线 **0.1.1 = 功能 v0.11.0 已发布**（mooncakes.io/docs/walkzzz/moon2dart 可检索） |
 
 本回应的所有实证均可复现：
 

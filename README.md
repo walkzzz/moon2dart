@@ -5,7 +5,7 @@
 **MoonBit → Dart/Flutter Transpiler** | 让 MoonBit 代码跑在 Flutter 上
 
 [![CI](https://github.com/walkzzz/moon2dart/actions/workflows/ci.yml/badge.svg)](https://github.com/walkzzz/moon2dart/actions/workflows/ci.yml)
-[![mooncakes.io](https://img.shields.io/badge/mooncakes-0.1.0-blueviolet)](https://mooncakes.io/docs/walkzzz/moon2dart)
+[![mooncakes.io](https://img.shields.io/badge/mooncakes-0.1.1-blueviolet)](https://mooncakes.io/docs/walkzzz/moon2dart)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 </div>
