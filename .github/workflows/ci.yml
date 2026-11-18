@@ -31,3 +31,25 @@ jobs:
         run: |
           moon test --enable-coverage --target native
           moon coverage analyze | tee coverage.txt
+
+  golden-dual-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup MoonBit
+        run: |
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          echo "$HOME/.moon/bin" >> $GITHUB_PATH
+      - name: Setup Dart SDK
+        uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Update registry index
+        run: moon update
+      - name: Golden dual-runtime comparison (MoonBit truth vs Dart execution, 14/14)
+        run: node scripts/golden_check.mjs
