@@ -12,8 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
+        # 固定版本：本地开发验证所用版本，避免 latest 版本漂移导致 fmt/check 规则变化
         run: |
-          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash
+          curl -fsSL https://cli.moonbitlang.com/install/unix.sh | bash -s -- 0.1.20261117
           echo "$HOME/.moon/bin" >> $GITHUB_PATH
       - name: Update registry index
         run: moon update
