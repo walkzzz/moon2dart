@@ -96,7 +96,7 @@ class Option<T> {
 | 项目 | moon2dart：MoonBit → Dart/Flutter 代码生成器 |
 | 参赛者 | walkzzz（蒋本雄）· 13689047817 · 745244185@qq.com |
 | GitHub | https://github.com/walkzzz/moon2dart |
-| mooncakes | `walkzzz/moon2dart`（0.8.0 已发布；包版本重置 0.1.0） |
+| mooncakes | `walkzzz/moon2dart`（旧功能线 0.8.0 已发布；包版本重置 0.1.x：0.1.0 已发布，0.1.1 = 功能 v0.11.0 待发布） |
 | 方向 | 开发者工具 — transpiler（原创，非移植）· Apache-2.0 |
 
 ---
