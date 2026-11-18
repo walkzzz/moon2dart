@@ -1,6 +1,6 @@
 # moon2dart 迭代路线图 | Roadmap
 
-> 已实现 v0.1.0-v0.10.0 · 2026-11-16 | 更新 v0.10.0-v1.0.0 规划
+> 已实现 v0.1.0-v0.11.0 · 2026-11-18 | 更新 v0.11.0-v1.0.0 规划
 >
 > 📌 **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量。
 >
@@ -27,10 +27,10 @@ transpiler   parser     trait      项目级     async
 骨架         源码→AST   模式匹配    扫描       Option
   ✅           ✅          ✅         ✅         ✅
 
-v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v0.10.0 ──► v1.0.0
-async      FFI       Flutter     Dart→MB    MCP+Skill   语义等价    完整
-Option     混合      widget      反向骨架    大模型消费   往返验证    发布
-  ✅           ✅          ✅         ✅         ✅           ✅
+v0.5.0 ──► v0.6.0 ──► v0.7.0 ──► v0.8.0 ──► v0.9.0 ──► v0.10.0 ──► v0.11.0 ──► v1.0.0
+async      FFI       Flutter     Dart→MB    MCP+Skill   语义等价    语义保持    完整
+Option     混合      widget      反向骨架    大模型消费   往返验证    golden双端  发布
+  ✅           ✅          ✅         ✅         ✅           ✅           ✅
 ```
 
 ---
@@ -325,6 +325,24 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 
 ---
 
+## v0.11.0 ✅ — 运行时语义保持体系（已完成）
+
+**目标**：从"类型往返可还原"升级到"运行时语义逐行一致"——Int 算术 32 位回绕模拟 + 双语义模式 + golden 双端实测。
+
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | 语义双模式（SemanticsMode：Wrapping 默认 / Fast）+ CLI `--semantics` + `transpile_source_with_mode`/`transpile_source_with_options` | ✅ |
+| S2 | mini 类型推断器（`typesys/infer.mbt`：TypeEnv + infer_expr_type + collect_int_arith_ops，推断失败保守裸发） | ✅ |
+| S3 | parser 缺口修复（类型表补 Int64/UInt/UInt64/Float + Double/负数字面量 + EBlock 多语句块 + `fn main {}` 无括号语法 + parse_expr_prec 终止条件） | ✅ |
+| S4 | golden 双端验证（golden 包 + scripts/golden_check.mjs，14/14 行一致，INT_MIN/-1 trap 边界行为类别一致） | ✅ |
+| S5 | 文档同步 + 回复组委会（6 份文档 + docs/golden_results.md + reply_to_committee.md） | ✅ |
+
+**交付**：541 测试（native 全绿），Int 32 位回绕模拟层（mb32*，按需生成），整数除法 `/` → `~/`（Fast）/ `mb32Div`（Wrapping），`%` → `.remainder()`，println → print，UInt64 定级修正 L3，双模式定级 `semantic_level_in_mode`。
+
+**交付线**：库 API + CLI（`--semantics` 选项）+ golden 复现（`node scripts/golden_check.mjs`，前置 moon 工具链 + Dart SDK 3.x）
+
+---
+
 ## v1.0.0 — 验证 + 完整发布
 
 **目标**：生产可用，完整发布到 mooncakes.io。
@@ -358,6 +376,7 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 | v0.8.0 ✅ | � 中 | Dart 语法复杂，parser 工作量大 |
 | v0.9.0 | 🟡 中 | MCP 服务器依赖 colmugx/mcp（已验证可用）；自动触发降级为可选 |
 | v0.10.0 ✅ | 🟡 中 | 嵌套 Option 三分态 + DResult 往返 + strict 模式（已验证） |
+| v0.11.0 ✅ | 🟡 中 | mb32 trap 模拟 + 双端逐行输出对比（golden 14/14 已验证） |
 | v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
 
 ## 技术参考 | Technical References

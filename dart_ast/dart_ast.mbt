@@ -86,7 +86,7 @@ pub(all) enum DartDecl {
     Array[String],
     Array[(String, DartType)],
     DartType,
-    DartExpr
+    DartExpr,
   )
   DClass(String, Array[String], Array[(String, DartType)], Array[DartMethod]) // 类 | Class
   DSealedClass(String, Array[DartVariant]) // sealed 类 | Sealed class

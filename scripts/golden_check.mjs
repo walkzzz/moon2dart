@@ -64,7 +64,7 @@ function runCapture(cmd) {
 // 1. MoonBit 端真值
 console.log('[1/5] moon run golden --target native');
 const moonRes = runCapture('moon run golden --target native');
-const moonLines = moonRes.stdout.trim().split('\n').filter((l) => l.length > 0);
+const moonLines = moonRes.stdout.trim().split(/\r?\n/).filter((l) => l.length > 0);
 if (moonRes.status !== 0 || moonLines.length === 0) {
   console.error('MoonBit 端执行失败：\n' + moonRes.stderr);
   process.exit(1);
@@ -86,7 +86,7 @@ mkdirSync(WORK, { recursive: true });
 const dartPath = join(WORK, 'main.dart');
 writeFileSync(dartPath, dartCode, 'utf8');
 const dartRes = runCapture(`dart run "${dartPath}"`);
-const dartLines = dartRes.stdout.trim().split('\n').filter((l) => l.length > 0);
+const dartLines = dartRes.stdout.trim().split(/\r?\n/).filter((l) => l.length > 0);
 if (dartRes.status !== 0 || dartLines.length === 0) {
   console.error('Dart 端执行失败：\n' + dartRes.stderr);
   process.exit(1);
@@ -121,7 +121,7 @@ const trapProbe = `${shimDefs}\nvoid main() {\n  try {\n    mb32Div(-2147483648,
 const trapPath = join(WORK, 'trap_probe.dart');
 writeFileSync(trapPath, trapProbe, 'utf8');
 const trapRes = runCapture(`dart run "${trapPath}"`);
-const trapLines = trapRes.stdout.trim().split('\n').filter((l) => l.length > 0);
+const trapLines = trapRes.stdout.trim().split(/\r?\n/).filter((l) => l.length > 0);
 const divTrap = trapLines[0] === 'TRAP';
 const remTrap = trapLines[1] === 'TRAP';
 console.log(

@@ -159,9 +159,13 @@ fn Parser::parse_lambda_params(
 
 ///|
 /// 解析参数列表：(name : Type, name : Type, ...)
+/// 兼容 `fn main { ... }` 无括号零参语法（MoonBit 顶层 main）| Compatible with `fn main { ... }` paren-less zero params (MoonBit top-level main)
 fn Parser::parse_params(
   self : Parser,
 ) -> (Array[(String, @ast.MoonType)], Parser) {
+  if !(self.peek().kind is TkLParen) {
+    return ([], self)
+  }
   let parser = self.expect(TkLParen)
   let mut p = parser
   let params : Array[(String, @ast.MoonType)] = []
@@ -414,7 +418,8 @@ fn Parser::parse_expr_prec(
   while true {
     let op = parser.peek().kind
     let prec = op_precedence(op)
-    if prec < min_prec {
+    // 非运算符 token（precedence 0）即语句/参数自然边界 | non-operator token is a natural statement boundary
+    if prec <= 0 || prec < min_prec {
       break
     }
     if op is TkEof ||
@@ -583,14 +588,23 @@ fn Parser::parse_primary(
 }
 
 ///|
-/// 解析块表达式 { expr }。
+/// 解析块表达式 { stmt; stmt; ... } — 多语句折叠为 EBlock（语句间分号可选，表达式自然边界分隔） | Parse block { stmt; stmt; ... } — folded into EBlock (semicolons optional)
 fn Parser::parse_block_expr(
   self : Parser,
 ) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
   let parser = self.expect(TkLBrace)
-  let (expr, p) = parser.parse_expr()
+  let mut p = parser
+  let stmts : Array[@ast.MoonExpr] = []
+  while !(p.peek().kind is TkRBrace) {
+    let (stmt, p1) = p.parse_expr()
+    p = p1
+    stmts.push(stmt)
+    if p.peek().kind is TkSemi {
+      p = p.advance()
+    }
+  }
   let p_final = p.expect(TkRBrace)
-  (expr, p_final)
+  (@ast.EBlock(stmts), p_final)
 }
 
 ///|

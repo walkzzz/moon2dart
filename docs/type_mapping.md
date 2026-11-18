@@ -1,15 +1,15 @@
 # MoonBit → Dart 类型与构造映射规范 | Type Mapping Specification
 
-> v0.10.0 · 2026-11-16 · 完整映射表 + 语义等价分级
+> v0.11.0 · 2026-11-18 · 完整映射表 + 语义等价分级 + 运行时语义双模式（--semantics）
 
 ## 1. 基础类型映射 | Basic Type Mapping
 
 | MoonBit | Dart | 可纯转换 | 语义等级 | 备注 |
 |---------|------|---------|---------|------|
-| `Int` | `int` | ✅ | L1 ✅ | 64-bit |
+| `Int` | `int` | ✅ | L1 ✅ | 32 位回绕模拟层（mb32\*，Wrapping 模式默认开启）；Fast 模式裸发降级 L2 |
 | `UInt` | `int` | ✅ | L3 🔶 | Dart 无 unsigned，转换有符号 |
-| `Int64` | `int` | ✅ | L1 ✅ | |
-| `UInt64` | `int` | ✅ | L3 🔶 | 同 UInt |
+| `Int64` | `int` | ✅ | L1 ✅ | 限 Dart VM（web 目标 int 退化为 JS number 值域 2^53） |
+| `UInt64` | `int` | ✅ | L3 🔶 | 同 UInt（v0.11.0 定级修正：原 semantic_level 漏判 L1） |
 | `Double` | `double` | ✅ | L1 ✅ | |
 | `Float` | `double` | ✅ | L3 🔶 | Dart 无 float，转换 double |
 | `Bool` | `bool` | ✅ | L1 ✅ | |
@@ -150,7 +150,7 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 |------|------|------|:------:|----------------|
 | L1 完全等价 | ✅ | 往返转换后语义完全一致 | 18 | 正常生成 |
 | L2 结构等价 | ⚠️ | 数据结构可还原，操作语义有差异 | 2 | 正常生成 |
-| L3 受限等价 | 🔶 | 特定约束下等价，生成 `// [L3-CONSTRAINED]` 注释 | 3 | 允许，标注注释 |
+| L3 受限等价 | 🔶 | 特定约束下等价，生成 `// [L3-CONSTRAINED]` 注释 | 4 | 允许，标注注释 |
 | L4 不等价 | ❌ | 语义丢失，不可往返 | 5 | raise TypeError |
 
 ### 11.1 DResult 到 DartType 映射表（v0.10.0 新增）
@@ -168,7 +168,20 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 | 嵌套 | `Option[Option[T]]` | `DNullable(DNullable(T'))` | L1 ✅ | 自动生成 `Option<T>` |
 | 三层+ | `Option[Option[Option[T]]]` | 递归嵌套 | L1 ✅ | 递归包装 |
 
-## 12. 映射表维护 | Mapping Table Maintenance
+## 12. 运行时语义双模式 | Semantics Mode（v0.11.0 新增）
+
+| 模式 | Int 算术发射 | 语义定级（MInt） | 适用场景 |
+|------|-------------|-----------------|---------|
+| `Wrapping`（默认） | mb32* 回绕模拟层（按需生成，仅程序用到的运算） | L1 | 运行时语义保持（golden 双端 14/14 实测） |
+| `Fast` | 裸发 `+` `-` `*` `~/` `.remainder()`（不再包裹 shim） | L2 | 极致轻量，接受 Dart 裸 int（64 位）值域 |
+
+- **API**：`transpile_source_with_mode(src, mode)` / `transpile_source_with_options(src, lib_name, mode)`
+- **CLI**：`--semantics wrapping|fast`
+- **双模式定级**：`semantic_level_in_mode` —— Wrapping 下 MInt=L1，Fast 下 MInt=L2；MUInt64=L3；MInt64 保持 L1 但限 Dart VM（web 退化）
+- **shim 细节**：`mb32Add/Sub/Mul` → `(a op b).toSigned(32)`；`mb32Div` → INT_MIN/-1 与除零 throw StateError trap 模拟 + `(a ~/ b).toSigned(32)`；`mb32Rem` → 除零 trap 模拟 + `a.remainder(b).toSigned(32)`
+- 详见 [semantic_equivalence.md](semantic_equivalence.md) §5.1 / golden 双端报告 [golden_results.md](golden_results.md)
+
+## 13. 映射表维护 | Mapping Table Maintenance
 
 映射表集中在 `typesys/mapping.mbt`，版本跟随：
 - MoonBit 工具链升级 → 更新 MoonType 枚举

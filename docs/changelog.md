@@ -1,6 +1,37 @@
 # Changelog | 变更日志
 
-> **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.10.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本，0.1.0 未被占用）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，后续包版本沿 0.1.x 线推进。
+> **版本双轨说明**（2026-11-13，v0.11.0 更新）：功能迭代版本（v0.1.0 → v0.11.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本，0.1.0 未被占用）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，包 0.1.1 = 功能 v0.11.0，后续包版本沿 0.1.x 线推进。
+
+## v0.11.0 (2026-11-18) — 运行时语义保持体系 | Runtime Semantic Preservation
+
+### 新增 | Added
+- **语义双模式 SemanticsMode**（ast 包）：Wrapping（默认）/ Fast
+  - API：`transpile_source_with_mode(src, mode)` + `transpile_source_with_options(src, lib_name, mode)`
+  - CLI：`--semantics wrapping|fast`
+- **Int 32 位回绕模拟层（mb32\* shim）**：按需生成（仅程序用到的运算）
+  - `mb32Add/Sub/Mul(a,b) => (a op b).toSigned(32)`
+  - `mb32Div`：INT_MIN/-1 与除零 throw StateError trap 模拟 + `(a ~/ b).toSigned(32)`
+  - `mb32Rem`：除零 trap 模拟 + `a.remainder(b).toSigned(32)`
+- **mini 类型推断器**（`typesys/infer.mbt`）：TypeEnv（变量环境 + 函数签名表）+ `infer_expr_type` + `collect_int_arith_ops`；推断失败保守裸发（fast 语义）
+- **双模式定级**：`semantic_level_in_mode` —— Wrapping 下 MInt=L1，Fast 下 MInt=L2；MUInt64 从漏判 L1 **修正为 L3**；MInt64 保持 L1 但注明限 Dart VM（web 目标 int 退化为 JS number 值域 2^53）
+- **golden 双端验证设施**：golden 包（真值端 moon run）+ `scripts/golden_fixture/fixture.mbt`（转换素材）+ `scripts/golden_check.mjs`（对比脚本，前置 Dart SDK）；报告自动生成 `docs/golden_results.md`
+
+### 修复 | Fixed
+- **整数除法语义**：原发射 `/`（Dart 浮点除法，类型与语义双重错误）→ 修正 `~/`（Fast）或 `mb32Div`（Wrapping）
+- **取余语义**：`%` → `.remainder()`（Dart `%` 是欧几里得余数、MoonBit `%` 是截断余数符号跟被除数）
+- **println 映射**：println → print
+- **parser 类型表缺口**：补 Int64/UInt/UInt64/Float（原 fallback MCustom 发射无效 Dart 类型 Int64）
+- **parser 字面量缺口**：新增 Double 字面量（parse_double_safe）与负数字面量（一元负号折叠）
+- **多语句块**：新 AST 节点 `EBlock(Array[MoonExpr])`，语句间分号可选
+- **`fn main { ... }` 无括号零参语法**
+- **parse_expr_prec 终止条件**：非运算符 token（precedence 0）时 `prec <= 0` break（原 `prec < min_prec` 在 min_prec=0 时不终止）
+- **UInt64 定级修正**：semantic_level 漏判 L1 → L3
+
+### 测试 | Tests（native 后端全通过）
+- 测试 500 → 541；新增 42 个测试：`typesys/infer_wbtest.mbt`（14）+ `codegen/semantics_wbtest.mbt`（9）+ 根包 `moon2dart_sem_wbtest.mbt`（5）+ `golden/golden_wbtest.mbt`（14）
+- golden 双端 **14/14 行一致**（含 `2147483647+1 = -2147483648` 溢出回绕、`65536*65536 = 0`、`trunc_rem(-7,2) = -1`、`trunc_div(7,2) = 3`）
+- trap 边界实测：INT_MIN/-1 在 MoonBit native 是**硬件 trap（0xC0000095）**而非回绕（wasm i32.div_s 规范 trap），`mb32Div` 抛 StateError 模拟，两端行为类别一致（异常终止）
+- 复现：`node scripts/golden_check.mjs`（前置：moon 工具链 + Dart SDK 3.x）
 
 ## v0.10.0 (2026-11-16) — 往返语义等价性验证体系 | Round-Trip Semantic Equivalence
 

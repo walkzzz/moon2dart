@@ -89,6 +89,12 @@ pub fn infer_expr_type(e : @ast.MoonExpr, env : TypeEnv) -> @ast.MoonType? {
         other => other
       }
     @ast.ELambda(_, _) => None
+    @ast.EBlock(stmts) =>
+      // 块表达式类型 = 尾语句类型（MoonBit 块尾表达式为返回值）| block type = type of the last statement
+      match stmts.length() {
+        0 => None
+        n => infer_expr_type(stmts[n - 1], env)
+      }
   }
 }
 
@@ -165,6 +171,10 @@ fn collect_int_arith_ops_expr(
     }
     @ast.EAwait(inner) => collect_int_arith_ops_expr(inner, env, ops)
     @ast.ELambda(_, body) => collect_int_arith_ops_expr(body, env, ops)
+    @ast.EBlock(stmts) =>
+      for s in stmts {
+        collect_int_arith_ops_expr(s, env, ops)
+      }
     @ast.EInt(_)
     | @ast.EDouble(_)
     | @ast.EBool(_)

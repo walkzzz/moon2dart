@@ -209,6 +209,11 @@ pub fn emit_flutter_expr(e : @ast.MoonExpr) -> String {
         .join(",\n")
       "switch (\{scrut}) {\n\{arms}\n}"
     }
+    @ast.EBlock(stmts) => {
+      // 兜底：块作为 Flutter 表达式出现时保守拼接（正常由 emit_flutter_program 的 DFn 路径处理）| fallback: conservative join
+      let parts = stmts.map(fn(s) { emit_flutter_expr(s) }).join("; ")
+      "(\{parts})"
+    }
   }
 }
 

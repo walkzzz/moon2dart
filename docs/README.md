@@ -2,22 +2,23 @@
 
 > MoonBit → Dart transpiler | 让 MoonBit 代码跑在 Flutter 上
 >
-> v0.10.0 · 2026-11-16 · 11 份文档
+> v0.11.0 · 2026-11-18 · 12 份文档
 
 ## 文档索引 | Document Index
 
 | # | 文档 | 内容 | 状态 | 版本 |
 |---|------|------|:----:|------|
-| 1 | [architecture.md](architecture.md) | 架构设计：模块划分 + 数据流 + 双向转换 + 语义等价架构 | ✅ 已实现 | v0.10.0 |
-| 2 | [type_mapping.md](type_mapping.md) | MoonBit → Dart 类型与构造映射规范（L1-L4 语义分级） | ✅ 已实现 | v0.10.0 |
-| 3 | [semantic_equivalence.md](semantic_equivalence.md) | 往返语义等价性规范（四级分类 + 嵌套 Option + DResult） | ✅ 已实现 | v0.10.0 |
+| 1 | [architecture.md](architecture.md) | 架构设计：模块划分 + 数据流 + 双向转换 + 语义等价架构 | ✅ 已实现 | v0.11.0 |
+| 2 | [type_mapping.md](type_mapping.md) | MoonBit → Dart 类型与构造映射规范（L1-L4 语义分级 + 双语义模式） | ✅ 已实现 | v0.11.0 |
+| 3 | [semantic_equivalence.md](semantic_equivalence.md) | 往返语义等价性规范（四级分类 + 嵌套 Option + DResult + 运行时语义保持） | ✅ 已实现 | v0.11.0 |
 | 4 | [assessment.md](assessment.md) | 验收记分卡（三口径 + evidence） | ✅ 已实现 | v0.10.0 |
-| 5 | [pitfall-catalog.md](pitfall-catalog.md) | 陷阱目录（M 系列 MoonBit 语法 + T 系列 transpiler 特有） | ✅ 已实现 | v0.10.0 |
-| 6 | [roadmap.md](roadmap.md) | 迭代路线图 v0.1.0 → v1.0.0 | ✅ 已实现 | v0.10.0 |
-| 7 | [coding_conventions.md](coding_conventions.md) | 编码规范（MoonBit + 生成 Dart + 语义等价标注） | ✅ 已实现 | v0.10.0 |
-| 8 | [testing_strategy.md](testing_strategy.md) | 测试策略（单元/快照/round-trip/语义等价/变异） | ✅ 已实现 | v0.10.0 |
-| 9 | [changelog.md](changelog.md) | 变更日志 | ✅ 已实现 | v0.10.0 |
+| 5 | [pitfall-catalog.md](pitfall-catalog.md) | 陷阱目录（M 系列 MoonBit 语法 + T 系列 transpiler 特有） | ✅ 已实现 | v0.11.0 |
+| 6 | [roadmap.md](roadmap.md) | 迭代路线图 v0.1.0 → v1.0.0 | ✅ 已实现 | v0.11.0 |
+| 7 | [coding_conventions.md](coding_conventions.md) | 编码规范（MoonBit + 生成 Dart + 语义等价标注） | ✅ 已实现 | v0.11.0 |
+| 8 | [testing_strategy.md](testing_strategy.md) | 测试策略（单元/快照/round-trip/语义等价/变异） | ✅ 已实现 | v0.11.0 |
+| 9 | [changelog.md](changelog.md) | 变更日志 | ✅ 已实现 | v0.11.0 |
 | 10 | [v0.1.0_plan.md](v0.1.0_plan.md) | v0.1.0 详细迭代计划（历史归档） | 📦 归档 | v0.1.0 |
+| 11 | [golden_results.md](golden_results.md) | golden 双端验证报告（14/14 行一致 + trap 边界） | ✅ 已实现 | v0.11.0 |
 
 ## 项目定位 | Project Positioning
 
@@ -39,7 +40,7 @@
 |------|------|------|:------:|
 | L1 完全等价 | ✅ | 往返转换后语义完全一致 | 18 |
 | L2 结构等价 | ⚠️ | 数据结构可还原，操作语义有差异 | 2 |
-| L3 受限等价 | 🔶 | 特定约束下等价，默认模式含诊断注释 | 3 |
+| L3 受限等价 | 🔶 | 特定约束下等价，默认模式含诊断注释 | 4 |
 | L4 不等价 | ❌ | 语义丢失，不可往返，--strict 拒绝 | 5 |
 
 ## 竞品 | Competition
@@ -48,4 +49,4 @@
 
 ## 测试 | Tests
 
-500 个测试，native 后端全通过。
+541 个测试，native 后端全通过（v0.11.0 口径）。

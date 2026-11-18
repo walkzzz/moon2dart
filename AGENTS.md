@@ -178,6 +178,12 @@ ast ──> (零依赖)
   - S5 strict 模式 ✅（--strict CLI + transpile_source_strict + L4 拒绝）
   - S6 断言+变异+记分卡 ✅（assert_round_trip + assert_value_domain + 验收三口径）
   - S7 文档更新 ✅（semantic_equivalence + type_mapping + assessment + pitfall + architecture + roadmap）
+- **v0.11.0** ✅ 已完成 — 运行时语义保持体系（541 测试 native）
+  - S1 语义双模式 ✅（SemanticsMode：Wrapping 默认 / Fast + CLI --semantics + transpile_source_with_mode/transpile_source_with_options）
+  - S2 mini 推断器 ✅（typesys/infer.mbt：TypeEnv + infer_expr_type + collect_int_arith_ops，推断失败保守裸发）
+  - S3 parser 缺口修复 ✅（类型表补 Int64/UInt/UInt64/Float + Double/负数字面量 + EBlock 多语句块 + fn main {} 无括号语法 + parse_expr_prec 终止条件）
+  - S4 golden 双端验证 ✅（golden 包 + scripts/golden_check.mjs，14/14 行一致，INT_MIN/-1 trap 行为类别一致）
+  - S5 文档+回复组委会 ✅（6 份文档 + docs/golden_results.md + reply_to_committee.md）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
@@ -197,18 +203,22 @@ ast ──> (零依赖)
 
 ### 测试
 
-500 个测试，native 后端全通过：
+541 个测试，native 后端全通过（v0.11.0 口径）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
 | ast | 11 | 0 |
-| typesys | 50 | 0 |
-| codegen | 140 | 0 |
+| typesys | 74+ | 0 |
+| codegen | 167+ | 0 |
 | parser | 38 | 0 |
 | project | 17 | 0 |
 | dart_ast | 14 | 0 |
-| moon2dart (根) | 32 | 5 |
+| dart_parser | 0 | 0 |
+| reverse_codegen | 7+ | 0 |
+| mcp_server | 10+ | 0 |
+| golden | 14 | 0 |
+| moon2dart (根) | 37 | 5 |
 
 ### 文档
 
-开发文档在 `docs/`（11 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / semantic_equivalence / assessment / pitfall-catalog / changelog / README。
+开发文档在 `docs/`（12 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / semantic_equivalence / assessment / pitfall-catalog / changelog / golden_results / README。

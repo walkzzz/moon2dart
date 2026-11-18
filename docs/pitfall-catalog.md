@@ -81,6 +81,14 @@
 - **来源**：【实测】astrolabe 侧同类实现（walkzzz/astrolabe v0.5.2，M 系列同源）。
 - **可自动化**：✅ 正反向测试。
 
+### M11 `#warnings("...")` 属性触发 E3002 假 EOF（moonc v0.10.20 实测）
+
+- **现象**：`.mbt` 文件使用 `#warnings("...")` 属性时，moonc 报 `[E3002] Parse error ... unexpected EOF`——错误位置指向文件尾的"假 EOF"。
+- **根因**：moonc v0.10.20（moon 0.1.20261104 系）不支持该属性语法；CRLF 行尾的 `.mbt` 文件同样触发假 EOF。
+- **修法**：禁用 `#warnings(...)` 属性，警告治理走修根因（--deny-warn 门禁逐条消除）；行尾统一 LF（仓库已加 `.gitattributes` 强制 `eol=lf`）。
+- **来源**：【实测】moon2dart 仓库 moon check（2026-11-18，v0.11.0 Sprint）。
+- **可自动化**：✅（`.gitattributes` eol=lf + CI --deny-warn）。
+
 ---
 
 ## T 系列 · moon2dart transpiler 特有 | Transpiler-Specific
@@ -135,6 +143,30 @@
 - **修法**：L4 分类，strict 模式下拒绝；映射为 `DCustom` 并添加 `[L4-INEQUIVALENT]` 诊断注释。用户需手动实现 Dart 侧并发逻辑。
 - **来源**：【实测】v0.10.0 L4 拒绝测试（Channel/Spawn strict raise）。
 - **可自动化**：✅（strict 模式 L4 全拒绝测试）。
+
+### T7 parse_expr_prec 终止条件——非运算符 token 不终止
+
+- **现象**：表达式解析在 `min_prec=0` 时遇到非运算符 token（precedence=0）不终止，继续走运算符处理，`op_to_string` 抛 `"unknown operator token"`。
+- **根因**：终止条件 `prec < min_prec` 对 precedence=0 的 token 在 `min_prec=0` 时不成立（0 < 0 为 false），非运算符被误当运算符。
+- **修法**：终止条件改 `prec <= 0 || prec < min_prec`。
+- **来源**：【实测】v0.11.0 parser 测试红绿（golden fixture 多语句块触发）。
+- **可自动化**：✅（parser 白盒测试 + golden 双端对比）。
+
+### T8 INT_MIN/-1 是硬件 trap 而非回绕
+
+- **现象**：MoonBit native 端 `(-2147483648) / (-1)` 触发硬件 trap（0xC0000095），不产生回绕值 2147483647；测试断言若假设回绕值则失败。
+- **根因**：除法溢出在 wasm（i32.div_s 规范 trap）与 native（CPU 除法异常）上都是 trap，语义上"无值"而非"回绕"。
+- **修法**：测试断言不得假设回绕值；Dart 端 `mb32Div` 用 `throw StateError` 模拟 trap，保持两端行为类别一致（异常终止）。
+- **来源**：【实测】golden 双端 trap 边界用例（[golden_results.md](golden_results.md)）。
+- **可自动化**：✅（golden trap 用例）。
+
+### T9 Dart `%` 与 MoonBit `%` 余数语义不同
+
+- **现象**：`-7 % 2` MoonBit 得 -1（截断余数，符号跟被除数），Dart 裸 `%` 得 1（欧几里得余数，结果非负）。
+- **根因**：两语言对 `%` 的语义定义不同——Dart `%` 结果非负，MoonBit `%` 符号跟被除数。
+- **修法**：发射 `.remainder()`（Dart `num.remainder` 为截断余数）；Wrapping 模式下经 `mb32Rem`（含除零 trap 模拟）。
+- **来源**：【实测】golden 双端 `trunc_rem(-7,2)` 用例（裸 `%` 得 1，`.remainder()` 得 -1）。
+- **可自动化**：✅（golden 双端对比）。
 
 ---
 

@@ -14,36 +14,50 @@
 
 | 等级 | 含义 | 数量 | 代表构造 | 往返 |
 |------|------|:----:|---------|:----:|
-| L1 完全等价 | 往返后语义完全一致 | 18 | Int→int, Bool→bool, String→String, Double→double, Array→List, Map→Map, Set→Set, 单层Option[T]→T?, enum→sealed class, struct→class, trait→abstract class, fn→function, async fn→Future, 泛型[T]→\<T\>, 闭包→箭头函数, Result[T,E]→sealed class, 嵌套Option→辅助类, Tuple→Record | ✅ |
-| L2 结构等价 | 结构可还原，操作有差异 | 2 | Char→int(rune), Int64→int(64位值域约束) | ⚠️ |
-| L3 受限等价 | 约束下等价，需用户配合 | 3 | UInt→int(丢unsigned), Float→double(精度提升), Char运算→int运算 | 🔶 |
+| L1 运行时验证等价 | 类型映射 + 运行时语义模拟（golden 双端实测） | 18 | Int→int(32位回绕模拟层), Bool→bool, String→String, Double→double, Array→List, Map→Map, Set→Set, 单层Option[T]→T?, enum→sealed class, struct→class, trait→abstract class, fn→function, async fn→Future, 泛型[T]→\<T\>, 闭包→箭头函数, Result[T,E]→sealed class, 嵌套Option→辅助类, Tuple→Record | ✅ |
+| L2 结构等价 | 结构可还原，操作有差异 | 2 | Char→int(rune), Int64→int(64位值域约束，限 Dart VM) | ⚠️ |
+| L3 受限等价 | 约束下等价，需用户配合 | 4 | UInt→int(丢unsigned), UInt64→int(丢unsigned), Float→double(精度提升), Char运算→int运算 | 🔶 |
 | L4 不等价 | 语义丢失，不可往返 | 5 | ForeignFunction, Channel, Spawn, FFI内联, wasm intrinsics | ❌ |
 
-**边界逻辑**：L1/L2 分界在"值域是否完全对应"（Char 在 Dart 无独立类型）；L3/L4 分界在"约束下能否等价"（UInt 加运行时检查可部分等价，Channel 无 Dart 对应物）。`--strict` 拒绝 L4，只放行 L1-L3。
+**边界逻辑**：L1/L2 分界在"运行语义能否完全模拟"——MoonBit `Int` 是 32 位回绕（wasm i32）而 Dart `int` 是 64 位，类型映射不保证运算一致，因此 L1 的 Int 依赖生成的**回绕模拟层**（wrapping shim）而非裸映射；L3/L4 分界在"约束下能否等价"（UInt 加运行时检查可部分等价，Channel 无 Dart 对应物）。`--strict` 拒绝 L4，只放行 L1-L3。
 
-**验证**：18 个 L1 往返测试全绿→恢复率 100%；5 个 L4 strict 拒绝测试全绿→拒绝率 100%；L2/L3 各有语义边界断言确认行为与分级一致。
+**验证**：18 个 L1 往返测试全绿→恢复率 100%；5 个 L4 strict 拒绝测试全绿→拒绝率 100%；**同一输入双端运行对比 14/14 一致**（MoonBit 端 `moon run` 原生求值 vs Dart 端转换后 Dart SDK 3.12 实跑，含 2147483647+1 溢出回绕、截断除法、截断余数等组委会关切反例，完整对比表见 docs/golden_results.md）。
 
 ### 二、语义保留方法 | Semantic Preservation
 
-**问题**：转换中如何保留语义？有损映射怎么处理？
+**问题**：类型往返只证明**结构**可还原——**运行语义**（运算行为）如何保证？32 位整数溢出怎么办？
 
-**三级差异化策略**：
+**回答**：类型 × 运算双层建模 + 三道防线 + 双端运行实证。
 
-- **L1 同构映射**：直接映射，零语义损失。Int→int, Bool→bool, 单层Option→T?, enum→sealed class... 18 个类型双向往返完全恢复
-- **L2/L3 辅助结构**：嵌套Option→Option\<T\>辅助类（三分态保留，见关切三）；Result→DResult(ok,err)结构化节点（保留ok/err类型结构）；UInt/Float→正常映射+`// [L3-CONSTRAINED]`诊断注释标注语义损失
-- **L4 拒绝/标注**：`--strict`模式 raise TypeError 拒绝生成；默认模式生成代码+`// [L4-INEQUIVALENT] Channel: no Dart equivalent`诊断注释
+**类型层**：28 条映射四级分类（见关切一），每条有 `assert_round_trip()` 可执行断言。
 
-**防线一——编译期自动检查**（4 个检查点串联）：①`is_nested_option()` 检测嵌套自动切换辅助类 ②`DResult(ok,err)` 结构化节点替代 DCustom 字符串退化 ③`semantic_level()` 每种 MoonType 自动获 L1-L4 标签 ④`emit_semantic_diagnostic()` L3/L4 自动插入诊断注释
+**运算层**（v0.11.0 新增）——MoonBit `Int` 是 32 位回绕（wasm i32），Dart `int` 是 64 位，`2147483647 + 1` 两端结果必然不同。mini 类型推断器（变量环境 + 函数签名表）在发射期判定算术操作数类型，**Wrapping 模式（默认）**为 Int 算术生成回绕模拟层：
 
-**防线二——变异测试**（3 组，证明防线检错有效）：
+```dart
+int mb32Add(int a, int b) => (a + b).toSigned(32); // 回绕
+int mb32Div(int a, int b) => (a == -2147483648 && b == -1 || b == 0)
+    ? (throw StateError('integer overflow trap')) // INT_MIN/-1 与除零：trap 模拟
+    : ((a ~/ b).toSigned(32)); // 截断除法
+```
 
-| 变异操作 | 注入缺陷 | 检出结果 |
-|---------|---------|---------|
-| 嵌套Option塌缩 | 临时将辅助类改为 `T?` | round-trip 变红（Some(None)≠None不可区分）→撤回变绿 |
-| Result结构退化 | 临时将 DResult 改回 DCustom | round-trip 变红（ok/err类型结构丢失）→撤回变绿 |
-| UInt诊断缺失 | 临时移除 L3 标注 | strict 变红（L4拒绝范围错误）→撤回变绿 |
+MoonBit `%` 是截断余数（符号跟被除数）而 Dart `%` 是欧几里得余数——发射 `.remainder()`；整数除法发射 `~/` 而非 `/`（Dart 浮点除法）。**Fast 模式**（`--semantics fast`）裸发地道 Dart，Int 自动降级 L2 并插入 `[L2-SEMANTICS]` 诊断注释；UInt/UInt64/Float/Char 保持 `[L3-CONSTRAINED]` 标注；嵌套 Option 三分态辅助类与 DResult 结构化节点不变（见关切三）。
 
-**结论**：每个保留方法有可执行断言，每个防线有变异测试证明检错能力。缺陷注入→变红→撤回→变绿，三组全通过。
+**三道防线**：
+1. **编译期检查**：嵌套 Option 检测 / `semantic_level()` 模式感知定级（Wrapping 下 MInt=L1、Fast 下 MInt=L2）/ 诊断注释自动插入
+2. **运行时模拟层**：mb32* shim 按需生成（仅程序实际用到的运算）；INT_MIN/-1 与除零按 wasm i32.div_s 规范抛异常模拟 trap，两端行为类别一致（异常终止）
+3. **变异测试**：3 组注入缺陷→变红→撤回→变绿（嵌套 Option 塌缩 / Result 结构退化 / UInt 标注缺失）
+
+**实证——同一输入双端运行对比**（直接回应"32 位整数溢出即可使转换前后结果不同"）：golden 用例库 14 组确定性输入，MoonBit 端 `moon run` 原生求值 vs Dart 端（wrapping 转换产物）Dart SDK 3.12 实跑，**逐行对比 14/14 一致**：
+
+| 输入 | MoonBit 输出 | Dart 输出 | 一致 |
+|------|------------|-----------|:----:|
+| `2147483647 + 1`（溢出回绕） | -2147483648 | -2147483648 | ✅ |
+| `65536 * 65536`（2^32 回绕） | 0 | 0 | ✅ |
+| `7 / 2`（截断除法） | 3 | 3 | ✅ |
+| `-7 % 2`（截断余数） | -1 | -1（Dart 裸 `%` 会得 1） | ✅ |
+| `INT_MIN / -1`（trap 边界） | 异常终止（native 硬件 trap） | 异常终止（throw 模拟） | ✅ 类别一致 |
+
+完整 14 行对比表 + **拒绝/人工处理边界表**（L4 strict 拒绝 / L3 标注 / Int64 限 Dart VM / 推断失败保守裸发）见 `docs/golden_results.md`。
 
 ### 三、嵌套可选值 | Nested Option
 
@@ -103,7 +117,7 @@ ast（零依赖）← typesys ← codegen ← 根包，线性无环。管线：�
 
 ## 质量实测
 
-包 **12** · 测试 **500**(native)/**464**(wasm+js+wasm-gc) · `moon check --target all --deny-warn` 零警告 · Sprint 55+轮(10版本全交付) · L1 往返100% · strict 拒绝100% · 变异红→绿 · CI 五步
+包 **12** · 测试 **541**(native)· 四目标全绿 · `moon check --target all --deny-warn` 零警告 · Sprint 55+轮(11版本全交付) · L1 往返100% · strict 拒绝100% · 变异红→绿 · **golden 双端 14/14** · CI 五步
 
 ---
 
@@ -118,9 +132,9 @@ mooncakes 3566+ 包：**唯一 MoonBit→Dart transpiler**。①生态空白填�
 | 大赛要求 | 满足方式 |
 |---------|---------|
 | MoonBit 为主 | 100% MoonBit 实现 |
-| 公开仓库 | GitHub v0.1.0-v0.10.0 |
-| 能够运行 | 500 测试+0 warnings+示例 |
-| 工作有效 | 10 版本全交付，原创 |
+| 公开仓库 | GitHub v0.1.0-v0.11.0 |
+| 能够运行 | 541 测试+0 warnings+示例+golden 双端验证脚本 |
+| 工作有效 | 11 版本全交付，原创 |
 | 开源合规 | Apache-2.0 |
 | AI 可解释 | AI 辅助，决策人工把控 |
 | 持续集成 | GitHub Actions 五步 |
@@ -134,7 +148,9 @@ mooncakes 3566+ 包：**唯一 MoonBit→Dart transpiler**。①生态空白填�
 | 嵌套Option语义丢失 | 辅助类+三分态往返+变异 | 100% |
 | Result结构丢失 | DResult结构化节点 | 往返+变异 |
 | FFI安全 | --pure-only+L4+strict | strict拒绝 |
-| UInt/Float值域 | L3标注+诊断注释 | L3+strict |
+| UInt/UInt64/Float/Char值域 | L3标注+诊断注释 | L3+strict |
+| **Int 32位溢出语义差异** | **mb32* 回绕模拟层 + --semantics 双模式** | **golden 双端 14/14** |
+| INT_MIN/-1 与除零 trap | mb32Div/mb32Rem 抛异常模拟（两端行为类别一致） | trap 边界验证 |
 
 ---
 

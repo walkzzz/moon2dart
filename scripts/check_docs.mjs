@@ -42,14 +42,14 @@ const ASSERTIONS = [
     },
   },
   {
-    id: 'B2', desc: 'README 测试数 == AGENTS.md v0.9.1 口径（383）',
+    id: 'B2', desc: 'README 测试数 == AGENTS.md 测试节数字（当前口径）',
     async run(root) {
       const readme = await read('README.md', root);
       const agents = await read('AGENTS.md', root);
-      const readmeN = cap(/(\d+) 个测试，native/, readme, 'README.md', 'readme tests').value;
-      const agentsN = cap(/- \*\*v0\.9\.1\*\*[\s\S]*?(\d+) 测试 native/, agents, 'AGENTS.md', 'agents tests (v0.9.1 line)').value;
-      if (readmeN !== agentsN) throw new Error(`README=${readmeN} != AGENTS(v0.9.1)=${agentsN}`);
-      return { readme: readmeN, agents_v091: agentsN };
+      const readmeN = cap(/(\d+) 个测试/, readme, 'README.md', 'readme tests').value;
+      const agentsN = cap(/### 测试\s*\n+\*{0,2}(\d+) 个测试/, agents, 'AGENTS.md', 'agents tests section').value;
+      if (readmeN !== agentsN) throw new Error(`README=${readmeN} != AGENTS(测试节)=${agentsN}`);
+      return { readme: readmeN, agents_section: agentsN };
     },
   },
   {
@@ -95,7 +95,7 @@ async function selfTest() {
   const writeFixtures = async (version, tests) => {
     await writeFile(path.join(tmp, 'moon.mod'), `name = "walkzzz/moon2dart"\n\nversion = "${version}"\n`);
     await writeFile(path.join(tmp, 'README.md'), `# moon2dart\n\n${tests} 个测试，native 后端全通过：\n\n\`\`\`bash\nmoon add walkzzz/moon2dart\n\`\`\`\n`);
-    await writeFile(path.join(tmp, 'AGENTS.md'), `- **v0.9.1** ✅ 已完成 — 项目双向同步 + 冲突检测（${tests} 测试 native）\n`);
+    await writeFile(path.join(tmp, 'AGENTS.md'), `- **v0.9.1** ✅ 已完成 — 项目双向同步 + 冲突检测\n\n### 测试\n\n${tests} 个测试，native 后端全通过：\n`);
     await writeFile(path.join(tmp, 'docs', 'changelog.md'), `# Changelog\n\n> **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；mooncakes 包版本重置为 0.1.0。\n\n## [${version}] - 2026-11-13\n`);
   };
   const assertThrows = async (id, expectId) => {

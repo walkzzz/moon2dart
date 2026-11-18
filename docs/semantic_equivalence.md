@@ -1,8 +1,8 @@
 # moon2dart 语义等价性规范 | Semantic Equivalence Specification
 
-> v0.10.0 · 2026-11-16 · 回应黑客松初审反馈 · 已实现嵌套 Option 辅助类 + DResult 结构化节点
+> v0.11.0 · 2026-11-18 · 新增运行时语义保持体系（Int 32 位回绕模拟层 + 双语义模式 + golden 双端验证 14/14）· 已实现嵌套 Option 辅助类 + DResult 结构化节点
 >
-> 交叉参考：T 系列陷阱详见 [pitfall-catalog.md](pitfall-catalog.md)（T2 嵌套 Option 塌缩 / T3 Result 退化 / T4 UInt 值域 / T5 FFI 语义 / T6 并发原语）
+> 交叉参考：T 系列陷阱详见 [pitfall-catalog.md](pitfall-catalog.md)（T2 嵌套 Option 塌缩 / T3 Result 退化 / T4 UInt 值域 / T5 FFI 语义 / T6 并发原语 / T7 parse_expr_prec 终止 / T8 INT_MIN trap / T9 余数语义）；golden 双端实测报告详见 [golden_results.md](golden_results.md)
 
 ## 1. 核心定义 | Core Definitions
 
@@ -20,7 +20,7 @@ S → transpile → D → reverse_transpile → S'
 
 | 等级 | 标记 | 含义 |
 |------|------|------|
-| **L1 完全等价** | ✅ | 往返转换后语义完全一致 |
+| **L1 完全等价** | ✅ | 类型映射 + 运行时语义模拟（golden 双端 14/14 实测，见 §5.3） |
 | **L2 结构等价** | ⚠️ | 数据结构可还原，但操作语义有差异 |
 | **L3 受限等价** | 🔶 | 在特定约束下等价（需用户配合），默认模式含诊断注释 |
 | **L4 不等价** | ❌ | 语义丢失，不可往返，--strict 模式拒绝 |
@@ -35,8 +35,8 @@ S → transpile → D → reverse_transpile → S'
 
 | # | MoonBit | Dart | 正向映射 | 反向映射 |
 |---|---------|------|---------|---------|
-| 1 | `Int` | `int` | `MInt → DInt` | `DInt → MInt` |
-| 2 | `Int64` | `int` | `MInt64 → DInt64` | `DDouble → MDouble` |
+| 1 | `Int` | `int` | `MInt → DInt`（+ mb32* 32 位回绕模拟层，Wrapping 模式默认） | `DInt → MInt` |
+| 2 | `Int64` | `int` | `MInt64 → DInt64`（限 Dart VM——web 目标 int 退化为 JS number 值域 2^53） | `DDouble → MDouble` |
 | 3 | `Double` | `double` | `MDouble → DDouble` | `DDouble → MDouble` |
 | 4 | `Bool` | `bool` | `MBool → DBool` | `DBool → MBool` |
 | 5 | `String` | `String` | `MString → DString` | `DString → MString` |
@@ -61,13 +61,14 @@ S → transpile → D → reverse_transpile → S'
 | 1 | `Char` | `int` (rune) | 字符 vs Unicode码点 | 字符串操作需注意 |
 | 2 | `T*` (引用) | `T` | MoonBit 值类型 vs Dart 引用语义 | struct 行为差异 |
 
-### 2.3 L3 受限等价的构造 | L3 Constrained Equivalence（3 条目）
+### 2.3 L3 受限等价的构造 | L3 Constrained Equivalence（4 条目）
 
 | # | MoonBit | Dart | 约束条件 | 诊断注释 |
 |---|---------|------|---------|---------|
-| 1 | `UInt` / `UInt64` | `int` | Dart 无 unsigned | `// [L3-CONSTRAINED] UInt: unsigned semantics lost, mapped to signed int` |
-| 2 | `Float` | `double` | 32→64位精度提升 | `// [L3-CONSTRAINED] Float: 32-bit float promoted to 64-bit double` |
-| 3 | `Char` | `int` | 字符→码点 | `// [L3-CONSTRAINED] Char: character mapped to Unicode code point (int)` |
+| 1 | `UInt` | `int` | Dart 无 unsigned | `// [L3-CONSTRAINED] UInt: unsigned semantics lost, mapped to signed int` |
+| 2 | `UInt64` | `int` | Dart 无 unsigned（v0.11.0 修正：原 semantic_level 漏判 L1） | `// [L3-CONSTRAINED] UInt64: unsigned semantics lost, mapped to signed int` |
+| 3 | `Float` | `double` | 32→64位精度提升 | `// [L3-CONSTRAINED] Float: 32-bit float promoted to 64-bit double` |
+| 4 | `Char` | `int` | 字符→码点 | `// [L3-CONSTRAINED] Char: character mapped to Unicode code point (int)` |
 
 ### 2.4 L4 不等价的构造 | L4 Inequivalent（5 条目）
 
@@ -271,8 +272,8 @@ Result<int, String> divide(int a, int b) {
 
 ```
 ┌──────────────────────────────────────────────────────┐
-│ Level 1: 类型同构 — 直接映射，零语义损失          │
-│   Int→int, Bool→bool, String→String, Array→List...  │
+│ Level 1: 类型同构 — 类型映射 + 运算模拟           │
+│   Int→int (mb32* 回绕模拟), Bool→bool, Array→List...  │
 │   Option[T]→T? (单层), enum→sealed class            │
 ├──────────────────────────────────────────────────────┤
 │ Level 2: 类型同态 — 映射需辅助结构，语义可还原      │
@@ -287,6 +288,12 @@ Result<int, String> divide(int a, int b) {
 └──────────────────────────────────────────────────────┘
 ```
 
+**运算层（v0.11.0 新增）**：类型同构之上叠加运行时语义模拟——
+
+- **mini 类型推断器**（`typesys/infer.mbt`）：`TypeEnv`（变量环境 + 函数签名表）+ `infer_expr_type` + `collect_int_arith_ops`，定位程序中实际发生的 Int 算术运算；推断失败时保守裸发（fast 语义，不阻塞转换）。
+- **mb32\* 回绕 shim**（按需生成，仅程序用到的运算）：`mb32Add/Sub/Mul(a,b) => (a op b).toSigned(32)`；`mb32Div` 含 INT_MIN/-1 与除零的 throw StateError trap 模拟 + `(a ~/ b).toSigned(32)`；`mb32Rem` 含除零 trap 模拟 + `a.remainder(b).toSigned(32)`。
+- **双模式**：`SemanticsMode` 枚举（Wrapping 默认 / Fast），API `transpile_source_with_mode(src, mode)` / `transpile_source_with_options(src, lib_name, mode)`，CLI `--semantics wrapping|fast`。双模式定级 `semantic_level_in_mode`：Wrapping 下 MInt=L1，Fast 下 MInt=L2；MUInt64 从漏判 L1 修正为 L3；MInt64 保持 L1 但限 Dart VM（web 目标 int 退化为 JS number 值域 2^53）。
+
 ### 5.2 编译期语义检查 | Compile-Time Semantic Checks
 
 1. **嵌套 Option 检测**：`map_type` 递归时检测 `MOption(MOption(_))`，自动切换辅助类映射
@@ -294,15 +301,19 @@ Result<int, String> divide(int a, int b) {
 3. **Result 结构化**：`MResult` 映射为 `DResult`（非 `DCustom`），保留类型结构
 4. **is_pure 检查**：`--pure-only` 模式排除所有 L3/L4 构造
 
-### 5.3 运行时语义验证 | Runtime Semantic Verification（v1.0.0 规划）
+### 5.3 运行时语义验证 | Runtime Semantic Verification（v0.11.0 已实现）
 
 ```
-MoonBit 源码 → transpile → Dart 源码
-    ↓                           ↓
-  moon test                  dart test
-    ↓                           ↓
-  输出值 ────────对比──────── 输出值
+golden_fixture/fixture.mbt (MoonBit)
+    ├── moon run golden      → 真值端逐行输出（MoonBit native 语义）
+    └── transpile → dart run → 转换端逐行输出（Dart SDK 3.x）
+              └── scripts/golden_check.mjs 逐行对比 → docs/golden_results.md
 ```
+
+- **结果**：14/14 行一致——含 `2147483647+1 = -2147483648`（溢出回绕）、`65536*65536 = 0`（乘法回绕）、`trunc_div(7,2) = 3`（截断除法）、`trunc_rem(-7,2) = -1`（Dart 裸 `%` 得 1，`.remainder()` 得 -1）。
+- **trap 边界**：`INT_MIN / -1` 在 MoonBit native 是硬件 trap（0xC0000095）而非回绕（wasm i32.div_s 规范 trap）；`mb32Div` 抛 StateError 模拟，两端行为类别一致（异常终止）。
+- **复现**：`node scripts/golden_check.mjs`（前置：moon 工具链 + Dart SDK 3.x）；报告见 [golden_results.md](golden_results.md)。
+- **两级证据互补**：类型往返断言只证明结构可还原；运行时语义等价由 golden 双端逐行输出对比证明。
 
 ---
 
@@ -327,4 +338,5 @@ MoonBit 源码 → transpile → Dart 源码
 | ✅ 已实现 | 反向转换管线 Dart→MoonBit | v0.8.0 |
 | ✅ 已实现 | 双向同步 + 冲突检测 | v0.9.1 |
 | ✅ 已实现 | 嵌套 Option 辅助类 + DResult 结构化节点 + 语义等价分级 + strict 模式 | v0.10.0 |
-| 📋 下一步 | 运行时往返等价测试套件（MoonBit↔Dart 输出对比） | v1.0.0 |
+| ✅ 已实现 | Int 回绕模拟层 + mini 推断器 + 双模式 + golden 双端验证 | v0.11.0 |
+| 📋 下一步 | 运行时等价覆盖扩展（更多构造 + CI 集成） | v1.0.0 |

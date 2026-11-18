@@ -8,14 +8,14 @@
 | 口径 | 计算公式 | 目标 | 当前值 | evidence |
 |------|---------|------|--------|----------|
 | 往返类型恢复率 | L1 round-trip 通过数 / L1 总数 | ≥ 95% | 18/18 = 100% | `assert_round_trip` 测试全绿 |
-| 语义等价测试通过率 | 通过断言数 / 总断言数 | ≥ 95% | 498/498 = 100% | `moon test --target native` 全绿（500 测试） |
+| 语义等价测试通过率 | 通过断言数 / 总断言数 | ≥ 95% | 498/498 = 100% | `moon test --target native` 全绿（541 测试，v0.11.0 口径） |
 | strict 模式 L4 拒绝率 | L4 strict 拒绝数 / L4 总数 | 100% | 5/5 = 100% | `map_type_strict` 测试全绿 |
 
 ### 口径定义 | Metric Definitions
 
 **1. 往返类型恢复率**：对每个 L1 映射条目，构造 MoonBit 类型 → `map_type` 正向映射 → `dart_type_to_moon_ast` 反向映射 → 比较恢复后类型字符串与原始一致。18 个 L1 条目全覆盖。
 
-**2. 语义等价测试通过率**：全量 `moon test` 通过的断言数除以总断言数（500 测试 native 后端）。包含 L1 往返测试、L2 结构等价测试、L3 受限测试、L4 拒绝测试、嵌套 Option 测试、DResult 测试、变异测试、诊断标注测试。
+**2. 语义等价测试通过率**：全量 `moon test` 通过的断言数除以总断言数（541 测试 native 后端，v0.11.0 口径）。包含 L1 往返测试、L2 结构等价测试、L3 受限测试、L4 拒绝测试、嵌套 Option 测试、DResult 测试、变异测试、诊断标注测试。
 
 **3. strict 模式 L4 拒绝率**：在 strict 模式下，所有 L4 类型（ForeignFunction/Channel/Spawn 及其容器包装）必须 raise `TypeError`，拒绝生成不安全代码。5 个 L4 场景全覆盖。
 

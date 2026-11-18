@@ -46,6 +46,7 @@ pub(all) enum MoonExpr {
   EMatch(MoonExpr, Array[(MoonPattern, MoonExpr)]) // match 表达式 | Match expression
   EAwait(MoonExpr) // await 表达式 | Await expression
   ELambda(Array[(String, MoonType)], MoonExpr) // 闭包/lambda | Closure/lambda
+  EBlock(Array[MoonExpr]) // 块表达式（多语句，尾语句为返回值）| Block expression (multiple statements, last is the return value)
 }
 
 ///|

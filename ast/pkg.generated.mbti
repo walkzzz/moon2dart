@@ -73,6 +73,7 @@ pub(all) enum MoonExpr {
   EMatch(MoonExpr, Array[(MoonPattern, MoonExpr)])
   EAwait(MoonExpr)
   ELambda(Array[(String, MoonType)], MoonExpr)
+  EBlock(Array[MoonExpr])
 }
 pub fn MoonExpr::compare(Self, Self) -> Int32
 pub fn MoonExpr::equal(Self, Self) -> Bool

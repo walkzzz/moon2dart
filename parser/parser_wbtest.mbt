@@ -103,7 +103,14 @@ test "parse_expr_binop_and" {
 /// 测试解析 if 表达式。
 test "parse_expr_if" {
   let (expr, _) = make_parser("if x { 1 } else { 2 }").parse_expr()
-  assert_true(expr is @ast.EIf(@ast.EVar("x"), @ast.EInt(1), @ast.EInt(2)))
+  assert_true(
+    expr
+    is @ast.EIf(
+      @ast.EVar("x"),
+      @ast.EBlock([@ast.EInt(1)]),
+      @ast.EBlock([@ast.EInt(2)]),
+    ),
+  )
 }
 
 ///|
@@ -184,7 +191,9 @@ test "parse_fn_decl" {
       assert_eq(p1n, "b")
       assert_true(p1t is @ast.MInt)
       assert_true(ret is @ast.MInt)
-      assert_true(body is @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")))
+      assert_true(
+        body is @ast.EBlock([@ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b"))]),
+      )
     }
     _ => abort("expected DFn")
   }
@@ -199,7 +208,7 @@ test "parse_fn_decl_no_ret" {
       assert_eq(name, "foo")
       assert_eq(params.length(), 1)
       assert_true(ret is @ast.MUnit)
-      assert_true(body is @ast.EVar("x"))
+      assert_true(body is @ast.EBlock([@ast.EVar("x")]))
     }
     _ => abort("expected DFn")
   }
@@ -516,7 +525,7 @@ test "parse_async_fn_decl" {
       assert_eq(name, "fetchData")
       assert_eq(params.length(), 0)
       assert_true(ret is @ast.MString)
-      assert_true(body is @ast.EString("hello"))
+      assert_true(body is @ast.EBlock([@ast.EString("hello")]))
     }
     _ => abort("expected DAsyncFn")
   }
@@ -534,7 +543,9 @@ test "parse_async_fn_decl_with_params" {
       assert_eq(pname, "x")
       assert_true(ptype is @ast.MInt)
       assert_true(ret is @ast.MInt)
-      assert_true(body is @ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1)))
+      assert_true(
+        body is @ast.EBlock([@ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1))]),
+      )
     }
     _ => abort("expected DAsyncFn")
   }
@@ -574,7 +585,7 @@ test "parse_generic_fn_decl" {
       assert_eq(pname, "x")
       assert_true(ptype is @ast.MCustom("T"))
       assert_true(ret is @ast.MCustom("T"))
-      assert_true(body is @ast.EVar("x"))
+      assert_true(body is @ast.EBlock([@ast.EVar("x")]))
     }
     _ => abort("expected DFn")
   }
@@ -648,7 +659,7 @@ test "parse_expr_lambda_no_params" {
   match expr {
     @ast.ELambda(params, body) => {
       assert_eq(params.length(), 0)
-      assert_true(body is @ast.EInt(42))
+      assert_true(body is @ast.EBlock([@ast.EInt(42)]))
     }
     _ => abort("expected ELambda")
   }
@@ -662,7 +673,7 @@ test "parse_expr_lambda_one_param" {
       assert_eq(params.length(), 1)
       let (pname, _) = params[0]
       assert_eq(pname, "x")
-      assert_true(body is @ast.EVar("x"))
+      assert_true(body is @ast.EBlock([@ast.EVar("x")]))
     }
     _ => abort("expected ELambda")
   }
@@ -678,7 +689,9 @@ test "parse_expr_lambda_two_params" {
       let (p1n, _) = params[1]
       assert_eq(p0n, "a")
       assert_eq(p1n, "b")
-      assert_true(body is @ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b")))
+      assert_true(
+        body is @ast.EBlock([@ast.EBinOp("+", @ast.EVar("a"), @ast.EVar("b"))]),
+      )
     }
     _ => abort("expected ELambda")
   }
@@ -693,7 +706,9 @@ test "parse_expr_lambda_with_type" {
       let (pname, ptype) = params[0]
       assert_eq(pname, "x")
       assert_true(ptype is @ast.MInt)
-      assert_true(body is @ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1)))
+      assert_true(
+        body is @ast.EBlock([@ast.EBinOp("+", @ast.EVar("x"), @ast.EInt(1))]),
+      )
     }
     _ => abort("expected ELambda")
   }

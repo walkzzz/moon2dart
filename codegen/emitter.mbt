@@ -97,7 +97,29 @@ fn emit_dart_expr_inner(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
           pname
         })
         .join(", ")
-      "(\{param_str}) => \{emit_dart_expr_inner(body, ctx)}"
+      match body {
+        @ast.EBlock([single]) =>
+          "(\{param_str}) => \{emit_dart_expr_inner(single, ctx)}"
+        @ast.EBlock(stmts) => {
+          let lines : Array[String] = []
+          let n = stmts.length()
+          for i in 0..<n {
+            let s = emit_dart_expr_inner(stmts[i], ctx)
+            if i == n - 1 {
+              lines.push("  return \{s};")
+            } else {
+              lines.push("  \{s};")
+            }
+          }
+          "(\{param_str}) {\n\{lines.join("\n")}\n}"
+        }
+        _ => "(\{param_str}) => \{emit_dart_expr_inner(body, ctx)}"
+      }
+    }
+    @ast.EBlock(stmts) => {
+      // 兜底：块作为子表达式出现（正常不发生）| fallback: block as sub-expression (should not normally occur)
+      let parts = stmts.map(fn(s) { emit_dart_expr_inner(s, ctx) }).join("; ")
+      "(\{parts})"
     }
   }
 }
@@ -232,6 +254,36 @@ pub fn emit_dart_decl(d : @ast.MoonDecl) -> String {
 }
 
 ///|
+/// 函数体发射 — EBlock 多语句（尾语句按返回类型 return；Unit 函数为语句）与单表达式两种形态 | Function body emission — EBlock multi-statement (last returned; Unit fn as statement) vs single expression
+fn emit_fn_body(
+  body : @ast.MoonExpr,
+  ret : @ast.MoonType,
+  ctx : EmitCtx,
+) -> String {
+  match body {
+    @ast.EBlock(stmts) => {
+      let lines : Array[String] = []
+      let n = stmts.length()
+      for i in 0..<n {
+        let s = emit_dart_expr_inner(stmts[i], ctx)
+        if i == n - 1 && !(ret is @ast.MUnit) {
+          lines.push("  return \{s};")
+        } else {
+          lines.push("  \{s};")
+        }
+      }
+      lines.join("\n")
+    }
+    _ =>
+      if ret is @ast.MUnit {
+        "  \{emit_dart_expr_inner(body, ctx)};"
+      } else {
+        "  return \{emit_dart_expr_inner(body, ctx)};"
+      }
+  }
+}
+
+///|
 /// Dart 声明发射（带上下文：类型环境 + 语义模式）| Dart declaration emission with context (type env + semantics mode)
 fn emit_dart_decl_with_ctx(d : @ast.MoonDecl, ctx : EmitCtx) -> String {
   match d {
@@ -239,13 +291,15 @@ fn emit_dart_decl_with_ctx(d : @ast.MoonDecl, ctx : EmitCtx) -> String {
       let param_str = format_dart_params(params)
       let ret_str = @typesys.map_type(ret).to_dart_string()
       let generic = format_generics(type_params)
-      "\{ret_str} \{name}\{generic}(\{param_str}) {\n  return \{emit_dart_expr_inner(body, ctx)};\n}"
+      let body_str = emit_fn_body(body, ret, ctx)
+      "\{ret_str} \{name}\{generic}(\{param_str}) {\n\{body_str}\n}"
     }
     @ast.DAsyncFn(name, type_params, params, ret, body) => {
       let param_str = format_dart_params(params)
       let ret_str = @typesys.map_type(ret).to_dart_string()
       let generic = format_generics(type_params)
-      "Future<\{ret_str}> \{name}\{generic}(\{param_str}) async {\n  return \{emit_dart_expr_inner(body, ctx)};\n}"
+      let body_str = emit_fn_body(body, ret, ctx)
+      "Future<\{ret_str}> \{name}\{generic}(\{param_str}) async {\n\{body_str}\n}"
     }
     @ast.DStruct(name, type_params, fields, derives) => {
       let field_str = format_dart_fields(fields)
@@ -275,7 +329,8 @@ fn emit_dart_decl_with_ctx(d : @ast.MoonDecl, ctx : EmitCtx) -> String {
         .map(fn(m) {
           let param_str = format_dart_params(m.params)
           let ret_str = @typesys.map_type(m.ret_type).to_dart_string()
-          "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr_inner(m.body, ctx)};\n  }"
+          let body_str = emit_fn_body(m.body, m.ret_type, ctx)
+          "  \{ret_str} \{m.name}(\{param_str}) {\n\{body_str}\n  }"
         })
         .join("\n")
       "class \{type_name} implements \{trait_name} {\n\{method_str}\n}"
@@ -813,7 +868,8 @@ fn emit_dart_struct_with_impls(
           mode,
           nested_option_context: false,
         }
-        "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr_inner(m.body, mctx)};\n  }"
+        let body_str = emit_fn_body(m.body, m.ret_type, mctx)
+        "  \{ret_str} \{m.name}(\{param_str}) {\n\{body_str}\n  }"
       })
       .join("\n")
     })
