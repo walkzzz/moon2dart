@@ -82,6 +82,25 @@ ast ──> (零依赖)
 
 - `supported_targets = "+wasm+wasm-gc+js+native"`
 
+### 凭据与 Token 安全（强制）
+
+1. **禁止明文 token**：任何平台（GitHub / GitCode）的 access token 一律不得出现在
+   命令行参数、remote URL（`https://user:token@` 形式）、脚本、文档、提交信息、
+   聊天对话或任何持久化文件中。
+2. **GitHub 操作统一用 gh CLI**：`gh`（GitHub CLI）凭据存于系统凭据管理器；
+   查仓库 / 查 CI / 建 release 用 `gh repo view`、`gh run list` 等命令；
+   git 推送走 SSH（origin = `git@github.com:...`）。
+3. **GitCode 推送走 SSH**：SSH 公钥在 gitcode.com 个人设置中绑定后，
+   `git push gitcode main`；remote URL 保持无凭据裸地址
+   （当前：`git@gitcode.com:LOOYIABC/moon2dart.git`）。
+4. **Agent 协作约定**：Agent 请求 token 仅限单次使用场景（如首次建仓推送），
+   使用后不得写入任何持久化位置，且必须提醒用户在平台侧撤销该 token。
+5. **token 泄露处置**：token 一旦出现在聊天、日志或文件中，立即在对应平台
+   撤销并重新生成；平台绑定改用 SSH key（长期凭据），不再使用 token 日常推送。
+6. **CI/CD 凭据**：GitHub Actions 如需跨平台 token，一律存 GitHub Secrets
+   （仓库设置 → Secrets and variables），工作流中经 `${{ secrets.X }}` 引用，
+   严禁写入 workflow YAML 明文。
+
 ### MoonBit 语法要点
 
 - **derive 后必须显式 pub extend**：`derive(Eq, Compare, Debug)` 后需三条 `pub extend`
