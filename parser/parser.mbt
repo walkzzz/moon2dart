@@ -263,9 +263,7 @@ fn Parser::parse_enum_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 
 ///|
 /// 解析 trait 声明：trait Name { fn method(params) -> ret_type; ... }
-fn Parser::parse_trait_decl(
-  self : Parser,
-) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_trait_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkTrait)
   let (name, parser) = parser.expect_ident()
   let p = parser.expect(TkLBrace)
@@ -321,9 +319,7 @@ fn Parser::parse_impl_decl(
 
 ///|
 /// 解析 extern "c" fn 声明：extern "c" fn name(params) -> ret_type = "c_symbol"
-fn Parser::parse_extern_fn_decl(
-  self : Parser,
-) -> (@ast.MoonDecl, Parser) {
+fn Parser::parse_extern_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
   let parser = self.expect(TkExtern)
   let parser = parser.expect(TkString)
   let parser = parser.expect(TkFn)

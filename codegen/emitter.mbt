@@ -9,7 +9,7 @@ pub(all) struct EmitCtx {
 ///|
 /// 默认单表达式上下文 — 无类型环境 + Fast 模式 | Default single-expression context — no env + Fast mode
 fn default_expr_ctx(nested : Bool) -> EmitCtx {
-  { env: None, mode: @ast.Fast, nested_option_context: nested }
+  { env: None, mode: @ast.Fast, nested_option_context: nested, }
 }
 
 ///|
@@ -89,8 +89,7 @@ fn emit_dart_expr_inner(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
         .join(",\n")
       "switch (\{scrut}) {\n\{arms}\n}"
     }
-    @ast.EAwait(inner) =>
-      "await \{emit_dart_expr_inner(inner, ctx)}"
+    @ast.EAwait(inner) => "await \{emit_dart_expr_inner(inner, ctx)}"
     @ast.ELambda(params, body) => {
       let param_str = params
         .map(fn(pair) {
@@ -129,12 +128,7 @@ fn emit_binop(
 ///
 /// Wrapping 模式：+ - * / % 经 mb32* shim 模拟 wasm i32 回绕，两端结果一致。
 /// Fast 模式：+ - * 裸发（L2：64 位溢出行为差异，程序级诊断标注）；/ % 修正为 Dart 整数语义。
-fn emit_int_binop(
-  op : String,
-  l : String,
-  r : String,
-  ctx : EmitCtx,
-) -> String {
+fn emit_int_binop(op : String, l : String, r : String, ctx : EmitCtx) -> String {
   if ctx.mode is @ast.Wrapping {
     match op {
       "+" => "mb32Add(\{l}, \{r})"
@@ -426,7 +420,7 @@ fn emit_semantic_diagnostic(
   if mode is @ast.Fast {
     let mut int_found = false
     for t in types {
-      if (t is @ast.MInt) && !int_found {
+      if t is @ast.MInt && !int_found {
         int_found = true
         all_comments.push(
           "// [L2-SEMANTICS] Int: MoonBit 32-bit wrapping arithmetic vs Dart 64-bit int; overflow behavior differs (use --semantics wrapping to emulate)",
@@ -590,8 +584,9 @@ pub fn emit_dart_program_full(
 ///|
 /// 生成 32 位回绕运行时 shim（仅包含程序实际用到的操作） | Generate 32-bit wrapping runtime shim (only ops actually used by the program)
 ///
-/// MoonBit Int 算术是 wasm i32 语义：加/减/乘回绕，除法向零截断（INT_MIN / -1 回绕为 INT_MIN），
-/// 取余符号跟被除数。Dart int 为 64 位，toSigned(32)/remainder() 逐运算还原语义。
+/// MoonBit Int 算术是 wasm i32 语义：加/减/乘回绕，除法向零截断，取余符号跟被除数。
+/// `INT_MIN / -1` 与除零按 wasm i32.div_s 规范是 **trap**（异常终止）——mb32Div 显式抛异常模拟，
+/// 使两端行为类别一致（MoonBit native 硬件 trap / Dart throw）。
 fn emit_wrapping_shim(ops : Array[String]) -> String {
   let header = "// === moon2dart Int wrapping shim — emulates MoonBit 32-bit overflow (wasm i32) on Dart 64-bit int ==="
   let defs : Array[String] = []
@@ -600,8 +595,10 @@ fn emit_wrapping_shim(ops : Array[String]) -> String {
       "+" => "int mb32Add(int a, int b) => (a + b).toSigned(32);"
       "-" => "int mb32Sub(int a, int b) => (a - b).toSigned(32);"
       "*" => "int mb32Mul(int a, int b) => (a * b).toSigned(32);"
-      "/" => "int mb32Div(int a, int b) => (a ~/ b).toSigned(32);"
-      "%" => "int mb32Rem(int a, int b) => a.remainder(b).toSigned(32);"
+      "/" =>
+        "int mb32Div(int a, int b) => (a == -2147483648 && b == -1 || b == 0) ? (throw StateError('mb32Div: integer overflow trap (INT_MIN/-1 or div by zero), mirrors MoonBit wasm i32.div_s')) : ((a ~/ b).toSigned(32));"
+      "%" =>
+        "int mb32Rem(int a, int b) => b == 0 ? (throw StateError('mb32Rem: division by zero trap, mirrors MoonBit wasm i32.rem_s')) : a.remainder(b).toSigned(32);"
       _ => ""
     }
     if def != "" {
@@ -747,7 +744,8 @@ fn emit_dart_decl_in_program_with_mode(
       "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
     @ast.DAsyncFn(_, _, params, _, _) =>
       "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
-    _ => "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
+    _ =>
+      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
   }
 }
 
@@ -810,7 +808,11 @@ fn emit_dart_struct_with_impls(
       .map(fn(m) {
         let param_str = format_dart_params(m.params)
         let ret_str = @typesys.map_type(m.ret_type).to_dart_string()
-        let mctx : EmitCtx = { env: Some(@typesys.TypeEnv::for_function(all_decls, m.params)), mode: mode, nested_option_context: false }
+        let mctx : EmitCtx = {
+          env: Some(@typesys.TypeEnv::for_function(all_decls, m.params)),
+          mode,
+          nested_option_context: false,
+        }
         "  \{ret_str} \{m.name}(\{param_str}) {\n    return \{emit_dart_expr_inner(m.body, mctx)};\n  }"
       })
       .join("\n")

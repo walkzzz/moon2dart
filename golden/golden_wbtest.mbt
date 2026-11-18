@@ -50,9 +50,13 @@ test "golden trunc_rem sign follows dividend" {
 }
 
 ///|
-test "golden int_min over -1 wraps back to int_min" {
+/// INT_MIN/-1 是 **trap 边界**：MoonBit native 硬件异常终止（0xc0000095），
+/// Dart 端 mb32Div 显式抛 StateError 模拟 —— 两端行为类别一致（异常终止），
+/// 不在本套件内取值断言（见 docs/golden_results.md 边界行为表）。
+test "golden int_min computation and wrap-around" {
   let int_min = wrap_add(-2147483647, -1)
-  assert_eq(trunc_div(int_min, -1), -2147483648)
+  assert_eq(int_min, -2147483648)
+  assert_eq(wrap_sub(int_min, 1), 2147483647)
 }
 
 ///|

@@ -113,7 +113,9 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
     println(dart_code)
   } else {
-    let dart_code = @lib.transpile_source_with_options(content, lib_name, semantics_mode) catch {
+    let dart_code = @lib.transpile_source_with_options(
+      content, lib_name, semantics_mode,
+    ) catch {
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
         return

@@ -31,7 +31,6 @@ fn main {
   println(trunc_div(7, -2))
   println(trunc_rem(-7, 2))
   println(trunc_rem(7, -2))
-  println(trunc_div(wrap_add(-2147483647, -1), -1))
   println(add64(1073741824, 1073741824))
   println(ratio(7.0, 2.0))
   println(lt(2147483647, -2147483647))

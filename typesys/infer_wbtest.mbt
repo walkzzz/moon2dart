@@ -95,7 +95,11 @@ test "collect_int_arith_ops deduplicates operators" {
       [],
       [("a", @ast.MInt)],
       @ast.MInt,
-      @ast.EBinOp("+", @ast.EVar("a"), @ast.EBinOp("+", @ast.EVar("a"), @ast.EInt(1))),
+      @ast.EBinOp(
+        "+",
+        @ast.EVar("a"),
+        @ast.EBinOp("+", @ast.EVar("a"), @ast.EInt(1)),
+      ),
     ),
   ]
   assert_eq(collect_int_arith_ops(decls).length(), 1)
@@ -103,9 +107,7 @@ test "collect_int_arith_ops deduplicates operators" {
 
 ///|
 test "collect_int_arith_ops empty for non-arithmetic program" {
-  let decls = [
-    @ast.DFn("f", [], [], @ast.MString, @ast.EString("hello")),
-  ]
+  let decls = [@ast.DFn("f", [], [], @ast.MString, @ast.EString("hello"))]
   assert_eq(collect_int_arith_ops(decls).length(), 0)
 }
 

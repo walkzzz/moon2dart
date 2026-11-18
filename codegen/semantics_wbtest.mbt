@@ -43,10 +43,14 @@ test "emit_dart_program_with_mode wrapping div and rem" {
   assert_true(result.contains("return mb32Div(a, b);"))
   assert_true(result.contains("return mb32Rem(a, b);"))
   assert_true(
-    result.contains("int mb32Div(int a, int b) => (a ~/ b).toSigned(32);"),
+    result.contains(
+      "int mb32Div(int a, int b) => (a == -2147483648 && b == -1 || b == 0) ? (throw StateError('mb32Div: integer overflow trap (INT_MIN/-1 or div by zero), mirrors MoonBit wasm i32.div_s')) : ((a ~/ b).toSigned(32));",
+    ),
   )
   assert_true(
-    result.contains("int mb32Rem(int a, int b) => a.remainder(b).toSigned(32);"),
+    result.contains(
+      "int mb32Rem(int a, int b) => b == 0 ? (throw StateError('mb32Rem: division by zero trap, mirrors MoonBit wasm i32.rem_s')) : a.remainder(b).toSigned(32);",
+    ),
   )
 }
 
@@ -63,7 +67,11 @@ test "emit_dart_program_with_mode fast raw with L2 annotation" {
   ]
   let result = emit_dart_program_with_mode(decls, @ast.Fast)
   assert_true(result.contains("return a + b;"))
-  assert_true(result.contains("[L2-SEMANTICS] Int: MoonBit 32-bit wrapping arithmetic vs Dart 64-bit int; overflow behavior differs"))
+  assert_true(
+    result.contains(
+      "[L2-SEMANTICS] Int: MoonBit 32-bit wrapping arithmetic vs Dart 64-bit int; overflow behavior differs",
+    ),
+  )
   assert_true(!result.contains("mb32Add"))
 }
 
@@ -149,9 +157,7 @@ test "wrapping shim generated on demand only" {
 
 ///|
 test "wrapping shim absent without int arithmetic" {
-  let decls = [
-    @ast.DFn("f", [], [], @ast.MString, @ast.EString("hello")),
-  ]
+  let decls = [@ast.DFn("f", [], [], @ast.MString, @ast.EString("hello"))]
   let result = emit_dart_program_with_mode(decls, @ast.Wrapping)
   assert_true(!result.contains("mb32"))
 }

@@ -8,7 +8,7 @@ pub(all) struct TypeEnv {
 
 ///|
 pub fn TypeEnv::make() -> TypeEnv {
-  { vars: Map([]), fns: Map([]) }
+  { vars: Map([]), fns: Map([]), }
 }
 
 ///|
@@ -45,10 +45,7 @@ pub fn TypeEnv::from_decls(decls : Array[@ast.MoonDecl]) -> TypeEnv {
 ///
 /// 推断失败（未知变量、无签名调用、闭包体等）返回 `None` — 发射端保守裸发（fast 语义）。
 /// 推断成功且为 `MInt` 时，Wrapping 模式发射 mb32* 回绕调用 / `~/` / `remainder()`。
-pub fn infer_expr_type(
-  e : @ast.MoonExpr,
-  env : TypeEnv,
-) -> @ast.MoonType? {
+pub fn infer_expr_type(e : @ast.MoonExpr, env : TypeEnv) -> @ast.MoonType? {
   match e {
     @ast.EInt(_) => Some(@ast.MInt)
     @ast.EDouble(_) => Some(@ast.MDouble)
@@ -168,7 +165,10 @@ fn collect_int_arith_ops_expr(
     }
     @ast.EAwait(inner) => collect_int_arith_ops_expr(inner, env, ops)
     @ast.ELambda(_, body) => collect_int_arith_ops_expr(body, env, ops)
-    @ast.EInt(_) | @ast.EDouble(_) | @ast.EBool(_) | @ast.EString(_)
+    @ast.EInt(_)
+    | @ast.EDouble(_)
+    | @ast.EBool(_)
+    | @ast.EString(_)
     | @ast.EVar(_) => ()
   }
 }
