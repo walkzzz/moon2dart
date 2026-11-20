@@ -197,8 +197,19 @@ bool same(List<int> xs, List<int> ys) {
 | `mizchi/mbt_rs`（MoonBit↔Rust） | 明确"不追求完美转换"、WARNING 人工修复、`--report` 真实项目转化率 96-100%、行为等价 159+161、roundtrip 测试 | 采用"真实语料接受率"（`acceptance_report.md`）与 roundtrip 断言；保持 fail-closed 更严格的拒绝策略 |
 | `mizchi/ts`（TS↔MoonBit） | parity / rule-equivalence / mangle-fuzzing / corpus / docs 分层 | 采用随机化属性测试（6 类）与"规则-证据"文档化 |
 | `bobzhang/typify` | 生成 upstream-identical token 流、Rust 子包分层 | 采用"映射层信息完备"原则（属性测试发现并修复 `Int64` 往返丢失） |
-| `moonbitlang/parser` | 官方 parser + 幂等格式化 | 列为 0.13.0 技术债：自研 parser 迁移/双 parser 一致性评估 |
+| `moonbitlang/parser` | 官方 parser + 幂等格式化 | **已落地**：`official_parser` 适配层为默认前端（fail-closed），`--official-only` 度量直连覆盖 |
 | `moonbitlang/quickcheck` | 随机输入 + shrink + 修饰器 | 采用固定种子属性测试（零新依赖实现） |
+
+### 技术债修复：前端迁移到官方 parser（本轮落地）
+
+自研 parser 是长期风险（语法覆盖受限、无法跟进语言演进）。本轮已完成迁移：
+
+- 新增 `official_parser` 包：基于 MoonBit 官方 `moonbitlang/parser`（0.4.9，LL(k)/LR(1)）→ moon2dart AST 适配层；子集外节点**显式拒绝**（fail-closed）。
+- 根包默认官方前端；仅在**语法层**失败时回退内置 parser（兼容旧语法）；`--official-only` 可强制官方直连，用于技术债度量。
+- 适配测试 **11 项**；`docs/acceptance_report.md` 双列：官方直连 **4/9**、兼容模式 **4/9**（核心实现文件按子集外语法拒绝并给出具体原因：try/catch、extend、record literal、return 等）。
+- 业务/算术 fixture 在官方直连下全部接受，golden 仍 **27/27**。
+
+这一步把"最大技术债"从计划变成"已落地 + 可度量"，也为后续补齐 `try/catch`、`extend`、`record`、`return` 等节点提供了明确清单。
 
 ---
 
@@ -223,7 +234,7 @@ bool same(List<int> xs, List<int> ys) {
 
 | 指标 | 结果 |
 | --- | --- |
-| 单元测试 | **579/579**（native）；wasm / wasm-gc / js 各 529/529 |
+| 单元测试 | **590/590**（native）；wasm / wasm-gc / js 各 540/540 |
 | 四目标检查 | `moon check --target all --deny-warn` 零警告 |
 | 双端 golden | **27/27**（算术 14 + 业务函数 13） |
 | 安全边界门禁 | **8/8 PASS**（fail-closed / 报告 / 幂等 / `mbEquals` / 回绕） |
@@ -239,7 +250,7 @@ bool same(List<int> xs, List<int> ys) {
 git clone https://github.com/walkzzz/moon2dart && cd moon2dart
 moon update
 moon check --target all --deny-warn
-moon test --target native                 # 579/579
+moon test --target native                 # 590/590
 node scripts/golden_check.mjs             # 27/27（需 Dart SDK 3.x）
 node scripts/safety_gate.mjs              # 8/8
 node scripts/acceptance_report.mjs        # 真实语料接受率

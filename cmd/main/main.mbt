@@ -23,7 +23,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
     println(
-      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>] [--semantics wrapping|fast] [--on-unresolved error|warn|fast] [--report <path>]",
+      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>] [--semantics wrapping|fast] [--on-unresolved error|warn|fast] [--report <path>] [--official-only]",
     )
     return
   }
@@ -35,6 +35,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   let mut semantics_mode : @ast.SemanticsMode = @ast.Wrapping
   let mut unresolved_policy : @ast.UnresolvedPolicy = @ast.Error
   let mut report_path = ""
+  let mut official_only = false
   let mut i = 1
   while i < args.length() {
     if args[i] == "--reverse" {
@@ -58,6 +59,9 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     } else if args[i] == "--report" && i + 1 < args.length() {
       report_path = args[i + 1]
       i = i + 2
+    } else if args[i] == "--official-only" {
+      official_only = true
+      i = i + 1
     } else {
       i = i + 1
     }
@@ -121,6 +125,30 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
     println(dart_code)
   } else {
+    if official_only {
+      let code = @lib.transpile_source_with_options_official(
+        content, lib_name, semantics_mode,
+      ) catch {
+        @ast.Moon2DartError::ParseError(msg) => {
+          println("Error: " + msg)
+          panic()
+        }
+        @ast.Moon2DartError::TranspileError(msg) => {
+          println("Error: " + msg)
+          panic()
+        }
+        @ast.Moon2DartError::TypeError(msg) => {
+          println("Error: " + msg)
+          panic()
+        }
+        _ => {
+          println("Error: unexpected error during official conversion")
+          panic()
+        }
+      }
+      println(code)
+      return
+    }
     let (dart_code, report) = @lib.transpile_source_report(
       content, lib_name, semantics_mode, unresolved_policy,
     ) catch {

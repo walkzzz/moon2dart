@@ -14,21 +14,75 @@ pub fn transpile_with_lib(
 }
 
 ///|
+/// 兼容解析：官方 parser 优先，失败时回退旧 parser（仅语法层兜底）| Compat parse: official parser first, legacy fallback on syntax failure
+fn parse_compat(src : String) -> Array[@ast.MoonDecl] raise @ast.Moon2DartError {
+  @official_parser.parse_source(src) catch {
+    @ast.Moon2DartError::ParseError(_) => {
+      let tokens = @parser.Lexer::make(src).tokenize()
+      if tokens.length() == 0 {
+        raise @ast.Moon2DartError::ParseError(
+          "legacy parser produced no tokens",
+        )
+      }
+      let decls = @parser.Parser::make(tokens).parse_program()
+      if decls.length() == 0 {
+        raise @ast.Moon2DartError::ParseError(
+          "legacy parser produced no declarations",
+        )
+      }
+      decls
+    }
+    e => raise e
+  }
+}
+
+///|
 /// 单文件转换管线 — MoonBit 源码字符串 → Dart 代码字符串 | Single-file pipeline — MoonBit source string to Dart code string
-/// 管线：source → Lexer::tokenize → Parser::parse_program → emit_dart_program | Pipeline: source → Lexer::tokenize → Parser::parse_program → emit_dart_program
+/// 管线：source → moonbitlang/parser → moon2dart AST → emit_dart_program | Pipeline: source → official parser → moon2dart AST → emit_dart_program
 pub fn transpile_source(src : String) -> String raise @ast.Moon2DartError {
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
   let result = @codegen.emit_dart_program(decls)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
+}
+
+///|
+/// 官方 parser 直连管线（不回落旧 parser，fail-closed；用于技术债度量与 CI）
+/// Official-parser-only pipeline (no legacy fallback; for coverage measurement and CI)
+pub fn transpile_source_official(
+  src : String,
+) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
+  let decls = @official_parser.parse_source(src)
+  let result = @codegen.emit_dart_program(decls)
+  if result.length() == 0 {
+    raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
+  }
+  result
+}
+
+///|
+/// 官方 parser 直连（带语义模式与 FFI 库名）| Official-parser-only with semantics mode and FFI lib name
+pub fn transpile_source_with_options_official(
+  src : String,
+  lib_name : String,
+  mode : @ast.SemanticsMode,
+) -> String raise @ast.Moon2DartError {
+  if src.trim().length() == 0 {
+    raise @ast.Moon2DartError::ParseError("empty source code")
+  }
+  let decls = @official_parser.parse_source(src)
+  let result = @codegen.emit_dart_program_full(decls, lib_name, mode)
   if result.length() == 0 {
     raise @ast.Moon2DartError::TranspileError("codegen produced empty output")
   }
@@ -44,11 +98,7 @@ pub fn transpile_source_with_lib(
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
@@ -65,11 +115,7 @@ pub fn transpile_source_pure(src : String) -> String raise @ast.Moon2DartError {
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
@@ -99,11 +145,7 @@ pub fn transpile_source_with_options(
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
@@ -138,11 +180,7 @@ pub fn transpile_source_report(
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
@@ -262,11 +300,7 @@ pub fn transpile_source_strict(
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }
@@ -315,11 +349,7 @@ pub fn transpile_source_flutter(
   if src.trim().length() == 0 {
     raise @ast.Moon2DartError::ParseError("empty source code")
   }
-  let tokens = @parser.Lexer::make(src).tokenize()
-  if tokens.length() == 0 {
-    raise @ast.Moon2DartError::ParseError("lexer produced no tokens")
-  }
-  let decls = @parser.Parser::make(tokens).parse_program()
+  let decls = parse_compat(src)
   if decls.length() == 0 {
     raise @ast.Moon2DartError::ParseError("parser produced no declarations")
   }

@@ -16,7 +16,9 @@
 
 **moon2dart** 是一个 MoonBit → Dart/Flutter 代码生成器（transpiler），支持**双向转换**与**语义等价性验证**。
 
-它将 MoonBit 源码解析为 AST，再转换为 Dart 代码字符串——同时支持 Dart → MoonBit 反向转换，并通过 **四级语义分类**（L1/L2/L3/L4）确保往返正确性。v0.10.0 引入 strict 模式与诊断标注；v0.11.0 建立运行时语义保持体系（Int 32 位回绕模拟 + 双语义模式 + golden 双端逐行验证）；**v0.12.0** 修正集合定级（Array/Map/Set → L2-C + `mbEquals` 相等 shim），并建立 **fail-closed 安全边界**（推断失败默认拒绝 + 可审计报告）。
+它将 MoonBit 源码解析为 AST，再转换为 Dart 代码字符串——同时支持 Dart → MoonBit 反向转换，并通过 **四级语义分类**（L1/L2/L3/L4）确保往返正确性。v0.10.0 引入 strict 模式与诊断标注；v0.11.0 建立运行时语义保持体系（Int 32 位回绕模拟 + 双语义模式 + golden 双端逐行验证）；**v0.12.0** 修正集合定级（Array/Map/Set → L2-C + `mbEquals` 相等 shim），建立 **fail-closed 安全边界**（推断失败默认拒绝 + 可审计报告），并完成 **官方 parser 迁移**（`moonbitlang/parser` 适配层为默认前端，兼容兜底仅用于语法层）。
+
+- **官方前端**：默认使用 MoonBit 官方 `moonbitlang/parser`（LL(k)/LR(1)），经 `official_parser` 适配层转 moon2dart AST；`--official-only` 可禁用兼容兜底（用于技术债度量）
 
 - **库 API**：供其他开发者引入，调用 `transpile_source` / `reverse_transpile_source` / `transpile_source_strict` 等函数
 - **CLI**：`moon2dart convert <file>` 命令行转换，支持 `--strict` / `--reverse` / `--pure-only`
@@ -240,7 +242,7 @@ moon info                              # 更新接口
 
 ## 🧪 测试 | Tests
 
-**579 个测试**，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 529）：
+**590 个测试**，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 540）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|

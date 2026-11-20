@@ -1,0 +1,17 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "walkzzz/moon2dart/official_parser"
+
+import {
+  "walkzzz/moon2dart/ast",
+}
+
+// Values
+pub fn parse_source(String) -> Array[@ast.MoonDecl] raise @ast.Moon2DartError
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits

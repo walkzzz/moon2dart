@@ -1,0 +1,7 @@
+import {
+  "walkzzz/moon2dart/ast",
+  "moonbitlang/parser",
+  "moonbitlang/parser/syntax",
+  "moonbitlang/core/string",
+  "moonbitlang/core/list",
+}

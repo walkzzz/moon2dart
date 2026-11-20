@@ -39,6 +39,8 @@ moon2dart/            # 根包 — transpile 编排入口
 ├── moon2dart.mbt         # transpile / transpile_decl / transpile_expr / transpile_type
 ├── ast/                  # AST 类型定义（零依赖）
 │   └── ast.mbt           # MoonType / MoonExpr / MoonPattern / MoonDecl
+├── official_parser/      # 官方 parser 适配层（moonbitlang/parser → moon2dart AST）
+│   └── official_parser.mbt # parse_source + conv_type/expr/pattern/decl（fail-closed）
 ├── typesys/              # 类型映射
 │   └── mapping.mbt       # DartType + map_type + emit_dart + is_pure
 ├── codegen/              # Dart 代码发射
@@ -64,6 +66,8 @@ moon2dart/            # 根包 — transpile 编排入口
 cmd/main ──> 根包 + mcp_server + ast + project
 cmd/mcp  ──> mcp_server
 mcp_server ──> 根包 + ast + parser + project + colmugx/mcp
+根包 ──> official_parser（官方前端）+ parser（语法兜底）
+official_parser ──> ast + moonbitlang/parser + parser/syntax
 codegen ──> ast + typesys
 typesys ──> ast
 ast ──> (零依赖)
@@ -184,13 +188,14 @@ ast ──> (零依赖)
   - S3 parser 缺口修复 ✅（类型表补 Int64/UInt/UInt64/Float + Double/负数字面量 + EBlock 多语句块 + fn main {} 无括号语法 + parse_expr_prec 终止条件）
   - S4 golden 双端验证 ✅（golden 包 + scripts/golden_check.mjs，14/14 行一致，INT_MIN/-1 trap 行为类别一致）
   - S5 文档+回复组委会 ✅（6 份文档 + docs/golden_results.md + reply_to_committee.md）
-- **v0.12.0** ✅ 已完成 — 第二轮初审整改：集合语义 + 安全边界 + 业务函数证据（**579 测试 native**）
+- **v0.12.0** ✅ 已完成 — 第二轮初审整改：集合语义 + 安全边界 + 业务函数证据（**590 测试 native**）
   - S1 集合定级修正 ✅（Array/Map/Set → **L2-C**；`mbEquals` 集合相等 shim；L1 15 / L2 5 / 总计 29）
   - S2 安全边界 ✅（`UnresolvedPolicy` Error 默认 / Warn / Fast；`transpile_source_report`；CLI `--on-unresolved` / `--report`；失败非零退出）
   - S3 业务函数子集 ✅（数组字面量/索引/方法调用/while/let/赋值/括号分组；`golden_business` 13/13）
   - S4 门禁与证据 ✅（`scripts/safety_gate.mjs` 8/8；CI golden 27/27 + `dart analyze --fatal-infos` + 工件上传）
   - S5 文档 ✅（array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business / reply 重写）
   - S6 生态经验学习 ✅（mbt_rs / mizchi-ts / typify / 官方 parser / quickcheck → `docs/moonbit_ecosystem_lessons.md`；属性测试 6 类；真实语料接受率；属性测试发现并修复 `Int64` 往返丢失 + `Int32/UInt32` 别名）
+  - S7 官方 parser 迁移 ✅（新增 `official_parser` 包：`moonbitlang/parser` → moon2dart AST 适配层，fail-closed；根包默认官方 parser + 语法层兼容兜底；`--official-only` 用于技术债度量；11 项适配测试）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
@@ -210,11 +215,12 @@ ast ──> (零依赖)
 
 ### 测试
 
-579 个测试，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 529）：
+590 个测试，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 540）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
 | ast | 11 | 0 |
+| official_parser | 11 | 0 |
 | typesys | 74+ | 0 |
 | codegen | 167+ | 0 |
 | parser | 38 | 0 |

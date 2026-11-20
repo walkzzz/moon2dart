@@ -31,6 +31,8 @@
 
 **类型层**：29 条映射四级分类（见关切一），每条有 `assert_round_trip()` 可执行断言；集合（Array/Map/Set）为 L2-C，需 `mbEquals` + 操作约束。
 
+**前端架构（v0.12.0 技术债修复）**：默认使用 MoonBit 官方 `moonbitlang/parser`（LL(k) + LR(1) 双 parser）解析源码，经 `official_parser` 适配层转为 moon2dart AST；子集外节点**显式拒绝**（fail-closed），语法层失败时才回落内置 parser（`--official-only` 可强制官方直连，用于技术债度量）。官方直连对业务/算术 fixture 全部接受；真实文件 4/9 直连、拒绝项均给出具体原因（`docs/acceptance_report.md`）。
+
 **运算层**（v0.11.0 新增）——MoonBit `Int` 是 32 位回绕（wasm i32），Dart `int` 是 64 位，`2147483647 + 1` 两端结果必然不同。mini 类型推断器（变量环境 + 函数签名表）在发射期判定算术操作数类型，**Wrapping 模式（默认）**为 Int 算术生成回绕模拟层：
 
 ```dart
@@ -121,7 +123,7 @@ ast（零依赖）← typesys ← codegen ← 根包，线性无环。管线：�
 
 ## 质量实测
 
-包 **13** · 测试 **579**(native)· 四目标全绿 · `moon check --target all --deny-warn` 零警告 · Sprint 56+轮(12版本全交付) · L1 往返100% · strict 拒绝100% · 变异红→绿 · **golden 双端 27/27** · **安全边界门禁 8/8** · CI 六步（含 dart analyze）
+包 **13** · 测试 **590**(native)· 四目标全绿 · `moon check --target all --deny-warn` 零警告 · Sprint 56+轮(12版本全交付) · L1 往返100% · strict 拒绝100% · 变异红→绿 · **golden 双端 27/27** · **安全边界门禁 8/8** · CI 六步（含 dart analyze）
 
 ---
 
@@ -137,7 +139,7 @@ mooncakes 3566+ 包：**唯一 MoonBit→Dart transpiler**。①生态空白填�
 |---------|---------|
 | MoonBit 为主 | 100% MoonBit 实现 |
 | 公开仓库 | GitHub 主仓 + GitCode 镜像（双仓 HEAD 一致），v0.1.0-v0.12.0 |
-| 能够运行 | 579 测试+0 warnings+示例+golden 双端 27/27 + 安全边界门禁（`node scripts/golden_check.mjs` / `node scripts/safety_gate.mjs` 一键复现） |
+| 能够运行 | 590 测试+0 warnings+示例+golden 双端 27/27 + 安全边界门禁（`node scripts/golden_check.mjs` / `node scripts/safety_gate.mjs` 一键复现） |
 | 工作有效 | 11 版本全交付，原创 |
 | 开源合规 | Apache-2.0 |
 | AI 可解释 | AI 辅助，决策人工把控 |

@@ -8,7 +8,7 @@
 | 口径 | 计算公式 | 目标 | 当前值 | evidence |
 |------|---------|------|--------|----------|
 | 往返类型恢复率 | L1 round-trip 通过数 / L1 总数 | ≥ 95% | 15/15 = 100% | `assert_round_trip` 测试全绿（集合移出 L1，见 type_mapping） |
-| 语义等价测试通过率 | 通过断言数 / 总断言数 | ≥ 95% | 579/579 = 100% | `moon test --target native` 全绿（v0.12.0 口径） |
+| 语义等价测试通过率 | 通过断言数 / 总断言数 | ≥ 95% | 590/590 = 100% | `moon test --target native` 全绿（v0.12.0 口径） |
 | strict 模式 L4 拒绝率 | L4 strict 拒绝数 / L4 总数 | 100% | 5/5 = 100% | `map_type_strict` 测试全绿 |
 | **双端观测等价率** | golden 一致行 / 总行 | 100% | **27/27 = 100%** | `node scripts/golden_check.mjs`（算术 14 + 业务 13） |
 | **安全边界门禁** | 通过项 / 总项 | 100% | **8/8 = 100%** | `node scripts/safety_gate.mjs` |
@@ -17,7 +17,7 @@
 
 **1. 往返类型恢复率**：对每个 L1 映射条目，构造 MoonBit 类型 → `map_type` 正向映射 → `dart_type_to_moon_ast` 反向映射 → 比较恢复后类型字符串与原始一致。15 个 L1 条目全覆盖（集合为 L2-C，由双端 golden 证明而非类型断言）。
 
-**2. 语义等价测试通过率**：全量 `moon test` 通过的断言数除以总断言数（579 测试 native 后端，v0.12.0 口径）。包含 L1 往返测试、L2 结构/集合约束测试、L3 受限测试、L4 拒绝测试、嵌套 Option 测试、DResult 测试、安全边界测试、诊断标注测试。
+**2. 语义等价测试通过率**：全量 `moon test` 通过的断言数除以总断言数（590 测试 native 后端，v0.12.0 口径）。包含 L1 往返测试、L2 结构/集合约束测试、L3 受限测试、L4 拒绝测试、嵌套 Option 测试、DResult 测试、安全边界测试、诊断标注测试。
 
 **3. strict 模式 L4 拒绝率**：在 strict 模式下，所有 L4 类型（ForeignFunction/Channel/Spawn 及其容器包装）必须 raise `TypeError`，拒绝生成不安全代码。5 个 L4 场景全覆盖。
 
@@ -40,12 +40,13 @@
 | 检查点 | 判据 | 权重 | 状态 | evidence |
 |---|---|:---:|:---:|---|
 | check 零警告 | `moon check --target all --deny-warn` | 10 | ✅ 本机通过 | 2026-11-20 实测（196 tasks, 0 warnings） |
-| 测试全绿 | `moon test --target all` | 15 | ✅ 本机通过 | native 579；js/wasm/wasm-gc 各 529 |
+| 测试全绿 | `moon test --target all` | 15 | ✅ 本机通过 | native 590；js/wasm/wasm-gc 各 540 |
 | moon fmt --check | 格式检查 | 5 | ✅ | 本轮 `moon fmt` 后 git diff 已复核 |
 | mbti 接口校验 | `moon info && git diff --exit-code -- '*.mbti'` | 5 | ✅ | CI 改为严格；本机 `moon info` 无漂移 |
 | 覆盖率报告 | `moon test --enable-coverage` + `moon coverage analyze` | 5 | ✅ | CI 断言 `uncovered line` 存在 |
 | **双端 golden** | 27/27 | 5 | ✅ | `node scripts/golden_check.mjs` |
 | **安全边界** | 8/8 + `dart analyze --fatal-infos` 0 issues | 5 | ✅ | `node scripts/safety_gate.mjs` |
+| **官方 parser 直连** | `--official-only` 接受真实文件 4/9（兼容 4/9） | 5 | ✅ | `node scripts/acceptance_report.mjs` |
 
 ### 生态贡献（20）| Ecosystem Contribution
 

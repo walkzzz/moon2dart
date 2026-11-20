@@ -355,8 +355,9 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 | S4 | 门禁（`scripts/safety_gate.mjs` 8/8；CI golden 27/27 + `dart analyze --fatal-infos` + 工件上传；`.mbti` 严格） | ✅ |
 | S5 | 文档（array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business / reply 重写） | ✅ |
 | S6 | 生态经验学习（MoonBit 同类库：mbt_rs / mizchi-ts / typify / 官方 parser / quickcheck）+ 属性测试 + 真实语料接受率 + `Int64`/`Int32` 兼容修复 | ✅ |
+| S7 | 官方 parser 迁移（`official_parser` 适配层，默认前端 + fail-closed；兼容兜底 + `--official-only` 度量；11 适配测试） | ✅ |
 
-**交付**：579 测试（native 全绿；js/wasm/wasm-gc 各 529），双端 golden 27/27，安全边界 8/8，真实语料接受率 4/9（fail-closed 子集），`dart analyze` 0 issues，转换幂等。
+**交付**：590 测试（native 全绿；js/wasm/wasm-gc 各 540），双端 golden 27/27，安全边界 8/8，官方直连接受率 4/9（兼容 4/9），`dart analyze` 0 issues，转换幂等。
 
 **已知边界（明确拒绝）**：位运算 / 复合赋值 / 一元负变量 / 切片 / `for-in` / `sort` 未实现（解析器直接报错）；数值格式化、字符串 Unicode、corpus 接受率列入 v0.13.0。
 

@@ -16,9 +16,10 @@
 - 业务函数语法子集：数组字面量、索引、方法调用、`while`、`let [mut]`、赋值、括号分组
 - `golden_business` 包 + 业务函数 golden（13 行）；`scripts/safety_gate.mjs`（8 项门禁）
 - 文档：array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business
+- **官方 parser 迁移**：新增 `official_parser` 适配包（`moonbitlang/parser` → moon2dart AST，fail-closed）；根包默认官方前端 + 语法层兼容兜底；`--official-only` 度量官方直连覆盖；11 项适配测试
 
 ### 验证 | Verified
-- **579 测试** native 全绿；js/wasm/wasm-gc 各 529；四目标 deny-warn 零警告
+- **590 测试** native 全绿；js/wasm/wasm-gc 各 540；四目标 deny-warn 零警告
 - golden 双端 **27/27**（算术 14 + 业务函数 13）；`dart analyze` 0 issues；转换幂等
 - 复现：`node scripts/golden_check.mjs && node scripts/safety_gate.mjs`
 

@@ -38,8 +38,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 属性测试发现并修复：`Int64` 往返丢失（新增 `dart_ast.DInt64`，同步 reverse/parser/emitter）；`Int32`/`UInt32` 规范别名支持
 - CLI 失败退出码非零（`panic`），CI 可拦截；CI 增 `dart format` 可解析性与接受率报告
 
+### Added — 官方 parser 迁移（技术债 E5）
+- 新增 `official_parser` 包：`moonbitlang/parser`（0.4.9，LL(k)/LR(1)）→ moon2dart AST 适配层（type/expr/pattern/decl），子集外节点显式拒绝（fail-closed）
+- 根包默认官方 parser 前端；语法层失败时回退内置 parser（兼容层），`--official-only` 可强制官方直连
+- 新增 `transpile_source_official` / `transpile_source_with_options_official` API；CLI `--official-only`
+- 11 项官方适配测试；acceptance 报告双列（官方直连 4/9 / 兼容 4/9）
+- 修复：官方 AST 的类型注解 `let`（Constraint pattern）、`Int32/UInt32` 别名、`Int64` 往返
+
 ### Verified
-- **579 测试** native 全绿；wasm / wasm-gc / js 各 529/529；四目标 `moon check --deny-warn` 零警告
+- **590 测试** native 全绿；wasm / wasm-gc / js 各 540/540；四目标 `moon check --deny-warn` 零警告
 - golden 双端 **27/27**（算术 14 + 业务函数 13）；`dart analyze` 0 issues；转换幂等
 - 复现：`node scripts/golden_check.mjs && node scripts/safety_gate.mjs`
 

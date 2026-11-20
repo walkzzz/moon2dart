@@ -33,6 +33,8 @@ pub fn transpile_source(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_flutter(String) -> String raise @ast.Moon2DartError
 
+pub fn transpile_source_official(String) -> String raise @ast.Moon2DartError
+
 pub fn transpile_source_pure(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_report(String, String, @ast.SemanticsMode, @ast.UnresolvedPolicy) -> (String, @ast.TranspileReport) raise @ast.Moon2DartError
@@ -46,6 +48,8 @@ pub fn transpile_source_with_lib(String, String) -> String raise @ast.Moon2DartE
 pub fn transpile_source_with_mode(String, @ast.SemanticsMode) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_with_options(String, String, @ast.SemanticsMode) -> String raise @ast.Moon2DartError
+
+pub fn transpile_source_with_options_official(String, String, @ast.SemanticsMode) -> String raise @ast.Moon2DartError
 
 pub fn transpile_type(@ast.MoonType) -> String
 

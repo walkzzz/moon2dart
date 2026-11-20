@@ -88,8 +88,9 @@ mizchi/ts："生成物是再生成 output"；mbt_rs `just convert` 自动 `moon 
 | E9 信息完备 | **已修 `DInt64`**（属性测试发现） | `dart_ast` / `reverse_codegen` / `dart_parser` |
 | E10 fuzz | 属性测试 6 类（类型/幂等/fail-closed/集合/回绕/L3） | `moon2dart_prop_wbtest.mbt` |
 | E11 文档分层 | `review_anticipation` / `array_semantics` / `safety_boundary` / 本篇 | `docs/` |
-| E12 CI 分层 | golden job 增 `dart format` 可解析性 + acceptance（待接入） | `.github/workflows/ci.yml` |
+| E12 CI 分层 | golden job 增 `dart format` 可解析性 + acceptance | `.github/workflows/ci.yml` |
 | E13 来源声明 | 列为 0.13.0（source digest） | 同上 |
+| **E5 官方 parser** | **已落地 `official_parser` 适配层（默认前端，fail-closed；兼容兜底 + `--official-only` 度量）** | `official_parser/`、`docs/acceptance_report.md` |
 
 ## 4. 结论
 

@@ -19,4 +19,5 @@ import {
   "colmugx/mcp@0.18.2",
   "colmugx/posoco@0.24.2",
   "sa2360/moonbench@0.3.0",
+  "moonbitlang/parser@0.4.9",
 }
