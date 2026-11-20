@@ -8,6 +8,9 @@
 
 ///|
 async fn main {
+  // 显式触发 async 运行时（同时满足 import 使用检查；0ms 不改变行为）
+  // Explicitly touch the async runtime (also satisfies unused_package lint; 0ms).
+  @async.sleep(0)
   let args = @env.args()
   let rest : Array[String] = []
   for j in 1..<args.length() {

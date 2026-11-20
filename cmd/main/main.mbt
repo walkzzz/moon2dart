@@ -448,13 +448,13 @@ fn cmd_demo(_args : Array[String]) -> Unit {
   let dart_code = @lib.transpile(demo)
   println(dart_code)
   println("---")
-  println("moon2dart v0.8.0 — MoonBit ↔ Dart transpiler (demo mode)")
+  println("moon2dart — MoonBit ↔ Dart transpiler (demo mode)")
 }
 
 ///|
 /// help — 显示用法。
 fn usage() -> Unit {
-  println("moon2dart v0.9.0 — MoonBit <-> Dart transpiler")
+  println("moon2dart — MoonBit <-> Dart transpiler")
   println("")
   println("Usage:")
   println(
@@ -520,6 +520,9 @@ fn usage() -> Unit {
 
 ///|
 async fn main {
+  // 显式触发 async 运行时（同时满足 import 使用检查；0ms 不改变行为）
+  // Explicitly touch the async runtime (also satisfies unused_package lint; 0ms).
+  @async.sleep(0)
   let args = @env.args()
   if args.length() < 2 {
     usage()
