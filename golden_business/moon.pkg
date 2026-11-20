@@ -1,0 +1,6 @@
+// golden_business 包 — 业务函数真值端可执行入口（moon run golden_business --target native）
+// golden_business package — executable business-function ground truth
+
+pkgtype(kind: "executable")
+
+supported_targets = "+native"

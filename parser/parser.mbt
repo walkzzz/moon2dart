@@ -349,8 +349,10 @@ fn Parser::parse_extern_fn_decl(self : Parser) -> (@ast.MoonDecl, Parser) {
 fn Parser::parse_type(self : Parser) -> (@ast.MoonType, Parser) {
   let (name, parser) = self.expect_ident()
   let (ty, p) = match name {
-    "Int" => (@ast.MInt, parser)
-    "UInt" => (@ast.MUInt, parser)
+    // MoonBit 2026 规范名 Int32/UInt32 与旧别名 Int/UInt 等价（生态惯例，mbt_rs 亦接受）
+    // Canonical Int32/UInt32 names alias to Int/UInt for compatibility with modern sources.
+    "Int" | "Int32" => (@ast.MInt, parser)
+    "UInt" | "UInt32" => (@ast.MUInt, parser)
     "Int64" => (@ast.MInt64, parser)
     "UInt64" => (@ast.MUInt64, parser)
     "Float" => (@ast.MFloat, parser)
@@ -412,7 +414,7 @@ fn Parser::parse_expr_prec(
   self : Parser,
   min_prec : Int32,
 ) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
-  let (left0, parser0) = self.parse_primary()
+  let (left0, parser0) = self.parse_postfix()
   let mut left = left0
   let mut parser = parser0
   while true {
@@ -488,6 +490,33 @@ fn Parser::parse_primary(
       let len = text.length()
       let content = if len >= 2 { text[1:len - 1].to_owned() } else { "" }
       (@ast.EString(content), parser)
+    }
+    TkLBracket => {
+      // 数组字面量 `[a, b, c]`（含空数组 `[]`）| array literal (including empty)
+      let parser = self.advance()
+      let mut p = parser
+      let items : Array[@ast.MoonExpr] = []
+      if !(p.peek().kind is TkRBracket) {
+        while true {
+          let (item, p2) = p.parse_expr()
+          p = p2
+          items.push(item)
+          if p.peek().kind is TkComma {
+            p = p.advance()
+          } else {
+            break
+          }
+        }
+      }
+      let p_final = p.expect(TkRBracket)
+      (@ast.EArrayLit(items), p_final)
+    }
+    TkLParen => {
+      // 括号分组 `(expr)` | grouping parentheses
+      let p1 = self.advance()
+      let (inner, p2) = p1.parse_expr()
+      let p3 = p2.expect(TkRParen)
+      (inner, p3)
     }
     TkTrue => {
       let parser = self.advance()
@@ -588,6 +617,126 @@ fn Parser::parse_primary(
 }
 
 ///|
+/// 解析后缀形式：索引 `a[i]` 与方法调用 `a.length()` / `a.push(x)` | Parse postfix forms: index and method call
+fn Parser::parse_postfix(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
+  let (e0, p0) = self.parse_primary()
+  let mut expr = e0
+  let mut p = p0
+  while true {
+    match p.peek().kind {
+      TkLBracket => {
+        let p1 = p.advance()
+        let (idx, p2) = p1.parse_expr()
+        let p3 = p2.expect(TkRBracket)
+        expr = @ast.EIndex(expr, idx)
+        p = p3
+      }
+      TkDot => {
+        let p1 = p.advance()
+        let (method_name, p2) = p1.expect_ident()
+        let p3 = p2.expect(TkLParen)
+        let mut pa = p3
+        let args : Array[@ast.MoonExpr] = []
+        if !(pa.peek().kind is TkRParen) {
+          while true {
+            let (arg, p4) = pa.parse_expr()
+            pa = p4
+            args.push(arg)
+            if pa.peek().kind is TkComma {
+              pa = pa.advance()
+            } else {
+              break
+            }
+          }
+        }
+        let p_final = pa.expect(TkRParen)
+        expr = @ast.EMethodCall(expr, method_name, args)
+        p = p_final
+      }
+      _ => break
+    }
+  }
+  (expr, p)
+}
+
+///|
+/// 前探第 n 个 token（用于区分 `let`/赋值语句）| Lookahead by n tokens (to distinguish let/assignment statements)
+fn Parser::peek_ahead(self : Parser, n : Int32) -> Token {
+  let i = self.pos + n
+  if i < self.tokens.length() {
+    self.tokens[i]
+  } else {
+    self.peek()
+  }
+}
+
+///|
+/// 解析块内语句：let / while / 赋值 / 表达式 | Parse a block statement: let / while / assignment / expression
+fn Parser::parse_statement(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
+  match self.peek().kind {
+    TkLet => self.parse_let_stmt()
+    TkWhile => self.parse_while_stmt()
+    TkIdent =>
+      if self.peek_ahead(1).kind is TkAssign {
+        self.parse_assign_stmt()
+      } else {
+        self.parse_expr()
+      }
+    _ => self.parse_expr()
+  }
+}
+
+///|
+/// `let [mut] name [: Type] = expr` | let binding
+fn Parser::parse_let_stmt(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
+  let p1 = self.expect(TkLet)
+  let (is_mut, p2) = if p1.peek().kind is TkMut {
+    (true, p1.advance())
+  } else {
+    (false, p1)
+  }
+  let (name, p3) = p2.expect_ident()
+  let (ty, p4) = if p3.peek().kind is TkColon {
+    let pa = p3.advance()
+    let (t, pb) = pa.parse_type()
+    (Some(t), pb)
+  } else {
+    (None, p3)
+  }
+  let p5 = p4.expect(TkAssign)
+  let (init, p6) = p5.parse_expr()
+  (@ast.ELet(name, is_mut, ty, init), p6)
+}
+
+///|
+/// `while cond { body }` | while loop
+fn Parser::parse_while_stmt(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
+  let p1 = self.expect(TkWhile)
+  let (cond, p2) = p1.parse_expr()
+  let (body, p3) = p2.parse_block_expr()
+  (@ast.EWhile(cond, body), p3)
+}
+
+///|
+/// `name = expr` | assignment
+fn Parser::parse_assign_stmt(
+  self : Parser,
+) -> (@ast.MoonExpr, Parser) raise @ast.Moon2DartError {
+  let (name, p1) = self.expect_ident()
+  let p2 = p1.expect(TkAssign)
+  let (rhs, p3) = p2.parse_expr()
+  (@ast.EAssign(name, rhs), p3)
+}
+
+///|
 /// 解析块表达式 { stmt; stmt; ... } — 多语句折叠为 EBlock（语句间分号可选，表达式自然边界分隔） | Parse block { stmt; stmt; ... } — folded into EBlock (semicolons optional)
 fn Parser::parse_block_expr(
   self : Parser,
@@ -596,7 +745,7 @@ fn Parser::parse_block_expr(
   let mut p = parser
   let stmts : Array[@ast.MoonExpr] = []
   while !(p.peek().kind is TkRBrace) {
-    let (stmt, p1) = p.parse_expr()
+    let (stmt, p1) = p.parse_statement()
     p = p1
     stmts.push(stmt)
     if p.peek().kind is TkSemi {

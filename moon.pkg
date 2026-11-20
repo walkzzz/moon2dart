@@ -8,6 +8,10 @@ import {
   "walkzzz/moon2dart/reverse_codegen",
 }
 
+import {
+  "moonbitlang/core/random",
+} for "wbtest"
+
 options(
   "allow-experimental-packages": [ "moonbitlang/core/async" ],
 )

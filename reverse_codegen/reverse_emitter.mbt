@@ -9,6 +9,7 @@
 pub fn dart_type_to_moon_ast(t : @dart_ast.DartType) -> @ast.MoonType {
   match t {
     @dart_ast.DInt => @ast.MInt
+    @dart_ast.DInt64 => @ast.MInt64
     @dart_ast.DDouble => @ast.MDouble
     @dart_ast.DBool => @ast.MBool
     @dart_ast.DString => @ast.MString

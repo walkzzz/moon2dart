@@ -1,6 +1,6 @@
 # MoonBit → Dart 类型与构造映射规范 | Type Mapping Specification
 
-> v0.11.0 · 2026-11-18 · 完整映射表 + 语义等价分级 + 运行时语义双模式（--semantics）
+> v0.12.0 · 2026-11-20 · 集合（Array/Map/Set）定级修正为 **L2-C 条件等价** + `mbEquals` 相等 shim + fail-closed 安全边界
 
 ## 1. 基础类型映射 | Basic Type Mapping
 
@@ -21,9 +21,9 @@
 
 | MoonBit | Dart | 可纯转换 | 语义等级 | 备注 |
 |---------|------|---------|---------|------|
-| `Array[T]` | `List<T>` | ✅ | L1 ✅ | |
-| `Map[K,V]` | `Map<K,V>` | ✅ | L1 ✅ | |
-| `Set[T]` | `Set<T>` | ✅ | L1 ✅ | |
+| `Array[T]` | `List<T>` | ✅ | **L2-C** 🔶 | 相等语义（MoonBit 逐元素 / Dart 引用）用 `mbEquals` 还原；越界异常类型不同；操作子集见 `array_semantics.md` |
+| `Map[K,V]` | `Map<K,V>` | ✅ | **L2-C** 🔶 | 键相等/hash 与迭代顺序约束；`mbEquals` 递归 |
+| `Set[T]` | `Set<T>` | ✅ | **L2-C** 🔶 | 元素相等与迭代顺序约束；`mbEquals` 递归 |
 | `Option[T]` (单层) | `T?` | ✅ | L1 ✅ | Dart null safety |
 | `Option[Option[T]]` (嵌套) | `Option<T>` 辅助类 | ✅ | L1 ✅ | 自动生成辅助类保留三分态 |
 | `Result[T,E]` | `Result<T,E>` sealed class | ⚠️ | L1 ✅ | DResult 结构化节点 |
@@ -148,8 +148,8 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 
 | 等级 | 标记 | 含义 | 条目数 | strict 模式行为 |
 |------|------|------|:------:|----------------|
-| L1 完全等价 | ✅ | 往返转换后语义完全一致 | 18 | 正常生成 |
-| L2 结构等价 | ⚠️ | 数据结构可还原，操作语义有差异 | 2 | 正常生成 |
+| L1 完全等价 | ✅ | 往返转换后语义完全一致 | 15 | 正常生成 |
+| L2 结构等价 | ⚠️ | 数据结构可还原，操作语义有差异（集合为 L2-C 条件等价） | 5 | 正常生成 + 约束 |
 | L3 受限等价 | 🔶 | 特定约束下等价，生成 `// [L3-CONSTRAINED]` 注释 | 4 | 允许，标注注释 |
 | L4 不等价 | ❌ | 语义丢失，不可往返 | 5 | raise TypeError |
 
@@ -181,7 +181,22 @@ final cSqrt = lib.lookupFunction<Double Function(Double), double Function(double
 - **shim 细节**：`mb32Add/Sub/Mul` → `(a op b).toSigned(32)`；`mb32Div` → INT_MIN/-1 与除零 throw StateError trap 模拟 + `(a ~/ b).toSigned(32)`；`mb32Rem` → 除零 trap 模拟 + `a.remainder(b).toSigned(32)`
 - 详见 [semantic_equivalence.md](semantic_equivalence.md) §5.1 / golden 双端报告 [golden_results.md](golden_results.md)
 
-## 13. 映射表维护 | Mapping Table Maintenance
+## 13. 集合相等语义（v0.12.0）| Collection Equality
+
+`Array` / `Map` / `Set` 的 `==` / `!=` 在 Wrapping 模式下发射结构相等 helper：
+
+```dart
+bool mbEquals(dynamic a, dynamic b) { /* List/Map/Set 递归；标量回落 == */ }
+```
+
+- MoonBit：`[1,2] == [1,2]` → `true`（逐元素）
+- Dart 原生：`[1,2] == [1,2]` → `false`（引用）
+- 生成代码：`mbEquals([1,2], [1,2])` → `true`（与 MoonBit 一致）
+
+Fast 模式裸发 `==`（L2），并在报告中记录。deep-equal 递归支持嵌套 List/Map/Set。
+详见 [array_semantics.md](array_semantics.md)。
+
+## 14. 映射表维护 | Mapping Table Maintenance
 
 映射表集中在 `typesys/mapping.mbt`，版本跟随：
 - MoonBit 工具链升级 → 更新 MoonType 枚举

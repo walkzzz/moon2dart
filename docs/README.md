@@ -2,7 +2,7 @@
 
 > MoonBit → Dart transpiler | 让 MoonBit 代码跑在 Flutter 上
 >
-> v0.11.0 · 2026-11-18 · 12 份文档
+> v0.11.0 · 2026-11-18 · 19 份文档
 
 ## 文档索引 | Document Index
 

@@ -110,7 +110,7 @@ ast ──> (零依赖)
 
 ### Sprint 状态
 
-> **版本双轨说明**（2026-11-13，2026-11-18 更新）：功能迭代版本（v0.1.0 → v0.11.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.x 线**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量（已发布），包 0.1.1 = 功能 v0.11.0（已发布，registry latest）。
+> **版本双轨说明**（2026-11-13，2026-11-20 更新）：功能迭代版本（v0.1.0 → v0.12.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.x 线**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量（已发布），包 0.1.1 = 功能 v0.11.0（已发布），包 0.1.2 = 功能 v0.12.0（**待发布**，由维护者执行）。
 
 - **v0.1.0** ✅ 已完成 — transpiler 骨架（33 测试 × 4 后端）
   - S1 ast 包 ✅ / S2 typesys ✅ / S3 codegen ✅ / S4 根包入口 ✅
@@ -184,6 +184,13 @@ ast ──> (零依赖)
   - S3 parser 缺口修复 ✅（类型表补 Int64/UInt/UInt64/Float + Double/负数字面量 + EBlock 多语句块 + fn main {} 无括号语法 + parse_expr_prec 终止条件）
   - S4 golden 双端验证 ✅（golden 包 + scripts/golden_check.mjs，14/14 行一致，INT_MIN/-1 trap 行为类别一致）
   - S5 文档+回复组委会 ✅（6 份文档 + docs/golden_results.md + reply_to_committee.md）
+- **v0.12.0** ✅ 已完成 — 第二轮初审整改：集合语义 + 安全边界 + 业务函数证据（**579 测试 native**）
+  - S1 集合定级修正 ✅（Array/Map/Set → **L2-C**；`mbEquals` 集合相等 shim；L1 15 / L2 5 / 总计 29）
+  - S2 安全边界 ✅（`UnresolvedPolicy` Error 默认 / Warn / Fast；`transpile_source_report`；CLI `--on-unresolved` / `--report`；失败非零退出）
+  - S3 业务函数子集 ✅（数组字面量/索引/方法调用/while/let/赋值/括号分组；`golden_business` 13/13）
+  - S4 门禁与证据 ✅（`scripts/safety_gate.mjs` 8/8；CI golden 27/27 + `dart analyze --fatal-infos` + 工件上传）
+  - S5 文档 ✅（array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business / reply 重写）
+  - S6 生态经验学习 ✅（mbt_rs / mizchi-ts / typify / 官方 parser / quickcheck → `docs/moonbit_ecosystem_lessons.md`；属性测试 6 类；真实语料接受率；属性测试发现并修复 `Int64` 往返丢失 + `Int32/UInt32` 别名）
 - **v1.0.0** 📋 计划 — 验证 + 完整发布（mooncakes.io）
 
 ### 四条交付线
@@ -203,7 +210,7 @@ ast ──> (零依赖)
 
 ### 测试
 
-541 个测试，native 后端全通过（v0.11.0 口径）：
+579 个测试，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 529）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -216,9 +223,16 @@ ast ──> (零依赖)
 | dart_parser | 0 | 0 |
 | reverse_codegen | 7+ | 0 |
 | mcp_server | 10+ | 0 |
-| golden | 14 | 0 |
-| moon2dart (根) | 37 | 5 |
+| golden | 27 | 0 |
+| moon2dart (根) | 45+ | 5 |
 
 ### 文档
 
-开发文档在 `docs/`（12 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / semantic_equivalence / assessment / pitfall-catalog / changelog / golden_results / README。
+开发文档在 `docs/`（19 份）：architecture / roadmap / v0.1.0_plan / type_mapping / coding_conventions / testing_strategy / semantic_equivalence / assessment / pitfall-catalog / changelog / golden_results / golden_results_business / array_semantics / safety_boundary / ecosystem_practices / moonbit_ecosystem_lessons / review_anticipation / acceptance_report / README。
+
+### 语义安全纪律（v0.12.0 强制）
+
+- **默认 fail-closed**：类型推断失败即拒绝生成（`UnresolvedPolicy::Error`），禁止恢复"静默裸发"默认行为；
+- **集合不得标 L1**：Array/Map/Set 只能 L2-C，相等比较必须走 Wrapping 的 `mbEquals`；
+- **未支持语法必须报错**：禁止在解析器/发射器里"跳过未知构造"或生成近似代码；
+- **证据先行**：语义相关改动必须同时更新 `scripts/golden_check.mjs` / `safety_gate.mjs` 与对应 docs 数字。

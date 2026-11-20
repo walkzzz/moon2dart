@@ -1,6 +1,26 @@
 # Changelog | 变更日志
 
-> **版本双轨说明**（2026-11-13，v0.11.0 更新）：功能迭代版本（v0.1.0 → v0.11.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本，0.1.0 未被占用）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，包 0.1.1 = 功能 v0.11.0，后续包版本沿 0.1.x 线推进。
+> **版本双轨说明**（2026-11-13，v0.12.0 更新）：功能迭代版本（v0.1.0 → v0.12.0）为 Sprint 史；**mooncakes 包版本沿 0.1.x 线**（季度评选「新项目」叙事，mooncakes 上 0.8.0 为旧包版本）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，包 0.1.1 = 功能 v0.11.0，包 0.1.2 = 功能 v0.12.0（待发布）。
+
+## v0.12.0 (2026-11-20) — 第二轮初审整改 | Second Review Remediation
+
+### 变更 | Changed
+- **集合定级修正**：Array/Map/Set 从 L1 降为 **L2-C（条件等价）**——MoonBit `[1,2] == [1,2]` 为 `true`（逐元素），Dart `==` 为 `false`（引用）
+- **`mbEquals` 集合相等 shim**：Wrapping 模式把集合 `==`/`!=` 发射为 `mbEquals`/`!mbEquals`（递归 List/Map/Set）；Fast 模式裸发并记录
+- `semantic_level` 集合定级 L2（内部 L3/L4 优先）；L1 18→15、L2 2→5、总计 29
+
+### 新增 | Added
+- **安全边界（fail-closed）**：`UnresolvedPolicy`（Error 默认 / Warn / Fast）、`transpile_source_report` / `transpile_source_safe`、`report_to_json` / `report_to_markdown`
+- CLI `--on-unresolved error|warn|fast`、`--report <path>`（JSON + MD）；失败退出码非零
+- 推断规则收紧（`EBinOp` 两侧均需可推断且一致）；lambda 参数并入子环境
+- 业务函数语法子集：数组字面量、索引、方法调用、`while`、`let [mut]`、赋值、括号分组
+- `golden_business` 包 + 业务函数 golden（13 行）；`scripts/safety_gate.mjs`（8 项门禁）
+- 文档：array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business
+
+### 验证 | Verified
+- **579 测试** native 全绿；js/wasm/wasm-gc 各 529；四目标 deny-warn 零警告
+- golden 双端 **27/27**（算术 14 + 业务函数 13）；`dart analyze` 0 issues；转换幂等
+- 复现：`node scripts/golden_check.mjs && node scripts/safety_gate.mjs`
 
 ## v0.11.0 (2026-11-18) — 运行时语义保持体系 | Runtime Semantic Preservation
 

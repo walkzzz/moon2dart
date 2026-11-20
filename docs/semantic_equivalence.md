@@ -1,8 +1,8 @@
 # moon2dart 语义等价性规范 | Semantic Equivalence Specification
 
-> v0.11.0 · 2026-11-18 · 新增运行时语义保持体系（Int 32 位回绕模拟层 + 双语义模式 + golden 双端验证 14/14）· 已实现嵌套 Option 辅助类 + DResult 结构化节点
+> v0.12.0 · 2026-11-20 · **集合定级修正**：Array/Map/Set 从 L1 降为 **L2-C 条件等价**（相等语义/越界/迭代顺序）；新增 `mbEquals` 集合相等 shim；新增安全边界 fail-closed 与业务函数 golden（双端 27/27）
 >
-> 交叉参考：T 系列陷阱详见 [pitfall-catalog.md](pitfall-catalog.md)（T2 嵌套 Option 塌缩 / T3 Result 退化 / T4 UInt 值域 / T5 FFI 语义 / T6 并发原语 / T7 parse_expr_prec 终止 / T8 INT_MIN trap / T9 余数语义）；golden 双端实测报告详见 [golden_results.md](golden_results.md)
+> 交叉参考：T 系列陷阱详见 [pitfall-catalog.md](pitfall-catalog.md)（T2 嵌套 Option 塌缩 / T3 Result 退化 / T4 UInt 值域 / T5 FFI 语义 / T6 并发原语 / T7 parse_expr_prec 终止 / T8 INT_MIN trap / T9 余数语义）；golden 双端实测见 [golden_results.md](golden_results.md)（算术 14）与 [golden_results_business.md](golden_results_business.md)（业务函数 13）；集合语义见 [array_semantics.md](array_semantics.md)；安全边界见 [safety_boundary.md](safety_boundary.md)
 
 ## 1. 核心定义 | Core Definitions
 
@@ -27,39 +27,39 @@ S → transpile → D → reverse_transpile → S'
 
 ---
 
-## 2. 可转换范围 | Translatable Range（28 条目全覆盖）
+## 2. 可转换范围 | Translatable Range（29 条目全覆盖）
 
-### 2.1 L1 完全等价的构造 | L1 Fully Equivalent（18 条目）
+### 2.1 L1 完全等价的构造 | L1 Fully Equivalent（15 条目）
 
-以下构造经过 MoonBit → Dart → MoonBit 往返后语义完全一致：
+以下构造经过 MoonBit → Dart → MoonBit 往返后语义完全一致（集合除外，见 §2.2）：
 
 | # | MoonBit | Dart | 正向映射 | 反向映射 |
 |---|---------|------|---------|---------|
 | 1 | `Int` | `int` | `MInt → DInt`（+ mb32* 32 位回绕模拟层，Wrapping 模式默认） | `DInt → MInt` |
-| 2 | `Int64` | `int` | `MInt64 → DInt64`（限 Dart VM——web 目标 int 退化为 JS number 值域 2^53） | `DDouble → MDouble` |
+| 2 | `Int64` | `int` | `MInt64 → DInt64`（限 Dart VM——web 目标 int 退化为 JS number 值域 2^53） | `DInt → MInt64` |
 | 3 | `Double` | `double` | `MDouble → DDouble` | `DDouble → MDouble` |
 | 4 | `Bool` | `bool` | `MBool → DBool` | `DBool → MBool` |
 | 5 | `String` | `String` | `MString → DString` | `DString → MString` |
 | 6 | `Unit` | `void` | `MUnit → DVoid` | `DVoid → MUnit` |
-| 7 | `Array[T]` | `List<T>` | `MArray(T) → DList(T')` | `DList(T') → MArray(T)` |
-| 8 | `Map[K,V]` | `Map<K,V>` | `MMap(K,V) → DMap(K',V')` | `DMap(K',V') → MMap(K,V)` |
-| 9 | `Set[T]` | `Set<T>` | `MSet(T) → DSet(T')` | `DSet(T') → MSet(T)` |
-| 10 | `Option[T]` (单层) | `T?` | `MOption(T) → DNullable(T')` | `DNullable(T') → MOption(T)` |
-| 11 | `Option[Option[T]]` (嵌套) | `Option<T>` 辅助类 | `MOption(MOption(T)) → DNullable(DNullable(T'))` | `DNullable(DNullable(T')) → MOption(MOption(T))` |
-| 12 | `Result[T,E]` | `Result<T,E>` sealed class | `MResult(ok,err) → DResult(ok',err')` | `DResult(ok',err') → MResult(ok,err)` |
-| 13 | `Future[T]` | `Future<T>` | `MFuture(T) → DFuture(T')` | `DFuture(T') → MFuture(T)` |
-| 14 | `fn(a:A) -> B` | `B name(A a)` | `DFn → DTopFn` | `DTopFn → DFn` |
-| 15 | `struct Name { fields }` | `class Name { fields }` | `DStruct → DClass` | `DClass → DStruct` |
-| 16 | `enum Name { variants }` | `sealed class Name` | `DEnum → DSealedClass` | `DSealedClass → DEnum` |
-| 17 | `trait Name { methods }` | `abstract class Name` | `DTrait → DAbstractClass` | `DAbstractClass → DTrait` |
-| 18 | `impl Trait for Type` | `class Type implements Trait` | `DImpl → 合并到DStruct` | `DClass(methods) → DImpl` |
+| 7 | `Option[T]` (单层) | `T?` | `MOption(T) → DNullable(T')` | `DNullable(T') → MOption(T)` |
+| 8 | `Option[Option[T]]` (嵌套) | `Option<T>` 辅助类 | `MOption(MOption(T)) → DNullable(DNullable(T'))` | `DNullable(DNullable(T')) → MOption(MOption(T))` |
+| 9 | `Result[T,E]` | `Result<T,E>` sealed class | `MResult(ok,err) → DResult(ok',err')` | `DResult(ok',err') → MResult(ok,err)` |
+| 10 | `Future[T]` | `Future<T>` | `MFuture(T) → DFuture(T')` | `DFuture(T') → MFuture(T)` |
+| 11 | `fn(a:A) -> B` | `B name(A a)` | `DFn → DTopFn` | `DTopFn → DFn` |
+| 12 | `struct Name { fields }` | `class Name { fields }` | `DStruct → DClass` | `DClass → DStruct` |
+| 13 | `enum Name { variants }` | `sealed class Name` | `DEnum → DSealedClass` | `DSealedClass → DEnum` |
+| 14 | `trait Name { methods }` | `abstract class Name` | `DTrait → DAbstractClass` | `DAbstractClass → DTrait` |
+| 15 | `impl Trait for Type` | `class Type implements Trait` | `DImpl → 合并到DStruct` | `DClass(methods) → DImpl` |
 
-### 2.2 L2 结构等价的构造 | L2 Structurally Equivalent（2 条目）
+### 2.2 L2 结构等价的构造 | L2 Structurally Equivalent（5 条目）
 
-| # | MoonBit | Dart | 差异说明 | 影响 |
-|---|---------|------|---------|------|
-| 1 | `Char` | `int` (rune) | 字符 vs Unicode码点 | 字符串操作需注意 |
-| 2 | `T*` (引用) | `T` | MoonBit 值类型 vs Dart 引用语义 | struct 行为差异 |
+| # | MoonBit | Dart | 差异说明 | 定级 / 约束 |
+|---|---------|------|---------|------------|
+| 1 | `Char` | `int` (rune) | 字符 vs Unicode 码点 | L2：码点表示差异 |
+| 2 | `T*` (引用) | `T` | MoonBit 值语义 vs Dart 引用语义 | L2：struct/闭包行为差异 |
+| 3 | `Array[T]` | `List<T>` | **相等语义不同**（MoonBit 逐元素 / Dart 引用）；越界异常类型不同 | **L2-C**：Wrapping 用 `mbEquals`；操作子集见 [array_semantics.md](array_semantics.md) |
+| 4 | `Map[K,V]` | `Map<K,V>` | 键相等/hash 与迭代顺序（Dart LinkedHashMap 插入序） | **L2-C**：`mbEquals` 递归；顺序依赖需人工介入 |
+| 5 | `Set[T]` | `Set<T>` | 元素相等与迭代顺序（Dart LinkedHashSet 插入序） | **L2-C**：`mbEquals` 递归；顺序依赖需人工介入 |
 
 ### 2.3 L3 受限等价的构造 | L3 Constrained Equivalence（4 条目）
 
@@ -273,8 +273,11 @@ Result<int, String> divide(int a, int b) {
 ```
 ┌──────────────────────────────────────────────────────┐
 │ Level 1: 类型同构 — 类型映射 + 运算模拟           │
-│   Int→int (mb32* 回绕模拟), Bool→bool, Array→List...  │
+│   Int→int (mb32* 回绕模拟), Bool→bool, String→String│
 │   Option[T]→T? (单层), enum→sealed class            │
+├──────────────────────────────────────────────────────┤
+│ Level 1-C: 条件等价 — 集合操作子集 + mbEquals       │
+│   Array→List（L2-C：相等/越界/顺序约束）             │
 ├──────────────────────────────────────────────────────┤
 │ Level 2: 类型同态 — 映射需辅助结构，语义可还原      │
 │   Option[Option[T]]→Option<T?> (辅助类)              │
@@ -310,7 +313,7 @@ golden_fixture/fixture.mbt (MoonBit)
               └── scripts/golden_check.mjs 逐行对比 → docs/golden_results.md
 ```
 
-- **结果**：14/14 行一致——含 `2147483647+1 = -2147483648`（溢出回绕）、`65536*65536 = 0`（乘法回绕）、`trunc_div(7,2) = 3`（截断除法）、`trunc_rem(-7,2) = -1`（Dart 裸 `%` 得 1，`.remainder()` 得 -1）。
+- **结果**：算术 14/14 行一致 + 业务函数 13/13 行一致（`docs/golden_results_business.md`）——含 `2147483647+1 = -2147483648`（溢出回绕）、`65536*65536 = 0`（乘法回绕）、`trunc_div(7,2) = 3`（截断除法）、`trunc_rem(-7,2) = -1`（Dart 裸 `%` 得 1，`.remainder()` 得 -1）、`sum([2147483647,1]) = -2147483648`（数组累加回绕）、`same([1,2],[1,2]) = true`（集合逐元素相等，`mbEquals`）。
 - **trap 边界**：`INT_MIN / -1` 在 MoonBit native 是硬件 trap（0xC0000095）而非回绕（wasm i32.div_s 规范 trap）；`mb32Div` 抛 StateError 模拟，两端行为类别一致（异常终止）。
 - **复现**：`node scripts/golden_check.mjs`（前置：moon 工具链 + Dart SDK 3.x）；报告见 [golden_results.md](golden_results.md)。
 - **两级证据互补**：类型往返断言只证明结构可还原；运行时语义等价由 golden 双端逐行输出对比证明。
@@ -339,4 +342,5 @@ golden_fixture/fixture.mbt (MoonBit)
 | ✅ 已实现 | 双向同步 + 冲突检测 | v0.9.1 |
 | ✅ 已实现 | 嵌套 Option 辅助类 + DResult 结构化节点 + 语义等价分级 + strict 模式 | v0.10.0 |
 | ✅ 已实现 | Int 回绕模拟层 + mini 推断器 + 双模式 + golden 双端验证 | v0.11.0 |
-| 📋 下一步 | 运行时等价覆盖扩展（更多构造 + CI 集成） | v1.0.0 |
+| ✅ 已实现 | 集合降级 L2-C + mbEquals 相等 shim + fail-closed + 报告 + 业务函数 golden 13/13 | **v0.12.0** |
+| 📋 下一步 | 差分随机测试 + 位运算/切片/for-in + corpus 接受率 | v0.13.0 |

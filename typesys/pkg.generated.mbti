@@ -11,7 +11,13 @@ pub fn assert_round_trip(@ast.MoonType) -> Bool
 
 pub fn assert_value_domain(@ast.MoonType, SemanticLevel) -> Bool
 
+pub fn bind_local_lets(@ast.MoonExpr, TypeEnv) -> Unit
+
+pub fn collect_degraded_types(Array[@ast.MoonDecl]) -> Array[@ast.Diagnostic]
+
 pub fn collect_int_arith_ops(Array[@ast.MoonDecl]) -> Array[String]
+
+pub fn collect_unresolved_arith(Array[@ast.MoonDecl]) -> Array[@ast.Diagnostic]
 
 pub fn ffi_dart_type(@ast.MoonType) -> String
 
@@ -19,11 +25,15 @@ pub fn ffi_native_type(@ast.MoonType) -> String
 
 pub fn infer_expr_type(@ast.MoonExpr, TypeEnv) -> @ast.MoonType?
 
+pub fn is_collection_type(@ast.MoonType) -> Bool
+
 pub fn map_type(@ast.MoonType) -> DartType
 
 pub fn map_type_strict(@ast.MoonType) -> DartType raise @ast.Moon2DartError
 
 pub fn moon_to_dart_type(@ast.MoonType) -> String
+
+pub fn needs_collection_equals(Array[@ast.MoonDecl]) -> Bool
 
 pub fn needs_option_class(Array[@ast.MoonDecl]) -> Bool
 
@@ -84,6 +94,7 @@ pub(all) struct TypeEnv {
   vars : Map[String, @ast.MoonType]
   fns : Map[String, @ast.MoonType]
 }
+pub fn TypeEnv::clone(Self) -> Self
 pub fn TypeEnv::for_function(Array[@ast.MoonDecl], Array[(String, @ast.MoonType)]) -> Self
 pub fn TypeEnv::from_decls(Array[@ast.MoonDecl]) -> Self
 pub fn TypeEnv::make() -> Self

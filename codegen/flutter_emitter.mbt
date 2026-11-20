@@ -214,6 +214,26 @@ pub fn emit_flutter_expr(e : @ast.MoonExpr) -> String {
       let parts = stmts.map(fn(s) { emit_flutter_expr(s) }).join("; ")
       "(\{parts})"
     }
+    @ast.EArrayLit(items) => {
+      let parts = items.map(fn(item) { emit_flutter_expr(item) }).join(", ")
+      "[\{parts}]"
+    }
+    @ast.EIndex(arr, idx) =>
+      "\{emit_flutter_expr(arr)}[\{emit_flutter_expr(idx)}]"
+    @ast.EMethodCall(recv, mname, args) => {
+      let r = emit_flutter_expr(recv)
+      let arg_s = args.map(fn(a) { emit_flutter_expr(a) }).join(", ")
+      if mname == "length" {
+        "\{r}.length"
+      } else if mname == "push" {
+        "\{r}.add(\{arg_s})"
+      } else {
+        "\{r}.\{mname}(\{arg_s})"
+      }
+    }
+    @ast.EWhile(_, _) => "null" // Flutter widget 表达式中不出现循环 | loops do not appear in widget expressions
+    @ast.ELet(_, _, _, init) => emit_flutter_expr(init)
+    @ast.EAssign(name, rhs) => "(\{name} = \{emit_flutter_expr(rhs)})"
   }
 }
 

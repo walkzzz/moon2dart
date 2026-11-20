@@ -90,6 +90,7 @@ pub fn DartPattern::to_repr(Self) -> @debug.Repr
 #derive(Compare, Eq, @debug.Debug)
 pub(all) enum DartType {
   DInt
+  DInt64
   DDouble
   DBool
   DString

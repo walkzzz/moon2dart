@@ -47,6 +47,12 @@ pub(all) enum MoonExpr {
   EAwait(MoonExpr) // await 表达式 | Await expression
   ELambda(Array[(String, MoonType)], MoonExpr) // 闭包/lambda | Closure/lambda
   EBlock(Array[MoonExpr]) // 块表达式（多语句，尾语句为返回值）| Block expression (multiple statements, last is the return value)
+  EArrayLit(Array[MoonExpr]) // 数组字面量 `[a, b]` | Array literal
+  EIndex(MoonExpr, MoonExpr) // 索引 `xs[i]` | Index access
+  EMethodCall(MoonExpr, String, Array[MoonExpr]) // 方法调用 `xs.length()` / `xs.push(x)` | Method call
+  EWhile(MoonExpr, MoonExpr) // while 循环（条件 + 块体）| While loop (condition + block body)
+  ELet(String, Bool, MoonType?, MoonExpr) // let 绑定（名字、是否 mut、类型注解、初值）| Let binding (name, mutability, optional type, initializer)
+  EAssign(String, MoonExpr) // 赋值 `x = e` | Assignment
 }
 
 ///|
@@ -57,6 +63,15 @@ pub extend MoonExpr with Compare::{op_lt, op_le, op_ge, compare, op_gt}
 
 ///|
 pub extend MoonExpr with Debug::{to_repr}
+
+///|
+/// 该表达式是否只能作为语句出现（let/赋值/while 无值语义）| Whether the expression is statement-only (let/assign/while carry no value)
+pub fn is_statement_expr(e : MoonExpr) -> Bool {
+  match e {
+    ELet(_, _, _, _) | EAssign(_, _) | EWhile(_, _) => true
+    _ => false
+  }
+}
 
 ///|
 /// MoonBit 模式匹配节点 | MoonBit pattern matching node
@@ -420,4 +435,84 @@ pub fn SemanticsMode::parse(s : String) -> SemanticsMode {
   } else {
     Wrapping
   }
+}
+
+///|
+/// 未解析类型推断的处置策略 — 决定推断失败时是拒绝、标注还是裸发 | Policy for unresolved type inference — reject, annotate, or emit raw
+///
+/// 安全边界（fail-closed）：默认 `Error`——推断失败即拒绝生成，绝不静默降级。
+/// `Warn` 生成 `[L2-UNRESOLVED]` 诊断注释并写入报告；`Fast` 保留旧版裸发行为（仅供实验，不进 CI）。
+#derive(Eq, Debug)
+pub(all) enum UnresolvedPolicy {
+  Error // 默认：拒绝并报错 | default: reject with explicit error
+  Warn // 标注并继续，报告可审计 | annotate, continue, auditable report
+  Fast // 裸发（不复现语义保证）| raw emit (no semantic guarantee)
+}
+
+///|
+pub extend UnresolvedPolicy with Eq::{equal, not_equal}
+
+///|
+pub extend UnresolvedPolicy with Debug::{to_repr}
+
+///|
+/// 解析 --on-unresolved 选项字符串（非法值回退 Error）| Parse --on-unresolved option (invalid values fall back to Error)
+pub fn UnresolvedPolicy::parse(s : String) -> UnresolvedPolicy {
+  if s == "warn" {
+    Warn
+  } else if s == "fast" {
+    Fast
+  } else {
+    Error
+  }
+}
+
+///|
+/// 转换诊断 — 可审计的未解析/降级记录 | Transpile diagnostic — auditable unresolved/degraded record
+#derive(Eq, Debug)
+pub(all) struct Diagnostic {
+  code : String // 诊断码（UNRESOLVED_ARITH / L3_TYPE / L4_TYPE / DROPPED_FFI）| diagnostic code
+  site : String // 函数或表达式位置 | function or expression site
+  detail : String // 人类可读说明 | human-readable detail
+}
+
+///|
+pub extend Diagnostic with Eq::{equal, not_equal}
+
+///|
+pub extend Diagnostic with Debug::{to_repr}
+
+///|
+/// 转换报告 — 未解析项、降级项与策略快照 | Transpile report — unresolved items, degradations, policy snapshot
+#derive(Eq, Debug)
+pub(all) struct TranspileReport {
+  policy : UnresolvedPolicy
+  unresolved : Array[Diagnostic]
+  degraded : Array[Diagnostic]
+}
+
+///|
+pub extend TranspileReport with Eq::{equal, not_equal}
+
+///|
+pub extend TranspileReport with Debug::{to_repr}
+
+///|
+/// 报告是否通过当前策略（Error 策略下有未解析项即失败）| Whether the report passes under its policy (Error policy fails on any unresolved item)
+pub fn TranspileReport::is_ok(self : TranspileReport) -> Bool {
+  match self.policy {
+    Error => self.unresolved.length() == 0
+    Warn | Fast => true
+  }
+}
+
+///|
+/// 报告摘要计数（用于 docs / CI 断言）| Summary counts for docs / CI assertions
+pub fn TranspileReport::summary(self : TranspileReport) -> String {
+  let policy_name = match self.policy {
+    Error => "error"
+    Warn => "warn"
+    Fast => "fast"
+  }
+  "unresolved=\{self.unresolved.length()} degraded=\{self.degraded.length()} policy=\{policy_name}"
 }

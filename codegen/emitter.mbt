@@ -74,9 +74,10 @@ fn emit_dart_expr_inner(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
     }
     @ast.EIf(cond, then_, else_) => {
       let c = emit_dart_expr_inner(cond, ctx)
-      let t = emit_dart_expr_inner(then_, ctx)
-      let e_ = emit_dart_expr_inner(else_, ctx)
-      "\{c} ? \{t} : \{e_}"
+      let t = emit_block_value(then_, ctx)
+      let e_ = emit_block_value(else_, ctx)
+      // 三元表达式统一加括号，避免参与外层二元运算时的优先级歧义 | parentheses avoid precedence ambiguity in binary expressions
+      "(\{c} ? \{t} : \{e_})"
     }
     @ast.EMatch(scrutinee, cases) => {
       let scrut = emit_dart_expr_inner(scrutinee, ctx)
@@ -97,30 +98,144 @@ fn emit_dart_expr_inner(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
           pname
         })
         .join(", ")
+      // lambda 参数类型并入子环境，使体内算术仍可推断（wrapping 不丢失）| lambda params extend a cloned env so wrapping inference survives
+      let lam_ctx = match ctx.env {
+        Some(env) => {
+          let child = env.clone()
+          for p in params {
+            let (pname, ptype) = p
+            child.vars[pname] = ptype
+          }
+          {
+            env: Some(child),
+            mode: ctx.mode,
+            nested_option_context: ctx.nested_option_context,
+          }
+        }
+        None => ctx
+      }
       match body {
         @ast.EBlock([single]) =>
-          "(\{param_str}) => \{emit_dart_expr_inner(single, ctx)}"
+          "(\{param_str}) => \{emit_dart_expr_inner(single, lam_ctx)}"
         @ast.EBlock(stmts) => {
           let lines : Array[String] = []
           let n = stmts.length()
           for i in 0..<n {
-            let s = emit_dart_expr_inner(stmts[i], ctx)
-            if i == n - 1 {
-              lines.push("  return \{s};")
+            if i == n - 1 && !@ast.is_statement_expr(stmts[i]) {
+              lines.push("  return \{emit_dart_expr_inner(stmts[i], lam_ctx)};")
             } else {
-              lines.push("  \{s};")
+              lines.push("  \{emit_dart_stmt(stmts[i], lam_ctx)}")
             }
           }
           "(\{param_str}) {\n\{lines.join("\n")}\n}"
         }
-        _ => "(\{param_str}) => \{emit_dart_expr_inner(body, ctx)}"
+        _ => "(\{param_str}) => \{emit_dart_expr_inner(body, lam_ctx)}"
       }
     }
     @ast.EBlock(stmts) => {
-      // 兜底：块作为子表达式出现（正常不发生）| fallback: block as sub-expression (should not normally occur)
-      let parts = stmts.map(fn(s) { emit_dart_expr_inner(s, ctx) }).join("; ")
-      "(\{parts})"
+      // 块作为子表达式：IIFE，尾语句按返回值（语句型尾语句不 return）| block as sub-expression: IIFE, last value returned unless statement-only
+      let lines : Array[String] = []
+      let n = stmts.length()
+      for i in 0..<n {
+        if i == n - 1 && !@ast.is_statement_expr(stmts[i]) {
+          lines.push("  return \{emit_dart_expr_inner(stmts[i], ctx)};")
+        } else {
+          lines.push("  \{emit_dart_stmt(stmts[i], ctx)}")
+        }
+      }
+      "(() {\n\{lines.join("\n")}\n})()"
     }
+    @ast.EArrayLit(items) => {
+      let parts = items
+        .map(fn(item) { emit_dart_expr_inner(item, ctx) })
+        .join(", ")
+      "[\{parts}]"
+    }
+    @ast.EIndex(arr, idx) =>
+      "\{emit_dart_expr_inner(arr, ctx)}[\{emit_dart_expr_inner(idx, ctx)}]"
+    @ast.EMethodCall(recv, mname, args) => {
+      let r = emit_dart_expr_inner(recv, ctx)
+      match mname {
+        // MoonBit Array::length() → List.length（长度语义一致：元素计数）| element count
+        "length" => "\{r}.length"
+        // MoonBit Array::push(x) → List.add(x)；返回 Unit | returns void
+        "push" =>
+          "\{r}.add(\{args.map(fn(a) { emit_dart_expr_inner(a, ctx) }).join(", ")})"
+        "append" =>
+          "\{r}.addAll(\{args.map(fn(a) { emit_dart_expr_inner(a, ctx) }).join(", ")})"
+        // MoonBit Array::get(i) → Option；用越界检查产生 null（L2：越界返回 None，Dart 索引则抛错）| bounds-checked nullable
+        "get" => {
+          let i = if args.length() > 0 {
+            emit_dart_expr_inner(args[0], ctx)
+          } else {
+            "0"
+          }
+          "((\{i}) >= 0 && (\{i}) < (\{r}).length ? (\{r})[\{i}] : null)"
+        }
+        "pop" => "((\{r}).isEmpty ? null : (\{r}).removeLast())"
+        _ =>
+          "\{r}.\{mname}(\{args.map(fn(a) { emit_dart_expr_inner(a, ctx) }).join(", ")})"
+      }
+    }
+    @ast.EWhile(cond, body) => {
+      // 表达式位置的 while：IIFE（语句位置由 emit_dart_stmt 处理）| while in expression position: IIFE
+      let c = emit_dart_expr_inner(cond, ctx)
+      let inner = match body {
+        @ast.EBlock(stmts) =>
+          stmts.map(fn(s) { emit_dart_stmt(s, ctx) }).join("\n  ")
+        other => emit_dart_stmt(other, ctx)
+      }
+      "(() {\n  while (\{c}) {\n  \{inner}\n  }\n})()"
+    }
+    @ast.ELet(_, _, _, init) => emit_dart_expr_inner(init, ctx)
+    @ast.EAssign(name, rhs) => "(\{name} = \{emit_dart_expr_inner(rhs, ctx)})"
+  }
+}
+
+///|
+/// 单表达式块折叠为表达式（`{ 1 }` → `1`），多语句块保留 IIFE | Fold single-expression blocks, keep IIFE for multi-statement blocks
+fn emit_block_value(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
+  match e {
+    @ast.EBlock([single]) => emit_dart_expr_inner(single, ctx)
+    _ => emit_dart_expr_inner(e, ctx)
+  }
+}
+
+///|
+/// 语句发射 — let / 赋值 / while / 块按 Dart 语句输出；其余表达式加分号 | Statement emission — let/assign/while/block as Dart statements; other expressions get a semicolon
+fn emit_dart_stmt(e : @ast.MoonExpr, ctx : EmitCtx) -> String {
+  match e {
+    @ast.ELet(name, is_mut, ty, init) => {
+      let init_s = emit_dart_expr_inner(init, ctx)
+      match ty {
+        Some(t) => {
+          let ty_s = @typesys.map_type(t).to_dart_string()
+          if is_mut {
+            "\{ty_s} \{name} = \{init_s};"
+          } else {
+            "final \{ty_s} \{name} = \{init_s};"
+          }
+        }
+        None =>
+          if is_mut {
+            "var \{name} = \{init_s};"
+          } else {
+            "final \{name} = \{init_s};"
+          }
+      }
+    }
+    @ast.EAssign(name, rhs) => "\{name} = \{emit_dart_expr_inner(rhs, ctx)};"
+    @ast.EWhile(cond, body) => {
+      let c = emit_dart_expr_inner(cond, ctx)
+      let inner = match body {
+        @ast.EBlock(stmts) =>
+          stmts.map(fn(s) { emit_dart_stmt(s, ctx) }).join("\n  ")
+        other => emit_dart_stmt(other, ctx)
+      }
+      "while (\{c}) {\n  \{inner}\n}"
+    }
+    @ast.EBlock(stmts) => stmts.map(fn(s) { emit_dart_stmt(s, ctx) }).join("\n")
+    _ => "\{emit_dart_expr_inner(e, ctx)};"
   }
 }
 
@@ -140,7 +255,21 @@ fn emit_binop(
   match inferred {
     Some(@ast.MInt) => emit_int_binop(op, lhs_s, rhs_s, ctx)
     Some(@ast.MInt64) => emit_int64_binop(op, lhs_s, rhs_s)
-    // Double/Float/String/Bool/推断失败：裸发（Double 为 IEEE 754 64 位，两端语义一致）
+    Some(t) =>
+      if (op == "==" || op == "!=") &&
+        @typesys.is_collection_type(t) &&
+        ctx.mode is @ast.Wrapping {
+        // MoonBit 集合 == 是逐元素比较；Dart == 是引用比较 —— 发射结构相等 helper
+        // MoonBit collection == is element-wise; Dart == is identity — emit the structural helper
+        if op == "==" {
+          "mbEquals(\{lhs_s}, \{rhs_s})"
+        } else {
+          "!mbEquals(\{lhs_s}, \{rhs_s})"
+        }
+      } else {
+        // Double/Float/String/Bool 与非集合比较：裸发
+        "\{lhs_s} \{op} \{rhs_s}"
+      }
     _ => "\{lhs_s} \{op} \{rhs_s}"
   }
 }
@@ -265,11 +394,12 @@ fn emit_fn_body(
       let lines : Array[String] = []
       let n = stmts.length()
       for i in 0..<n {
-        let s = emit_dart_expr_inner(stmts[i], ctx)
-        if i == n - 1 && !(ret is @ast.MUnit) {
-          lines.push("  return \{s};")
+        if i == n - 1 &&
+          !(ret is @ast.MUnit) &&
+          !@ast.is_statement_expr(stmts[i]) {
+          lines.push("  return \{emit_dart_expr_inner(stmts[i], ctx)};")
         } else {
-          lines.push("  \{s};")
+          lines.push("  \{emit_dart_stmt(stmts[i], ctx)}")
         }
       }
       lines.join("\n")
@@ -629,11 +759,26 @@ pub fn emit_dart_program_full(
   } else {
     ""
   }
+  let col_eq = if mode is @ast.Wrapping &&
+    @typesys.needs_collection_equals(decls) {
+    emit_collection_equals_helper() + "\n\n"
+  } else {
+    ""
+  }
   let body = decls
     .map(fn(d) { emit_dart_decl_in_program_with_mode(d, decls, mode) })
     .filter(fn(s) { s != "" })
     .join("\n\n")
-  "\{header}\{ffi_imports}\{ffi_init}\{result_class}\{option_class}\{shim}\{body}\n"
+  "\{header}\{ffi_imports}\{ffi_init}\{result_class}\{option_class}\{shim}\{col_eq}\{body}\n"
+}
+
+///|
+/// 集合结构相等 helper（按需生成）：MoonBit 的 `==` 对 Array/Map/Set 逐元素比较，
+/// Dart 的 `==` 是引用比较——Wrapping 模式下必须用 mbEquals 还原语义。
+/// Collection structural-equality helper: MoonBit `==` is element-wise for
+/// Array/Map/Set while Dart `==` is identity, so Wrapping mode emits mbEquals.
+fn emit_collection_equals_helper() -> String {
+  "// === moon2dart collection equality — MoonBit compares Array/Map/Set element-wise, Dart == is identity ===\nbool mbEquals(dynamic a, dynamic b) {\n  if (identical(a, b)) return true;\n  if (a is List && b is List) {\n    if (a.length != b.length) return false;\n    for (var i = 0; i < a.length; i++) {\n      if (!mbEquals(a[i], b[i])) return false;\n    }\n    return true;\n  }\n  if (a is Map && b is Map) {\n    if (a.length != b.length) return false;\n    for (final k in a.keys) {\n      if (!b.containsKey(k) || !mbEquals(a[k], b[k])) return false;\n    }\n    return true;\n  }\n  if (a is Set && b is Set) {\n    if (a.length != b.length) return false;\n    for (final x in a) {\n      if (!b.any((y) => mbEquals(x, y))) return false;\n    }\n    return true;\n  }\n  return a == b;\n}"
 }
 
 ///|
@@ -795,10 +940,16 @@ fn emit_dart_decl_in_program_with_mode(
         "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
       }
     }
-    @ast.DFn(_, _, params, _, _) =>
-      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
-    @ast.DAsyncFn(_, _, params, _, _) =>
-      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(@typesys.TypeEnv::for_function(all_decls, params)), mode: mode, nested_option_context: false })}"
+    @ast.DFn(_, _, params, _, body) => {
+      let env = @typesys.TypeEnv::for_function(all_decls, params)
+      @typesys.bind_local_lets(body, env)
+      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(env), mode: mode, nested_option_context: false })}"
+    }
+    @ast.DAsyncFn(_, _, params, _, body) => {
+      let env = @typesys.TypeEnv::for_function(all_decls, params)
+      @typesys.bind_local_lets(body, env)
+      "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: Some(env), mode: mode, nested_option_context: false })}"
+    }
     _ =>
       "\{diagnostic}\{emit_dart_decl_with_ctx(d, { env: None, mode: mode, nested_option_context: false })}"
   }
@@ -863,8 +1014,10 @@ fn emit_dart_struct_with_impls(
       .map(fn(m) {
         let param_str = format_dart_params(m.params)
         let ret_str = @typesys.map_type(m.ret_type).to_dart_string()
+        let menv = @typesys.TypeEnv::for_function(all_decls, m.params)
+        @typesys.bind_local_lets(m.body, menv)
         let mctx : EmitCtx = {
-          env: Some(@typesys.TypeEnv::for_function(all_decls, m.params)),
+          env: Some(menv),
           mode,
           nested_option_context: false,
         }

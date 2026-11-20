@@ -1,6 +1,6 @@
 # moon2dart 迭代路线图 | Roadmap
 
-> 已实现 v0.1.0-v0.11.0 · 2026-11-18 | 更新 v0.11.0-v1.0.0 规划
+> 已实现 v0.1.0-v0.12.0 · 2026-11-20 | 更新 v0.12.0-v1.0.0 规划
 >
 > 📌 **版本双轨说明**（2026-11-13）：功能迭代版本（v0.1.0 → v0.9.1）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.9.1 全量。
 >
@@ -343,6 +343,25 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 
 ---
 
+## v0.12.0 ✅ — 第二轮初审整改：集合语义 + 安全边界 + 业务函数证据（已完成）
+
+**目标**：撤回 Array→List 的 L1 定级（相等语义不等价），建立推断失败 fail-closed 边界，并用业务函数双端实跑给出证据。
+
+| Sprint | 内容 | 状态 |
+|--------|------|------|
+| S1 | 集合定级修正（Array/Map/Set → L2-C）+ `mbEquals` 相等 shim + L1/L2 计数修正（15/5/29） | ✅ |
+| S2 | 安全边界（`UnresolvedPolicy` Error 默认 / Warn / Fast；`transpile_source_report`；CLI `--on-unresolved` / `--report`；失败非零退出；推断规则收紧） | ✅ |
+| S3 | 业务函数子集（数组字面量/索引/方法调用/while/let/赋值/括号）+ `golden_business` 包（13/13） | ✅ |
+| S4 | 门禁（`scripts/safety_gate.mjs` 8/8；CI golden 27/27 + `dart analyze --fatal-infos` + 工件上传；`.mbti` 严格） | ✅ |
+| S5 | 文档（array_semantics / safety_boundary / ecosystem_practices / review_anticipation / golden_results_business / reply 重写） | ✅ |
+| S6 | 生态经验学习（MoonBit 同类库：mbt_rs / mizchi-ts / typify / 官方 parser / quickcheck）+ 属性测试 + 真实语料接受率 + `Int64`/`Int32` 兼容修复 | ✅ |
+
+**交付**：579 测试（native 全绿；js/wasm/wasm-gc 各 529），双端 golden 27/27，安全边界 8/8，真实语料接受率 4/9（fail-closed 子集），`dart analyze` 0 issues，转换幂等。
+
+**已知边界（明确拒绝）**：位运算 / 复合赋值 / 一元负变量 / 切片 / `for-in` / `sort` 未实现（解析器直接报错）；数值格式化、字符串 Unicode、corpus 接受率列入 v0.13.0。
+
+---
+
 ## v1.0.0 — 验证 + 完整发布
 
 **目标**：生产可用，完整发布到 mooncakes.io。
@@ -377,6 +396,7 @@ moon2dart watch <dir> -o <output>   # 持续监听变更
 | v0.9.0 | 🟡 中 | MCP 服务器依赖 colmugx/mcp（已验证可用）；自动触发降级为可选 |
 | v0.10.0 ✅ | 🟡 中 | 嵌套 Option 三分态 + DResult 往返 + strict 模式（已验证） |
 | v0.11.0 ✅ | 🟡 中 | mb32 trap 模拟 + 双端逐行输出对比（golden 14/14 已验证） |
+| v0.12.0 ✅ | 🟡 中 | 集合相等语义（`mbEquals`）+ fail-closed 边界（safety 8/8）+ 业务函数 golden 13/13 |
 | v1.0.0 | 🟡 中 | 整体质量保障 + 发布流程 |
 
 ## 技术参考 | Technical References

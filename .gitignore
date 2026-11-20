@@ -5,3 +5,7 @@ target
 .mooncakes/
 .moonagent/
 node_modules/
+.repos/
+golden_out/safety.json
+golden_out/safety.md
+golden_out/trap_probe.dart

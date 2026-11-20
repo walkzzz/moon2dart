@@ -5,6 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
@@ -23,18 +24,19 @@ jobs:
         run: moon test --target all
       - name: Format check
         run: moon fmt --check
-      - name: Verify API interface
+      - name: Verify API interface (.mbti contract)
         run: |
           moon info
-          git diff --exit-code -- '*.mbti' || echo "Warning: .mbti files changed, please commit them"
+          git diff --exit-code -- '*.mbti'
       - name: Code coverage report
         run: |
           moon test --enable-coverage --target native
           moon coverage analyze | tee coverage.txt
+          grep -q "uncovered line" coverage.txt
 
   golden-dual-runtime:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Setup MoonBit
@@ -51,5 +53,23 @@ jobs:
           node-version: 20
       - name: Update registry index
         run: moon update
-      - name: Golden dual-runtime comparison (MoonBit truth vs Dart execution, 14/14)
+      - name: Golden dual-runtime comparison (arithmetic 14 + business 13)
         run: node scripts/golden_check.mjs
+      - name: Dart analyzer on generated code
+        run: dart analyze golden_out --fatal-infos
+      - name: Dart formatter can parse generated code
+        run: dart format --output=none golden_out
+      - name: Safety boundary gate (fail-closed / report / idempotence / collection equality)
+        run: node scripts/safety_gate.mjs
+      - name: Acceptance report on real sources (fail-closed subset coverage)
+        run: node scripts/acceptance_report.mjs
+      - name: Upload safety & acceptance artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: moon2dart-evidence
+          path: |
+            golden_out/safety.json
+            golden_out/safety.md
+            docs/golden_results.md
+            docs/golden_results_business.md
+            docs/acceptance_report.md

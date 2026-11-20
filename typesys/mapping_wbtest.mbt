@@ -174,9 +174,16 @@ test "semantic_level L1 basic types" {
   assert_eq(semantic_level(@ast.MInt), L1)
   assert_eq(semantic_level(@ast.MBool), L1)
   assert_eq(semantic_level(@ast.MString), L1)
-  assert_eq(semantic_level(@ast.MArray(@ast.MInt)), L1)
   assert_eq(semantic_level(@ast.MOption(@ast.MInt)), L1)
   assert_eq(semantic_level(@ast.MResult(@ast.MInt, @ast.MString)), L1)
+}
+
+///|
+test "semantic_level L2 collections (Array/Map/Set)" {
+  assert_eq(semantic_level(@ast.MArray(@ast.MInt)), L2)
+  assert_eq(semantic_level(@ast.MMap(@ast.MString, @ast.MInt)), L2)
+  assert_eq(semantic_level(@ast.MSet(@ast.MInt)), L2)
+  assert_eq(semantic_level(@ast.MOption(@ast.MArray(@ast.MInt))), L2)
 }
 
 ///|
@@ -278,11 +285,11 @@ test "DResult with Array" {
 }
 
 ///|
-test "DResult semantic level L1" {
+test "DResult semantic level L2 when collection nested" {
   assert_eq(semantic_level(@ast.MResult(@ast.MInt, @ast.MString)), L1)
   assert_eq(
     semantic_level(@ast.MResult(@ast.MArray(@ast.MInt), @ast.MString)),
-    L1,
+    L2,
   )
 }
 

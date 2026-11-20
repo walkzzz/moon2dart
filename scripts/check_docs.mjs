@@ -32,10 +32,10 @@ function extractChangelogLatest(text) {
 
 const ASSERTIONS = [
   {
-    id: 'B1', desc: 'moon.mod version == 0.1.1 且 docs/changelog.md 含版本双轨说明',
+    id: 'B1', desc: 'moon.mod version == 0.1.2 且 docs/changelog.md 含版本双轨说明',
     async run(root) {
       const mod = cap(/^version = "([^"]+)"/m, await read('moon.mod', root), 'moon.mod', 'version').value;
-      if (mod !== '0.1.1') throw new Error(`moon.mod=${mod} != 0.1.1（包版本沿 0.1.x 线：0.1.1 = 功能 v0.11.0）`);
+      if (mod !== '0.1.2') throw new Error(`moon.mod=${mod} != 0.1.2（包版本沿 0.1.x 线：0.1.2 = 功能 v0.12.0）`);
       const cl = await read('docs/changelog.md', root);
       if (!cl.includes('版本双轨说明')) throw new Error('docs/changelog.md 缺「版本双轨说明」（0.1.x 重置映射）');
       return { moon_mod: mod, dual_track: 'present' };
@@ -106,20 +106,20 @@ async function selfTest() {
   };
   try {
     // 负向 1：moon.mod 与 changelog 最新条目不一致（0.1.1 vs 0.9.1 —— 版本重置场景的映射错误）
-    await await writeFixtures('0.1.1', '383');
+    await await writeFixtures('0.1.2', '572');
     await writeFile(path.join(tmp, 'docs', 'changelog.md'), '# Changelog\n\n## [0.9.1] - 2026-11-12\n');
     await assertThrows('ST1', 'B1');
     // 负向 2：README 测试数漂移（364 vs 383 —— 本项目真实发生过的漂移）
-    await await writeFixtures('0.1.1', '383');
+    await await writeFixtures('0.1.2', '572');
     await writeFile(path.join(tmp, 'README.md'), (await readFile(path.join(tmp, 'README.md'), 'utf8')).replace('383 个测试', '364 个测试'));
     await assertThrows('ST2', 'B2');
     // 负向 3：文档死链（fixture 追加文档表行，再制造坏链）
-    await await writeFixtures('0.1.1', '383');
+    await await writeFixtures('0.1.2', '572');
     await writeFile(path.join(tmp, 'README.md'), (await readFile(path.join(tmp, 'README.md'), 'utf8')) + '\n| [architecture](docs/architecture.md) | x |\n| [ghost](docs/ghost.md) | x |\n');
     await writeFile(path.join(tmp, 'README.md'), (await readFile(path.join(tmp, 'README.md'), 'utf8')).replace('docs/architecture.md', 'docs/ghost.md'));
     await assertThrows('ST3', 'B3');
     // 正向：全一致 → B1-B4 全绿
-    await await writeFixtures('0.1.1', '383');
+    await await writeFixtures('0.1.2', '572');
     const okRun = await runAssertions(tmp);
     for (const id of ['B1', 'B2', 'B3', 'B4']) {
       const hit = okRun.results.find(x => x.id === id);

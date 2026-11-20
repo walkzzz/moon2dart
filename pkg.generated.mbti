@@ -7,6 +7,10 @@ import {
 }
 
 // Values
+pub fn report_to_json(@ast.TranspileReport) -> String
+
+pub fn report_to_markdown(@ast.TranspileReport) -> String
+
 pub fn reverse_transpile(Array[@dart_ast.DartDecl]) -> String
 
 pub fn reverse_transpile_decl(@dart_ast.DartDecl) -> String
@@ -30,6 +34,10 @@ pub fn transpile_source(String) -> String raise @ast.Moon2DartError
 pub fn transpile_source_flutter(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_pure(String) -> String raise @ast.Moon2DartError
+
+pub fn transpile_source_report(String, String, @ast.SemanticsMode, @ast.UnresolvedPolicy) -> (String, @ast.TranspileReport) raise @ast.Moon2DartError
+
+pub fn transpile_source_safe(String) -> String raise @ast.Moon2DartError
 
 pub fn transpile_source_strict(String) -> String raise @ast.Moon2DartError
 

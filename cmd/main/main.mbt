@@ -23,7 +23,7 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   if args.length() < 1 {
     println("Error: missing <file> argument")
     println(
-      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>] [--semantics wrapping|fast]",
+      "Usage: moon2dart convert <file> [--reverse] [--pure-only] [--strict] [--lib <name>] [--semantics wrapping|fast] [--on-unresolved error|warn|fast] [--report <path>]",
     )
     return
   }
@@ -33,6 +33,8 @@ async fn cmd_convert(args : Array[String]) -> Unit {
   let mut strict = false
   let mut lib_name = "libnative.so"
   let mut semantics_mode : @ast.SemanticsMode = @ast.Wrapping
+  let mut unresolved_policy : @ast.UnresolvedPolicy = @ast.Error
+  let mut report_path = ""
   let mut i = 1
   while i < args.length() {
     if args[i] == "--reverse" {
@@ -50,6 +52,12 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     } else if args[i] == "--semantics" && i + 1 < args.length() {
       semantics_mode = @ast.SemanticsMode::parse(args[i + 1])
       i = i + 2
+    } else if args[i] == "--on-unresolved" && i + 1 < args.length() {
+      unresolved_policy = @ast.UnresolvedPolicy::parse(args[i + 1])
+      i = i + 2
+    } else if args[i] == "--report" && i + 1 < args.length() {
+      report_path = args[i + 1]
+      i = i + 2
     } else {
       i = i + 1
     }
@@ -64,11 +72,11 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     let moon_code = @lib.reverse_transpile_source(content) catch {
       @ast.Moon2DartError::ReverseTranspileError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       _ => {
         println("Error: unexpected error during reverse conversion")
@@ -80,15 +88,15 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     let dart_code = @lib.transpile_source_strict(content) catch {
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       @ast.Moon2DartError::TranspileError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       @ast.Moon2DartError::TypeError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       _ => {
         println("Error: unexpected error during strict conversion")
@@ -100,11 +108,11 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     let dart_code = @lib.transpile_source_pure(content) catch {
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       @ast.Moon2DartError::TranspileError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       _ => {
         println("Error: unexpected error during conversion")
@@ -113,20 +121,32 @@ async fn cmd_convert(args : Array[String]) -> Unit {
     }
     println(dart_code)
   } else {
-    let dart_code = @lib.transpile_source_with_options(
-      content, lib_name, semantics_mode,
+    let (dart_code, report) = @lib.transpile_source_report(
+      content, lib_name, semantics_mode, unresolved_policy,
     ) catch {
       @ast.Moon2DartError::ParseError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
       }
       @ast.Moon2DartError::TranspileError(msg) => {
         println("Error: " + msg)
-        return
+        panic()
+      }
+      @ast.Moon2DartError::TypeError(msg) => {
+        println("Error: " + msg)
+        panic()
       }
       _ => {
         println("Error: unexpected error during conversion")
         return
+      }
+    }
+    if report_path != "" {
+      @fs.write_file(report_path + ".json", @lib.report_to_json(report)) catch {
+        _ => ()
+      }
+      @fs.write_file(report_path + ".md", @lib.report_to_markdown(report)) catch {
+        _ => ()
       }
     }
     println(dart_code)

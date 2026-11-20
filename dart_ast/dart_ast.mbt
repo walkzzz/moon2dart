@@ -3,6 +3,7 @@
 #derive(Eq, Compare, Debug)
 pub(all) enum DartType {
   DInt // int | Dart int
+  DInt64 // int (64-bit, preserves MoonBit Int64 across round-trip) | Dart int (64-bit)
   DDouble // double | Dart double
   DBool // bool | Dart bool
   DString // String | Dart String
@@ -145,6 +146,7 @@ pub extend DartVariant with Debug::{to_repr}
 pub fn DartType::to_moon_string(self : DartType) -> String {
   match self {
     DInt => "Int"
+    DInt64 => "Int64"
     DDouble => "Double"
     DBool => "Bool"
     DString => "String"

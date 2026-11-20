@@ -168,6 +168,7 @@ fn DartParser::parse_type(
 fn dart_debug_type(t : @dart_ast.DartType) -> String {
   match t {
     @dart_ast.DInt => "int"
+    @dart_ast.DInt64 => "int"
     @dart_ast.DDouble => "double"
     @dart_ast.DBool => "bool"
     @dart_ast.DString => "String"

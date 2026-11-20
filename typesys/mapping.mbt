@@ -153,7 +153,36 @@ pub fn semantic_level(t : @ast.MoonType) -> SemanticLevel {
     @ast.MUInt => L3
     @ast.MFloat => L3
     @ast.MChar => L3
-    _ => if has_l4_type(t) { L4 } else if has_l3_type(t) { L3 } else { L1 }
+    _ =>
+      if has_l4_type(t) {
+        L4
+      } else if has_l3_type(t) {
+        L3
+      } else if has_collection_type(t) {
+        // 集合类型（Array/Map/Set）为结构等价 L2：元素类型/容量/迭代顺序可映射，
+        // 但相等语义、越界异常类型与迭代顺序依赖需约束（见 docs/array_semantics.md）。
+        L2
+      } else {
+        L1
+      }
+  }
+}
+
+///|
+/// 判断类型是否为集合类型（Array/Map/Set，含 Option/Result 包裹）| Whether the type is a collection (Array/Map/Set, including wrapped)
+pub fn is_collection_type(t : @ast.MoonType) -> Bool {
+  has_collection_type(t)
+}
+
+///|
+/// 递归检查类型中是否包含集合类型（Array/Map/Set）——L2 结构等价的判据 | Recursively check for collection types — the L2 structural-equivalence criterion
+fn has_collection_type(t : @ast.MoonType) -> Bool {
+  match t {
+    @ast.MArray(_) | @ast.MMap(_, _) | @ast.MSet(_) => true
+    @ast.MOption(inner) => has_collection_type(inner)
+    @ast.MResult(ok, err) => has_collection_type(ok) || has_collection_type(err)
+    @ast.MFuture(inner) => has_collection_type(inner)
+    _ => false
   }
 }
 
@@ -260,7 +289,7 @@ pub fn assert_value_domain(
 fn convert_to_dart_ast_type(t : DartType) -> @dart_ast.DartType {
   match t {
     DInt => @dart_ast.DInt
-    DInt64 => @dart_ast.DInt
+    DInt64 => @dart_ast.DInt64
     DDouble => @dart_ast.DDouble
     DBool => @dart_ast.DBool
     DString => @dart_ast.DString

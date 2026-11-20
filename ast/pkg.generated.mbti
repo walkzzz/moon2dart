@@ -12,6 +12,8 @@ pub fn has_nested_option_in_decls(Array[MoonDecl]) -> Bool
 
 pub fn is_nested_option(MoonType) -> Bool
 
+pub fn is_statement_expr(MoonExpr) -> Bool
+
 // Errors
 pub(all) suberror Moon2DartError {
   ParseError(String)
@@ -25,6 +27,16 @@ pub(all) suberror Moon2DartError {
 }
 
 // Types and methods
+#derive(Eq, @debug.Debug)
+pub(all) struct Diagnostic {
+  code : String
+  site : String
+  detail : String
+}
+pub fn Diagnostic::equal(Self, Self) -> Bool
+pub fn Diagnostic::not_equal(Self, Self) -> Bool
+pub fn Diagnostic::to_repr(Self) -> @debug.Repr
+
 #derive(Compare, Eq, @debug.Debug)
 pub(all) struct ImplMethod {
   name : String
@@ -74,6 +86,12 @@ pub(all) enum MoonExpr {
   EAwait(MoonExpr)
   ELambda(Array[(String, MoonType)], MoonExpr)
   EBlock(Array[MoonExpr])
+  EArrayLit(Array[MoonExpr])
+  EIndex(MoonExpr, MoonExpr)
+  EMethodCall(MoonExpr, String, Array[MoonExpr])
+  EWhile(MoonExpr, MoonExpr)
+  ELet(String, Bool, MoonType?, MoonExpr)
+  EAssign(String, MoonExpr)
 }
 pub fn MoonExpr::compare(Self, Self) -> Int32
 pub fn MoonExpr::equal(Self, Self) -> Bool
@@ -161,6 +179,29 @@ pub fn TraitMethod::op_gt(Self, Self) -> Bool
 pub fn TraitMethod::op_le(Self, Self) -> Bool
 pub fn TraitMethod::op_lt(Self, Self) -> Bool
 pub fn TraitMethod::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) struct TranspileReport {
+  policy : UnresolvedPolicy
+  unresolved : Array[Diagnostic]
+  degraded : Array[Diagnostic]
+}
+pub fn TranspileReport::equal(Self, Self) -> Bool
+pub fn TranspileReport::is_ok(Self) -> Bool
+pub fn TranspileReport::not_equal(Self, Self) -> Bool
+pub fn TranspileReport::summary(Self) -> String
+pub fn TranspileReport::to_repr(Self) -> @debug.Repr
+
+#derive(Eq, @debug.Debug)
+pub(all) enum UnresolvedPolicy {
+  Error
+  Warn
+  Fast
+}
+pub fn UnresolvedPolicy::equal(Self, Self) -> Bool
+pub fn UnresolvedPolicy::not_equal(Self, Self) -> Bool
+pub fn UnresolvedPolicy::parse(String) -> Self
+pub fn UnresolvedPolicy::to_repr(Self) -> @debug.Repr
 
 // Type aliases
 

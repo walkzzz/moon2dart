@@ -5,7 +5,7 @@
 **MoonBit → Dart/Flutter Transpiler** | 让 MoonBit 代码跑在 Flutter 上
 
 [![CI](https://github.com/walkzzz/moon2dart/actions/workflows/ci.yml/badge.svg)](https://github.com/walkzzz/moon2dart/actions/workflows/ci.yml)
-[![mooncakes.io](https://img.shields.io/badge/mooncakes-0.1.1-blueviolet)](https://mooncakes.io/docs/walkzzz/moon2dart)
+[![mooncakes.io](https://img.shields.io/badge/mooncakes-0.1.2-blueviolet)](https://mooncakes.io/docs/walkzzz/moon2dart)
 [![License](https://img.shields.io/badge/license-Apache--2.0-green)](LICENSE)
 
 </div>
@@ -16,7 +16,7 @@
 
 **moon2dart** 是一个 MoonBit → Dart/Flutter 代码生成器（transpiler），支持**双向转换**与**语义等价性验证**。
 
-它将 MoonBit 源码解析为 AST，再转换为 Dart 代码字符串——同时支持 Dart → MoonBit 反向转换，并通过 **四级语义分类**（L1-L4）确保往返正确性。v0.10.0 引入 strict 模式与诊断标注；v0.11.0 建立运行时语义保持体系（Int 32 位回绕模拟 + 双语义模式 + golden 双端逐行验证），语义等价从"类型可还原"升级到"运行时逐行一致"。
+它将 MoonBit 源码解析为 AST，再转换为 Dart 代码字符串——同时支持 Dart → MoonBit 反向转换，并通过 **四级语义分类**（L1/L2/L3/L4）确保往返正确性。v0.10.0 引入 strict 模式与诊断标注；v0.11.0 建立运行时语义保持体系（Int 32 位回绕模拟 + 双语义模式 + golden 双端逐行验证）；**v0.12.0** 修正集合定级（Array/Map/Set → L2-C + `mbEquals` 相等 shim），并建立 **fail-closed 安全边界**（推断失败默认拒绝 + 可审计报告）。
 
 - **库 API**：供其他开发者引入，调用 `transpile_source` / `reverse_transpile_source` / `transpile_source_strict` 等函数
 - **CLI**：`moon2dart convert <file>` 命令行转换，支持 `--strict` / `--reverse` / `--pure-only`
@@ -24,7 +24,8 @@
 - **独立**：MoonBit 代码本身独立可运行，不依赖生成的 Dart/Flutter 代码
 - **多后端**：支持 wasm / wasm-gc / js / native 四后端
 - **语义验证**：L1 等价 / L2 安全转换 / L3 受限 / L4 不等价 + strict 拒绝
-- **运行时语义保持**：Int 32 位回绕模拟层（mb32*）+ `--semantics` 双模式（Wrapping/Fast）+ golden 双端验证 14/14 行一致（复现：`node scripts/golden_check.mjs`）
+- **运行时语义保持**：Int 32 位回绕模拟层（mb32*）+ 集合相等 shim（`mbEquals`）+ `--semantics` 双模式（Wrapping/Fast）+ **fail-closed** 安全边界（`--on-unresolved error|warn|fast`）+ golden 双端验证 **27/27** 行一致（复现：`node scripts/golden_check.mjs`）
+- **生态经验对齐**：借鉴 mbt_rs（真实转化率 / roundtrip）、mizchi/ts（parity / fuzz）、typify（upstream-identical）、官方 parser（幂等格式化）与 quickcheck（随机化验证）；属性测试 6 类 + 真实语料接受率报告（`docs/moonbit_ecosystem_lessons.md`）
 
 ---
 
@@ -206,10 +207,10 @@ v0.10.0 引入完整的语义等价性验证体系，让 MoonBit → Dart 的类
 
 | 等级 | 含义 | 示例 |
 |------|------|------|
-| **L1-EQUIVALENT** | 语义完全等价 | `Int → int`，`String → String` |
-| **L2-SAFE** | 安全转换（无损） | `Double → double`，`Bool → bool` |
-| **L3-CONSTRAINED** | 受限转换（语义收缩） | 嵌套 `Option<Option<T>>` → `T?`（null 嵌套丢失） |
-| **L4-INEQUIVALENT** | 不等价（语义漂移） | `Unit → void`（值 vs 无返回） |
+| **L1 完全等价** | 类型 + 运算语义一致 | `Int`（mb32* 回绕）、`String`、`Double`、`Bool`、`Unit`、单层/嵌套 `Option`、`Result`、`Future`、fn/struct/enum/trait/impl |
+| **L2 结构等价** | 结构可还原，操作有约束 | **`Array`/`Map`/`Set`（L2-C：`mbEquals` + 操作子集）**、`Char`、引用语义 |
+| **L3 受限等价** | 值域/表示有损，需标注 | `UInt`/`UInt64`（无 unsigned）、`Float`（精度提升）、`Char`（码点） |
+| **L4 不等价** | 语义缺失，strict 拒绝 | FFI / Channel / Spawn / wasm intrinsics |
 
 ### 关键机制
 
@@ -218,7 +219,9 @@ v0.10.0 引入完整的语义等价性验证体系，让 MoonBit → Dart 的类
 - **诊断标注** — `emit_semantic_diagnostic` 在生成代码中插入 `[L3-CONSTRAINED]` / `[L4-INEQUIVALENT]` 注释
 - **strict 模式** — `--strict` 拒绝所有 L4 映射，返回 `Moon2DartError`
 - **变异测试** — `assert_round_trip` + `assert_value_domain` 验证往返语义保持
-- **运行时语义保持** — `SemanticsMode` 双模式（Wrapping 默认 / Fast）+ mb32* 回绕 shim + mini 类型推断器；golden 双端 14/14 行一致
+- **运行时语义保持** — `SemanticsMode` 双模式（Wrapping 默认 / Fast）+ mb32* 回绕 shim + `mbEquals` 集合相等 shim + mini 类型推断器；golden 双端 **27/27** 行一致（算术 14 + 业务函数 13）
+- **属性测试与真实语料** — 6 类固定种子属性测试（类型往返 / 幂等 / fail-closed / 集合相等 / 回绕 / L3）；真实文件接受率见 `docs/acceptance_report.md`（fail-closed 子集，拒绝即列出原因）
+- **安全边界** — `UnresolvedPolicy`（Error 默认 / Warn / Fast）+ `--on-unresolved` + `--report <path>`（JSON/MD）；推断失败即拒绝，未支持语法直接报错
 
 详见 [docs/semantic_equivalence.md](docs/semantic_equivalence.md)。
 
@@ -237,7 +240,7 @@ moon info                              # 更新接口
 
 ## 🧪 测试 | Tests
 
-**541 个测试**，native 后端全通过（v0.11.0 口径）：
+**579 个测试**，native 后端全通过（v0.12.0 口径；wasm/wasm-gc/js 各 529）：
 
 | 包 | 白盒 | 黑盒 |
 |----|------|------|
@@ -250,8 +253,8 @@ moon info                              # 更新接口
 | dart_parser | 0 | 0 |
 | reverse_codegen | 7+ | 0 |
 | mcp_server | 10+ | 0 |
-| golden | 14 | 0 |
-| moon2dart (根) | 37 | 5 |
+| golden | 27 | 0 |
+| moon2dart (根) | 45+ | 5 |
 
 ---
 
@@ -284,9 +287,10 @@ moon info                              # 更新接口
 | v0.9.1 | ✅ 已实现 | 项目双向同步 + 冲突检测 |
 | v0.10.0 | ✅ 已实现 | 往返语义等价性验证（嵌套 Option + DResult + 四级分类 + strict 模式 + 变异测试） |
 | v0.11.0 | ✅ 已实现 | 运行时语义保持（Int 32 位回绕模拟层 + --semantics 双模式 + golden 双端验证 14/14，复现 `node scripts/golden_check.mjs`） |
+| v0.12.0 | ✅ 已实现 | **集合定级修正（Array/Map/Set → L2-C + `mbEquals`）+ fail-closed 安全边界 + 业务函数 golden 27/27 + CI `dart analyze`/`safety_gate`** |
 | v1.0.0 | 📋 计划 | 验证 + 完整发布（mooncakes.io） |
 
-> 📌 **版本双轨说明**（2026-11-13，v0.11.0 更新）：功能迭代版本（v0.1.0 → v0.11.0）为 Sprint 史；**mooncakes 包版本重置为 0.1.0**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，包 0.1.1 = 功能 v0.11.0，后续包版本沿 0.1.x 线推进。
+> 📌 **版本双轨说明**（2026-11-13，v0.12.0 更新）：功能迭代版本（v0.1.0 → v0.12.0）为 Sprint 史；**mooncakes 包版本沿 0.1.x 线**（季度评选「新项目」叙事）——映射：包 0.1.0 = 功能 v0.1.0-v0.10.0 全量，包 0.1.1 = 功能 v0.11.0（已发布），包 0.1.2 = 功能 v0.12.0（待发布）。
 
 详见 [docs/roadmap.md](docs/roadmap.md)。
 
@@ -294,13 +298,19 @@ moon info                              # 更新接口
 
 ## 📄 文档 | Documentation
 
-开发文档在 `docs/`（12 份）：
+开发文档在 `docs/`（19 份）：
 
 | 文档 | 内容 |
 |------|------|
 | [architecture.md](docs/architecture.md) | 架构设计 |
-| [type_mapping.md](docs/type_mapping.md) | 类型映射规范（含 L1-L4 分级） |
+| [type_mapping.md](docs/type_mapping.md) | 类型映射规范（含 L1-L4 分级与集合约束） |
 | [semantic_equivalence.md](docs/semantic_equivalence.md) | 语义等价性规范 |
+| [array_semantics.md](docs/array_semantics.md) | **Array→List 语义（L2-C / 相等 / 越界 / 操作矩阵）** |
+| [safety_boundary.md](docs/safety_boundary.md) | **fail-closed 安全边界与人工介入清单** |
+| [ecosystem_practices.md](docs/ecosystem_practices.md) | **跨语言转换生态做法对照（TS/Scala.js/Kotlin/JS/c2rust 等）** |
+| [moonbit_ecosystem_lessons.md](docs/moonbit_ecosystem_lessons.md) | **MoonBit 生态同类库经验（mbt_rs / mizchi-ts / typify / 官方 parser / quickcheck）** |
+| [acceptance_report.md](docs/acceptance_report.md) | **真实语料接受率（fail-closed 子集覆盖）** |
+| [review_anticipation.md](docs/review_anticipation.md) | **评审预判清单（已修/明确边界/待办）** |
 | [roadmap.md](docs/roadmap.md) | 迭代路线图 |
 | [coding_conventions.md](docs/coding_conventions.md) | 编码规范 |
 | [testing_strategy.md](docs/testing_strategy.md) | 测试策略 |
@@ -308,7 +318,8 @@ moon info                              # 更新接口
 | [changelog.md](docs/changelog.md) | 变更日志 |
 | [assessment.md](docs/assessment.md) | 验收记分卡（三口径） |
 | [pitfall-catalog.md](docs/pitfall-catalog.md) | 陷阱目录（M1-M11 + T1-T9） |
-| [golden_results.md](docs/golden_results.md) | golden 双端验证报告（14/14） |
+| [golden_results.md](docs/golden_results.md) | golden 双端验证报告（算术 14/14） |
+| [golden_results_business.md](docs/golden_results_business.md) | **golden 业务函数双端报告（13/13）** |
 | [申报书](hackathon2026_moon2dart_proposal.md) | 季度评选申报书 |
 
 ---

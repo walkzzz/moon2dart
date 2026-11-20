@@ -26,7 +26,7 @@ test "emit_dart_expr binop" {
 ///|
 test "emit_dart_expr if" {
   let if_ = @ast.EIf(@ast.EBool(true), @ast.EInt(1), @ast.EInt(0))
-  assert_eq(emit_dart_expr(if_), "true ? 1 : 0")
+  assert_eq(emit_dart_expr(if_), "(true ? 1 : 0)")
 }
 
 ///|
